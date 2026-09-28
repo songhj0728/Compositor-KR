@@ -9,6 +9,8 @@
 
 현재 버전에서는 PSD로 변환할 경우 포토샵에서 레이어 작업은 가능하지만, 텍스트 등의 일부 요소는 편집이 불가능할 수 있습니다.
 
+원본 제작자의 설명과 링크는 아래 있습니다.
+
 English
 
 This project is a fork of Compositor by robbietilton.
