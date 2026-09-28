@@ -1,0 +1,7343 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : ""
+          }
+        }
+      }
+    },
+    " color" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : " 색상"
+          }
+        }
+      }
+    },
+    " histogram" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : " 히스토그램"
+          }
+        }
+      }
+    },
+    "." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "."
+          }
+        }
+      }
+    },
+    "…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "…"
+          }
+        }
+      }
+    },
+    "· encoded preview, fitted to window" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "· 창에 맞춘 인코딩된 미리보기"
+          }
+        }
+      }
+    },
+    "#" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "#"
+          }
+        }
+      }
+    },
+    "%" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%"
+          }
+        }
+      }
+    },
+    "%@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
+    "%@  %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@  %2$@"
+          }
+        }
+      }
+    },
+    "%@  %lld × %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@  %2$lld × %3$lld"
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ × %@ px" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ × %3$@ px"
+          }
+        }
+      }
+    },
+    "%@ × %@ px · sRGB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ × %2$@ px · sRGB"
+          }
+        }
+      }
+    },
+    "%@ color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 색상"
+          }
+        }
+      }
+    },
+    "%@ effect" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 효과"
+          }
+        }
+      }
+    },
+    "%@ the selection by this many pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역을 지정한 픽셀 수만큼 %@합니다."
+          }
+        }
+      }
+    },
+    "%@ uncompressed RGBA canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 비압축 RGBA 캔버스"
+          }
+        }
+      }
+    },
+    "%@…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@…"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld × %lld px" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld × %2$lld px"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld × %2$lld px"
+          }
+        }
+      }
+    },
+    "%lld × %lld px · %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld × %2$lld px · %3$@ · %4$@"
+          }
+        }
+      }
+    },
+    "%lld × %lld px · sRGB" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld × %2$lld px · sRGB"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld × %2$lld px · sRGB"
+          }
+        }
+      }
+    },
+    "%lld degrees" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld도"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "%lld°  %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld°  %2$lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld°  %2$lld"
+          }
+        }
+      }
+    },
+    "1:1" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1:1"
+          }
+        }
+      }
+    },
+    "3.5×5 in" : {
+
+    },
+    "4:3" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "4:3"
+          }
+        }
+      }
+    },
+    "4×6 in" : {
+
+    },
+    "5×7 in" : {
+
+    },
+    "8×10 in" : {
+
+    },
+    "16:9" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "16:9"
+          }
+        }
+      }
+    },
+    "100%" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "100%"
+          }
+        }
+      }
+    },
+    "A blank space for your next composition." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다음 작업을 위한 빈 캔버스입니다."
+          }
+        }
+      }
+    },
+    "A subdivision every %@ pixels." : {
+
+    },
+    "A2" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A2"
+          }
+        }
+      }
+    },
+    "A3" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A3"
+          }
+        }
+      }
+    },
+    "A4" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A4"
+          }
+        }
+      }
+    },
+    "Accent Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "강조 색상"
+          }
+        }
+      }
+    },
+    "Actual Pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실제 픽셀"
+          }
+        }
+      }
+    },
+    "Actual pixels (⌘1)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실제 픽셀로 표시합니다 (⌘1)."
+          }
+        }
+      }
+    },
+    "Actual Size" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실제 크기"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "추가"
+          }
+        }
+      }
+    },
+    "Add layer mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 마스크 추가"
+          }
+        }
+      }
+    },
+    "Add layer mask (the selection becomes black)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 마스크 추가 (선택 영역이 검은색이 됨)"
+          }
+        }
+      }
+    },
+    "Add Noise" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "노이즈 추가"
+          }
+        }
+      }
+    },
+    "Adobe RGB (1998)" : {
+
+    },
+    "Advanced" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "고급"
+          }
+        }
+      }
+    },
+    "Align " : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "정렬 "
+          }
+        }
+      }
+    },
+    "Align %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 정렬"
+          }
+        }
+      }
+    },
+    "Aligned" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "정렬"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전체"
+          }
+        }
+      }
+    },
+    "All Layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 레이어"
+          }
+        }
+      }
+    },
+    "Amount" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "양"
+          }
+        }
+      }
+    },
+    "Analyze the active layer only, or every visible layer as shown" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "활성 레이어만 분석하거나 표시된 대로 보이는 모든 레이어를 분석합니다."
+          }
+        }
+      }
+    },
+    "Anchor" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기준점"
+          }
+        }
+      }
+    },
+    "Anti-alias" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "앤티 앨리어스"
+          }
+        }
+      }
+    },
+    "App Language" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "앱 언어"
+          }
+        }
+      }
+    },
+    "Appearance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모양"
+          }
+        }
+      }
+    },
+    "Applies generic profile strength when camera metadata is not available." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "카메라 메타데이터를 사용할 수 없는 경우 일반 프로필 강도를 적용합니다."
+          }
+        }
+      }
+    },
+    "Apply" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "적용"
+          }
+        }
+      }
+    },
+    "Apply Crop" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자르기 적용"
+          }
+        }
+      }
+    },
+    "Apply outside this range instead" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "대신 이 범위 밖에 적용"
+          }
+        }
+      }
+    },
+    "Applying…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "적용 중…"
+          }
+        }
+      }
+    },
+    "ASCII" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ASCII"
+          }
+        }
+      }
+    },
+    "Atkinson (Classic Mac)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Atkinson (클래식 Mac)"
+          }
+        }
+      }
+    },
+    "Auto" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자동"
+          }
+        }
+      }
+    },
+    "Auto balances the average color. Custom follows Temperature and Tint." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자동은 평균 색상의 균형을 맞춥니다. 사용자 지정은 색온도와 색조를 따릅니다."
+          }
+        }
+      }
+    },
+    "Auto Select" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자동 선택"
+          }
+        }
+      }
+    },
+    "B1" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "B1"
+          }
+        }
+      }
+    },
+    "B2" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "B2"
+          }
+        }
+      }
+    },
+    "Background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "배경"
+          }
+        }
+      }
+    },
+    "Background for transparency" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명 영역용 배경색"
+          }
+        }
+      }
+    },
+    "Based On" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기준"
+          }
+        }
+      }
+    },
+    "Basic" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기본"
+          }
+        }
+      }
+    },
+    "Basic is quick; Advanced refines the mask against the layer's own detail, for hair and fur" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기본은 빠르며, 고급은 레이어 자체의 세부 정보를 기준으로 마스크를 다듬어 머리카락과 털에 적합합니다."
+          }
+        }
+      }
+    },
+    "Bayer 2 × 2" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bayer 2 × 2"
+          }
+        }
+      }
+    },
+    "Bayer 4 × 4" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bayer 4 × 4"
+          }
+        }
+      }
+    },
+    "Bayer 8 × 8" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bayer 8 × 8"
+          }
+        }
+      }
+    },
+    "Black" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "검정"
+          }
+        }
+      }
+    },
+    "Black · Hide" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "검정 · 가리기"
+          }
+        }
+      }
+    },
+    "Black & White" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흑백"
+          }
+        }
+      }
+    },
+    "Blend" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "혼합"
+          }
+        }
+      }
+    },
+    "Blend the chosen color into the edges while keeping the center unchanged" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 색상을 가장자리에 섞으면서 중앙은 그대로 유지합니다."
+          }
+        }
+      }
+    },
+    "Bloat" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "볼록"
+          }
+        }
+      }
+    },
+    "Bloom" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "블룸"
+          }
+        }
+      }
+    },
+    "Bloom / Glow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "블룸/글로우"
+          }
+        }
+      }
+    },
+    "Blue" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파란색"
+          }
+        }
+      }
+    },
+    "Blue Primary" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파랑 원색"
+          }
+        }
+      }
+    },
+    "Blues" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파랑 계열"
+          }
+        }
+      }
+    },
+    "Blur" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흐림 효과"
+          }
+        }
+      }
+    },
+    "Bottom" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "아래쪽"
+          }
+        }
+      }
+    },
+    "Bottom Right Pixel Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오른쪽 아래 픽셀 색상"
+          }
+        }
+      }
+    },
+    "Brush" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시"
+          }
+        }
+      }
+    },
+    "Brush Cursor" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시 커서"
+          }
+        }
+      }
+    },
+    "Brush Tool Options" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시 도구 옵션"
+          }
+        }
+      }
+    },
+    "Business Card (Korea)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "명함(한국)"
+          }
+        }
+      }
+    },
+    "Business Card (US)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "명함(미국)"
+          }
+        }
+      }
+    },
+    "Calibration" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "보정"
+          }
+        }
+      }
+    },
+    "Camera Raw Filter" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Camera Raw 필터"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "취소"
+          }
+        }
+      }
+    },
+    "Canvas extension" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 확장"
+          }
+        }
+      }
+    },
+    "Canvas Size" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 크기"
+          }
+        }
+      }
+    },
+    "Canvas Size…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 크기…"
+          }
+        }
+      }
+    },
+    "Cards & Envelopes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "카드 및 봉투"
+          }
+        }
+      }
+    },
+    "Category" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "카테고리"
+          }
+        }
+      }
+    },
+    "Center" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "중앙"
+          }
+        }
+      }
+    },
+    "Centimeters" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "센티미터"
+          }
+        }
+      }
+    },
+    "Channel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "채널"
+          }
+        }
+      }
+    },
+    "Characters" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "문자"
+          }
+        }
+      }
+    },
+    "Check for Updates…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "업데이트 확인…"
+          }
+        }
+      }
+    },
+    "Choose a custom grid color" : {
+
+    },
+    "Choose the %@ color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 색상 선택"
+          }
+        }
+      }
+    },
+    "Choose the vignette color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "비네트 색상 선택"
+          }
+        }
+      }
+    },
+    "Chooses how strongly the calibration sliders below are applied. Version 6 is the current default." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "아래 보정 슬라이더가 얼마나 강하게 적용되는지를 결정합니다. 버전 6이 현재 기본값입니다."
+          }
+        }
+      }
+    },
+    "Clear Guides" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "안내선 지우기"
+          }
+        }
+      }
+    },
+    "Clear Menu" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "메뉴 지우기"
+          }
+        }
+      }
+    },
+    "Clear Selection Pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역 픽셀 지우기"
+          }
+        }
+      }
+    },
+    "Clear the haze that leaves background showing through thin areas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "얇은 부분으로 배경이 비쳐 보이는 안개 효과를 제거합니다."
+          }
+        }
+      }
+    },
+    "Click a pixel that should be neutral." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "중성색이어야 하는 픽셀을 클릭합니다."
+          }
+        }
+      }
+    },
+    "Click a purple or green fringe to set its hue range." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자주색 또는 녹색 프린지를 클릭하여 색조 범위를 설정합니다."
+          }
+        }
+      }
+    },
+    "Click a shortcut, then press its new key combination. Changes apply when you save." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "단축키를 클릭한 다음 새 키 조합을 누릅니다. 변경 사항은 저장하면 적용됩니다."
+          }
+        }
+      }
+    },
+    "Click the canvas to sample" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스를 클릭하여 색상을 샘플링합니다."
+          }
+        }
+      }
+    },
+    "Click the fringe on the layer. Click the eyedropper again to stop." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어에서 프린지를 클릭합니다. 중지하려면 스포이드를 다시 클릭합니다."
+          }
+        }
+      }
+    },
+    "Click the image to center this range on that color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지를 클릭하여 이 범위를 클릭한 색상 중심으로 이동합니다."
+          }
+        }
+      }
+    },
+    "Click the image to narrow this range to exclude that color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지를 클릭하여 클릭한 색상이 제외되도록 이 범위를 좁힙니다."
+          }
+        }
+      }
+    },
+    "Click the image to pick the color to select." : {
+
+    },
+    "Click the image to widen this range to include that color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지를 클릭하여 클릭한 색상이 포함되도록 이 범위를 넓힙니다."
+          }
+        }
+      }
+    },
+    "Click the original layer to set %@. Click the eyedropper again to stop." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 레이어를 클릭하여 %@ 지점을 설정합니다. 중지하려면 스포이드를 다시 클릭합니다."
+          }
+        }
+      }
+    },
+    "Click the original layer. Click the eyedropper again to stop." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 레이어를 클릭합니다. 중지하려면 스포이드를 다시 클릭합니다."
+          }
+        }
+      }
+    },
+    "Click the picture to save a color. Up to eight colors." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지를 클릭하여 색상을 저장합니다. 최대 8개 색상까지 저장할 수 있습니다."
+          }
+        }
+      }
+    },
+    "Click to add a point. Drag to adjust." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클릭하여 점을 추가합니다. 드래그하여 조절합니다."
+          }
+        }
+      }
+    },
+    "Click to select; double-click to edit; Option-drag to copy %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클릭하면 선택합니다. 더블 클릭하면 편집합니다. Option 키를 누른 채 드래그하면 %@ 효과가 복사됩니다."
+          }
+        }
+      }
+    },
+    "Clone Stamp" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "복제 도장"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "닫기"
+          }
+        }
+      }
+    },
+    "Close %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 닫기"
+          }
+        }
+      }
+    },
+    "Close Project" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "프로젝트 닫기"
+          }
+        }
+      }
+    },
+    "CMYK" : {
+
+    },
+    "Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상"
+          }
+        }
+      }
+    },
+    "Color + neutral midtones" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 + 중간톤 중립화"
+          }
+        }
+      }
+    },
+    "Color Balance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 균형"
+          }
+        }
+      }
+    },
+    "Color for the added canvas" : {
+
+    },
+    "Color Grading" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 그레이딩"
+          }
+        }
+      }
+    },
+    "Color Mixer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 혼합"
+          }
+        }
+      }
+    },
+    "Color Overlay" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 오버레이"
+          }
+        }
+      }
+    },
+    "Color Priority" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 우선"
+          }
+        }
+      }
+    },
+    "Color Profile" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 프로파일"
+          }
+        }
+      }
+    },
+    "Color Range…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 범위…"
+          }
+        }
+      }
+    },
+    "Color that fills transparent areas" : {
+
+    },
+    "Color the result while keeping its tones, for a sepia or a cyanotype" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "톤을 유지하면서 결과에 색을 입혀 세피아나 시아노타입을 만듭니다."
+          }
+        }
+      }
+    },
+    "Colored background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 배경"
+          }
+        }
+      }
+    },
+    "Colorize" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상화"
+          }
+        }
+      }
+    },
+    "Colors" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상"
+          }
+        }
+      }
+    },
+    "Component" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "구성 요소"
+          }
+        }
+      }
+    },
+    "Compositor" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Compositor"
+          }
+        }
+      }
+    },
+    "Compositor will convert these Photoshop features. Nothing is applied until you continue." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Compositor가 다음 Photoshop 기능을 변환합니다. 계속하기 전까지는 아무것도 적용되지 않습니다."
+          }
+        }
+      }
+    },
+    "Constrain Crop" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자르기 제한"
+          }
+        }
+      }
+    },
+    "Content-Aware" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내용 인식"
+          }
+        }
+      }
+    },
+    "Content-Aware Fill" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내용 인식 채우기"
+          }
+        }
+      }
+    },
+    "Content-Aware Fill…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내용 인식 채우기…"
+          }
+        }
+      }
+    },
+    "Contextual keys & mouse gestures" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "상황별 키 및 마우스 제스처"
+          }
+        }
+      }
+    },
+    "Contiguous" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "인접"
+          }
+        }
+      }
+    },
+    "Contract…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "축소…"
+          }
+        }
+      }
+    },
+    "Contrast" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "대비"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "복사"
+          }
+        }
+      }
+    },
+    "Copy from the active layer only, or from every visible layer as shown" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "활성 레이어에서만 복사하거나 표시된 대로 보이는 모든 레이어에서 복사합니다."
+          }
+        }
+      }
+    },
+    "Copy Merged" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "병합하여 복사"
+          }
+        }
+      }
+    },
+    "Couldn’t crop" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자르기를 할 수 없습니다"
+          }
+        }
+      }
+    },
+    "Couldn’t paint" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그리기를 할 수 없습니다"
+          }
+        }
+      }
+    },
+    "Create a canvas or import an image." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스를 만들거나 이미지를 가져오세요."
+          }
+        }
+      }
+    },
+    "Create canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 만들기"
+          }
+        }
+      }
+    },
+    "Create Clipping Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클리핑 마스크 만들기"
+          }
+        }
+      }
+    },
+    "Create Texture" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스처 만들기"
+          }
+        }
+      }
+    },
+    "Crop" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자르기"
+          }
+        }
+      }
+    },
+    "Crops empty edges after the transform and fits the result back into the frame." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "변형 후 생긴 빈 가장자리를 잘라내고 결과물을 프레임에 다시 맞춥니다."
+          }
+        }
+      }
+    },
+    "Current: %lld × %lld pixels" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Current: %1$lld × %#@pixels@"
+          },
+          "substitutions" : {
+            "pixels" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixel"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixels"
+                    }
+                  },
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixels"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "현재: %1$lld × %#@pixels@"
+          },
+          "substitutions" : {
+            "pixels" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg 픽셀"
+                    }
+                  },
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg 픽셀"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Cursors" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "커서"
+          }
+        }
+      }
+    },
+    "Curve" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "곡선"
+          }
+        }
+      }
+    },
+    "Curves" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "곡선"
+          }
+        }
+      }
+    },
+    "Curves…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "곡선…"
+          }
+        }
+      }
+    },
+    "Custom" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용자 지정"
+          }
+        }
+      }
+    },
+    "Custom aspect ratio" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용자 지정 비율"
+          }
+        }
+      }
+    },
+    "Custom aspect ratio %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용자 지정 비율 %@"
+          }
+        }
+      }
+    },
+    "Cut" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "잘라내기"
+          }
+        }
+      }
+    },
+    "Cyans" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹청 계열"
+          }
+        }
+      }
+    },
+    "Dark" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "어두운 색"
+          }
+        }
+      }
+    },
+    "Default colors" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기본 색상"
+          }
+        }
+      }
+    },
+    "Default colors (D)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기본 색상 (D)"
+          }
+        }
+      }
+    },
+    "Defringe" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색번짐 제거"
+          }
+        }
+      }
+    },
+    "Delete " : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "삭제: "
+          }
+        }
+      }
+    },
+    "Delete %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 삭제"
+          }
+        }
+      }
+    },
+    "Delete Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 삭제"
+          }
+        }
+      }
+    },
+    "Delete layer mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 마스크 삭제"
+          }
+        }
+      }
+    },
+    "Delete Layer Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 마스크 삭제"
+          }
+        }
+      }
+    },
+    "Delete Layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 모두 삭제"
+          }
+        }
+      }
+    },
+    "Delete selected effect" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 효과 삭제"
+          }
+        }
+      }
+    },
+    "Delete selected layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 레이어 삭제"
+          }
+        }
+      }
+    },
+    "Delete selected layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 레이어 모두 삭제"
+          }
+        }
+      }
+    },
+    "Density" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "밀도"
+          }
+        }
+      }
+    },
+    "Deselect" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 해제"
+          }
+        }
+      }
+    },
+    "Detail" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "디테일"
+          }
+        }
+      }
+    },
+    "Develop “%@”" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” 현상"
+          }
+        }
+      }
+    },
+    "Device" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기기"
+          }
+        }
+      }
+    },
+    "Diffusion" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diffusion"
+          }
+        }
+      }
+    },
+    "Diffusion is soft and wide, Bloom is tighter, and Halation is a red fringe." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diffusion은 부드럽고 넓게 퍼지며, Bloom은 더 좁게 퍼지고, Halation은 붉은 프린지입니다."
+          }
+        }
+      }
+    },
+    "Digital" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "디지털"
+          }
+        }
+      }
+    },
+    "Dims the picture outside this color's range. It is not kept when you press OK." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 색상 범위 밖의 영역을 어둡게 표시합니다. 확인을 눌러도 유지되지 않습니다."
+          }
+        }
+      }
+    },
+    "Display P3" : {
+
+    },
+    "Distribution" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "분포"
+          }
+        }
+      }
+    },
+    "Dither" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "디더링"
+          }
+        }
+      }
+    },
+    "Document Bounds" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "문서 경계"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "완료"
+          }
+        }
+      }
+    },
+    "Dot" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점"
+          }
+        }
+      }
+    },
+    "Drag a color in the picture. Nearby color families move together." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사진에서 색상을 드래그합니다. 인접한 색상 계열이 함께 움직입니다."
+          }
+        }
+      }
+    },
+    "Drag a divider to change which tones the neighboring sliders affect." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "구분선을 드래그하여 인접한 슬라이더가 영향을 미치는 톤을 변경합니다."
+          }
+        }
+      }
+    },
+    "Drag a point. Click the curve to add one. Double-click a point to remove it." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점을 드래그합니다. 곡선을 클릭하여 점을 추가합니다. 점을 더블 클릭하여 삭제합니다."
+          }
+        }
+      }
+    },
+    "Drag inside the wheel. Angle sets hue, distance sets saturation." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "휠 안쪽을 드래그합니다. 각도는 색조를, 중심에서의 거리는 채도를 설정합니다."
+          }
+        }
+      }
+    },
+    "Drag on the layer to place a guide. Draw at least two lines." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어를 드래그하여 안내선을 배치합니다. 선을 두 개 이상 그립니다."
+          }
+        }
+      }
+    },
+    "Drag or scroll to move around; double-click switches between Fit and 100%" : {
+
+    },
+    "Drag to resize the panel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "드래그하여 패널 크기를 조절합니다"
+          }
+        }
+      }
+    },
+    "Drag to set hue and saturation. Double-click to reset this wheel." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "드래그하여 색조와 채도를 설정합니다. 더블 클릭하면 이 휠이 초기화됩니다."
+          }
+        }
+      }
+    },
+    "Draw each chunky pixel as a solid square, or as a round dot like a dot-matrix screen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "큼직한 픽셀 하나하나를 단색 사각형으로 그리거나, 도트 매트릭스 화면처럼 둥근 점으로 그립니다."
+          }
+        }
+      }
+    },
+    "Draw Guides" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "안내선 그리기"
+          }
+        }
+      }
+    },
+    "Draw the marks for the light tones on the dark color, like a glowing screen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "밝은 톤을 나타내는 무늬를 어두운 색 위에 그려, 화면이 빛나는 것처럼 표현합니다."
+          }
+        }
+      }
+    },
+    "Draw two or more lines on the preview that should be level or vertical." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기에서 수평 또는 수직이어야 하는 선을 두 개 이상 그립니다."
+          }
+        }
+      }
+    },
+    "Drop into new canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 캔버스에 놓기"
+          }
+        }
+      }
+    },
+    "Drop Shadow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그림자 효과"
+          }
+        }
+      }
+    },
+    "Drop to open in a new canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이곳에 드롭하면 새 캔버스로 엽니다"
+          }
+        }
+      }
+    },
+    "Duplicate Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 복제"
+          }
+        }
+      }
+    },
+    "Edge" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가장자리"
+          }
+        }
+      }
+    },
+    "Edit %@." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 편집합니다."
+          }
+        }
+      }
+    },
+    "Edit Adjustment…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "조정 편집…"
+          }
+        }
+      }
+    },
+    "Edit Text" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트 편집"
+          }
+        }
+      }
+    },
+    "Effects" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "효과"
+          }
+        }
+      }
+    },
+    "Ellipse" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "타원"
+          }
+        }
+      }
+    },
+    "Empty selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "빈 선택 영역"
+          }
+        }
+      }
+    },
+    "Enable Lens Profile Corrections" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "렌즈 프로필 보정 사용"
+          }
+        }
+      }
+    },
+    "End of the hue range, in degrees." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조 범위의 끝을 도 단위로 나타냅니다."
+          }
+        }
+      }
+    },
+    "English" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "영어"
+          }
+        }
+      }
+    },
+    "Enter a paper size greater than zero." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "0보다 큰 용지 크기를 입력하십시오."
+          }
+        }
+      }
+    },
+    "Enter a whole number from 1 to %lld px." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1부터 %lld px까지의 정수를 입력하십시오."
+          }
+        }
+      }
+    },
+    "Enter whole numbers from 1 to %@ pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1부터 %@ 픽셀까지의 정수를 입력하십시오."
+          }
+        }
+      }
+    },
+    "Envelope C4" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "봉투 C4"
+          }
+        }
+      }
+    },
+    "Envelope C5" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "봉투 C5"
+          }
+        }
+      }
+    },
+    "Envelope DL" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "봉투 DL"
+          }
+        }
+      }
+    },
+    "Erase" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "지우기"
+          }
+        }
+      }
+    },
+    "Eraser" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "지우개"
+          }
+        }
+      }
+    },
+    "Executive" : {
+
+    },
+    "Expand…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확장…"
+          }
+        }
+      }
+    },
+    "Export JPEG" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "JPEG 내보내기"
+          }
+        }
+      }
+    },
+    "Export JPEG…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "JPEG 내보내기…"
+          }
+        }
+      }
+    },
+    "Export PNG…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PNG 내보내기…"
+          }
+        }
+      }
+    },
+    "Export…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내보내기…"
+          }
+        }
+      }
+    },
+    "Exposure" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "노출"
+          }
+        }
+      }
+    },
+    "Extension color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확장 색상"
+          }
+        }
+      }
+    },
+    "Eyedropper" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "스포이드"
+          }
+        }
+      }
+    },
+    "Fade the edge of the selection by this many pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역의 가장자리를 지정한 픽셀 수만큼 페더 처리합니다."
+          }
+        }
+      }
+    },
+    "Feather" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페더"
+          }
+        }
+      }
+    },
+    "Feather…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페더…"
+          }
+        }
+      }
+    },
+    "Fill" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "채우기"
+          }
+        }
+      }
+    },
+    "Fill the selection using surrounding pixels from this layer." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 레이어의 주변 픽셀을 사용하여 선택 영역을 채웁니다."
+          }
+        }
+      }
+    },
+    "Fill with Background Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "배경색으로 채우기"
+          }
+        }
+      }
+    },
+    "Fill with Foreground Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경색으로 채우기"
+          }
+        }
+      }
+    },
+    "Filter" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "필터"
+          }
+        }
+      }
+    },
+    "Final dimensions must be 1–%@ pixels per side." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "최종 크기는 한 변당 1~%@ 픽셀이어야 합니다."
+          }
+        }
+      }
+    },
+    "Fit" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "맞춤"
+          }
+        }
+      }
+    },
+    "Fit Canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 맞춤"
+          }
+        }
+      }
+    },
+    "Fit canvas in window (⌘0)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "창에 맞게 캔버스를 표시합니다 (⌘0)."
+          }
+        }
+      }
+    },
+    "Flip Canvas Horizontal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 가로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Flip Canvas Vertical" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스 세로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Flip H" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가로 뒤집기"
+          }
+        }
+      }
+    },
+    "Flip Layer Horizontal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 가로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Flip Layer Vertical" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 세로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Flip V" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "세로 뒤집기"
+          }
+        }
+      }
+    },
+    "Floyd–Steinberg" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Floyd–Steinberg"
+          }
+        }
+      }
+    },
+    "Font face, including bold and italic variants" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "굵게, 기울임꼴 변형을 포함한 글꼴체"
+          }
+        }
+      }
+    },
+    "Foreground color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경색"
+          }
+        }
+      }
+    },
+    "Foreground to Background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경색에서 배경색으로"
+          }
+        }
+      }
+    },
+    "Foreground to Transparent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경색에서 투명으로"
+          }
+        }
+      }
+    },
+    "Forward Warp" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "뒤틀기"
+          }
+        }
+      }
+    },
+    "Freehand" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자유형"
+          }
+        }
+      }
+    },
+    "Fuzziness" : {
+
+    },
+    "Gaussian" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가우시안"
+          }
+        }
+      }
+    },
+    "Gaussian Blur" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가우시안 블러"
+          }
+        }
+      }
+    },
+    "Geometry" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기하학"
+          }
+        }
+      }
+    },
+    "Global" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전체"
+          }
+        }
+      }
+    },
+    "Glow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "글로우"
+          }
+        }
+      }
+    },
+    "Gradient" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그레이디언트"
+          }
+        }
+      }
+    },
+    "Gradient Map" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그레이디언트 맵"
+          }
+        }
+      }
+    },
+    "Grading" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그레이딩"
+          }
+        }
+      }
+    },
+    "Grain" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그레인"
+          }
+        }
+      }
+    },
+    "Graphite" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그래파이트"
+          }
+        }
+      }
+    },
+    "Gray" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "회색"
+          }
+        }
+      }
+    },
+    "Green" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "초록"
+          }
+        }
+      }
+    },
+    "Green Primary" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "초록 원색"
+          }
+        }
+      }
+    },
+    "Greens" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹색"
+          }
+        }
+      }
+    },
+    "Grid" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "격자"
+          }
+        }
+      }
+    },
+    "Grid Settings…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "격자 설정…"
+          }
+        }
+      }
+    },
+    "Gridline every" : {
+
+    },
+    "Group Selected Layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 레이어 그룹화"
+          }
+        }
+      }
+    },
+    "Group selected layers (⌘G)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 레이어 그룹화 (⌘G)"
+          }
+        }
+      }
+    },
+    "Guided" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가이드"
+          }
+        }
+      }
+    },
+    "Guides" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "안내선"
+          }
+        }
+      }
+    },
+    "Halation" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Halation"
+          }
+        }
+      }
+    },
+    "Half Letter" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하프 레터"
+          }
+        }
+      }
+    },
+    "Halftone Diamonds" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하프톤 다이아몬드"
+          }
+        }
+      }
+    },
+    "Halftone Dots" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하프톤 도트"
+          }
+        }
+      }
+    },
+    "Halftone Lines" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하프톤 선"
+          }
+        }
+      }
+    },
+    "Hardness" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "경도"
+          }
+        }
+      }
+    },
+    "HD video" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "HD 비디오"
+          }
+        }
+      }
+    },
+    "Height" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "높이"
+          }
+        }
+      }
+    },
+    "Hex" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "16진수"
+          }
+        }
+      }
+    },
+    "Hex color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "16진수 색상"
+          }
+        }
+      }
+    },
+    "Hide %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 가리기"
+          }
+        }
+      }
+    },
+    "Hide %@ in the preview" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기에서 %@ 가리기"
+          }
+        }
+      }
+    },
+    "Hide Compositor" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Compositor 가리기"
+          }
+        }
+      }
+    },
+    "Hide Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 가리기"
+          }
+        }
+      }
+    },
+    "Hide Others" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다른 앱 가리기"
+          }
+        }
+      }
+    },
+    "Hide the background behind a layer mask, keeping the foreground subjects. The pixels stay, so the background can be painted back at any time." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 마스크로 배경을 가리고 전경의 피사체는 그대로 유지합니다. 픽셀은 삭제되지 않고 남아 있으므로 언제든지 배경을 다시 칠해 되살릴 수 있습니다."
+          }
+        }
+      }
+    },
+    "High" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "높음"
+          }
+        }
+      }
+    },
+    "High quality" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "고품질"
+          }
+        }
+      }
+    },
+    "Highlight Clipping Indicator" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하이라이트 클리핑 표시기"
+          }
+        }
+      }
+    },
+    "Highlight Priority" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "밝은 영역 우선"
+          }
+        }
+      }
+    },
+    "Highlight Priority protects bright edges. Color Priority also reduces color. Paint Overlay covers the edges evenly." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Highlight Priority는 밝은 가장자리를 보호합니다. Color Priority는 색상도 줄입니다. Paint Overlay는 가장자리를 고르게 덮습니다."
+          }
+        }
+      }
+    },
+    "Highlights" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하이라이트"
+          }
+        }
+      }
+    },
+    "Histogram" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "히스토그램"
+          }
+        }
+      }
+    },
+    "History States: %lld" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "History State: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "History States: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "History States: %lld"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "작업 내역 상태: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "작업 내역 상태: %lld"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Hold Shift to add or Option to subtract for one outline" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Shift를 누른 채로 추가하거나 Option을 누른 채로 제외하여 하나의 윤곽선을 만듭니다."
+          }
+        }
+      }
+    },
+    "Hold Space and drag to move around · scroll or pinch to zoom" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Space 키를 누른 채 드래그하면 화면을 이동하고, 스크롤하거나 핀치하면 확대/축소합니다."
+          }
+        }
+      }
+    },
+    "How far a color may be from the picked ones and still be selected" : {
+
+    },
+    "How far each color channel (0–255) can differ from the clicked color and still be selected" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클릭한 색상과 비교하여 각 색상 채널(0–255)이 얼마나 차이 나도 선택 범위에 포함되는지를 나타냅니다."
+          }
+        }
+      }
+    },
+    "How far each dab moves the pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시가 한 번 찍힐 때마다 픽셀을 움직이는 거리입니다."
+          }
+        }
+      }
+    },
+    "How fast Reconstruct, Twirl, Pucker and Bloat work while the brush is held still" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시를 움직이지 않고 누르고 있을 때 재구성, 돌리기, 오목, 볼록이 작용하는 속도입니다."
+          }
+        }
+      }
+    },
+    "How firmly the brush's edge works: low fades out from the center, high is even to the rim" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시 가장자리가 작용하는 정도입니다. 낮으면 중심에서부터 약해지고, 높으면 가장자리까지 고르게 작용합니다."
+          }
+        }
+      }
+    },
+    "How much of each pixel's error spreads to its neighbors. Less gives flatter areas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "각 픽셀의 오차가 주변 픽셀로 얼마나 퍼지는지를 나타냅니다. 값이 작을수록 더 평평한 영역이 됩니다."
+          }
+        }
+      }
+    },
+    "HSL" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "HSL"
+          }
+        }
+      }
+    },
+    "HSL lists every color. Color edits one family. Point Color adjusts a color you pick." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "HSL은 모든 색상을 나열합니다. 색상은 한 가지 계열을 편집합니다. 포인트 색상은 직접 선택한 색상을 조정합니다."
+          }
+        }
+      }
+    },
+    "Hue" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조"
+          }
+        }
+      }
+    },
+    "Hue and saturation of this wheel." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 휠의 색조와 채도입니다."
+          }
+        }
+      }
+    },
+    "Hue around the wheel, saturation outward from the center. Control-click to show the histogram." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조는 휠을 따라, 채도는 중심에서 바깥쪽으로 나타납니다. Control 키를 누른 채 클릭하면 히스토그램이 표시됩니다."
+          }
+        }
+      }
+    },
+    "Hue shifts the color, Saturation its strength, and Luminance its brightness." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조는 색상을 바꾸고, 채도는 그 강도를, 광도는 밝기를 조절합니다."
+          }
+        }
+      }
+    },
+    "Hue/Saturation" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조/채도"
+          }
+        }
+      }
+    },
+    "Hue/Saturation…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조/채도…"
+          }
+        }
+      }
+    },
+    "Image" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지"
+          }
+        }
+      }
+    },
+    "Image Size" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지 크기"
+          }
+        }
+      }
+    },
+    "Image Size…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지 크기…"
+          }
+        }
+      }
+    },
+    "Import" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가져오기"
+          }
+        }
+      }
+    },
+    "Import an image or add a blank layer." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지를 가져오거나 빈 레이어를 추가하세요."
+          }
+        }
+      }
+    },
+    "Import couldn’t finish" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가져오기를 완료할 수 없습니다"
+          }
+        }
+      }
+    },
+    "Import image" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지 가져오기"
+          }
+        }
+      }
+    },
+    "Import Images…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지 가져오기…"
+          }
+        }
+      }
+    },
+    "Importing images…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지 가져오는 중…"
+          }
+        }
+      }
+    },
+    "in" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "in"
+          }
+        }
+      }
+    },
+    "In %lld   Out %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "In %1$lld   Out %2$lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "입력 %1$lld   출력 %2$lld"
+          }
+        }
+      }
+    },
+    "Inches" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "인치"
+          }
+        }
+      }
+    },
+    "Inner Glow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내부 글로우"
+          }
+        }
+      }
+    },
+    "Inner Shadow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내부 그림자"
+          }
+        }
+      }
+    },
+    "Input %lld · Output %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Input %1$lld · Output %2$lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "입력 %1$lld · 출력 %2$lld"
+          }
+        }
+      }
+    },
+    "Input and output of the selected curve point." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 곡선 점의 입력값과 출력값입니다."
+          }
+        }
+      }
+    },
+    "Inside" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "안쪽"
+          }
+        }
+      }
+    },
+    "Inverse" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "반전"
+          }
+        }
+      }
+    },
+    "Invert" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 반전"
+          }
+        }
+      }
+    },
+    "Invert Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스크 반전"
+          }
+        }
+      }
+    },
+    "ISO A" : {
+
+    },
+    "ISO B" : {
+
+    },
+    "JIS B" : {
+
+    },
+    "Keep the source moving with the brush between strokes; off starts every stroke at the source point" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "켜면 스트로크 사이에도 원본 지점이 브러시와 함께 이동합니다. 끄면 모든 스트로크가 항상 같은 원본 지점에서 시작됩니다."
+          }
+        }
+      }
+    },
+    "Keeps this point fixed. Artwork is not scaled; cropped content remains outside the canvas." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 지점을 고정합니다. 아트워크는 크기가 조정되지 않으며, 잘린 콘텐츠는 캔버스 밖에 남습니다."
+          }
+        }
+      }
+    },
+    "Keyboard Shortcuts…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "키보드 단축키…"
+          }
+        }
+      }
+    },
+    "Landscape" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가로"
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "언어"
+          }
+        }
+      }
+    },
+    "Lasso" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "올가미"
+          }
+        }
+      }
+    },
+    "Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어"
+          }
+        }
+      }
+    },
+    "Layer effects" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 효과"
+          }
+        }
+      }
+    },
+    "Layer effects: stroke and drop shadow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 효과: 선과 그림자 효과"
+          }
+        }
+      }
+    },
+    "Layer via Copy" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "복사한 레이어"
+          }
+        }
+      }
+    },
+    "Layer's Pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 픽셀"
+          }
+        }
+      }
+    },
+    "Layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어"
+          }
+        }
+      }
+    },
+    "Leading" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "행간"
+          }
+        }
+      }
+    },
+    "Left" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "왼쪽"
+          }
+        }
+      }
+    },
+    "Legal" : {
+
+    },
+    "Lens Correction" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "렌즈 교정"
+          }
+        }
+      }
+    },
+    "Letter" : {
+
+    },
+    "Levels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레벨"
+          }
+        }
+      }
+    },
+    "Levels…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레벨…"
+          }
+        }
+      }
+    },
+    "Light" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "라이트"
+          }
+        }
+      }
+    },
+    "Light on Dark" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "어두운 바탕에 밝은 색"
+          }
+        }
+      }
+    },
+    "Limited to the selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역으로 제한됨"
+          }
+        }
+      }
+    },
+    "Line" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선"
+          }
+        }
+      }
+    },
+    "Line height, baseline to baseline. Empty or 0 is Auto: 120% of the font size." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "줄 간격은 기준선에서 기준선까지의 거리입니다. 비워두거나 0으로 두면 자동으로 적용되며, 글꼴 크기의 120%입니다."
+          }
+        }
+      }
+    },
+    "Linear" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선형"
+          }
+        }
+      }
+    },
+    "Linear histogram with automatic vertical scaling. Tall spikes may extend beyond the graph; all tones from 0 to 255 remain included." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "세로 축 배율이 자동으로 조정되는 선형 히스토그램입니다. 높은 봉우리는 그래프 밖으로 벗어날 수 있지만, 0에서 255까지의 모든 톤이 포함됩니다."
+          }
+        }
+      }
+    },
+    "Linear runs along the line; Radial spreads out from the start point" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선형은 선을 따라 이어지고, 방사형은 시작점에서 퍼져 나갑니다."
+          }
+        }
+      }
+    },
+    "Liquify" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "유동화"
+          }
+        }
+      }
+    },
+    "Liquify pushes pixels · Blur softens · Smudge drags color along" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Liquify는 픽셀을 밀어냅니다 · Blur는 부드럽게 합니다 · Smudge는 색상을 따라 끌고 갑니다."
+          }
+        }
+      }
+    },
+    "Liquify…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "픽셀 유동화…"
+          }
+        }
+      }
+    },
+    "Loading histogram…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "히스토그램 로드 중…"
+          }
+        }
+      }
+    },
+    "Lock aspect ratio" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가로세로 비율 잠금"
+          }
+        }
+      }
+    },
+    "Lock Guides" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "안내선 잠그기"
+          }
+        }
+      }
+    },
+    "Lock original aspect ratio" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 가로세로 비율 잠금"
+          }
+        }
+      }
+    },
+    "Low" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "낮음"
+          }
+        }
+      }
+    },
+    "Luminance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "광도"
+          }
+        }
+      }
+    },
+    "Mac Patterns" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac 패턴"
+          }
+        }
+      }
+    },
+    "Magentas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마젠타"
+          }
+        }
+      }
+    },
+    "Magic" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자동 선택"
+          }
+        }
+      }
+    },
+    "Make each dithered pixel this many pixels across, for a chunky old-screen look" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "각 디더링 픽셀의 크기를 지정한 픽셀 수만큼 크게 만들어, 예전 화면처럼 큼직한 느낌을 냅니다."
+          }
+        }
+      }
+    },
+    "Manual" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "수동"
+          }
+        }
+      }
+    },
+    "Marquee" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 윤곽"
+          }
+        }
+      }
+    },
+    "Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스크"
+          }
+        }
+      }
+    },
+    "Mask background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "배경 마스킹"
+          }
+        }
+      }
+    },
+    "Mask foreground" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경 마스킹"
+          }
+        }
+      }
+    },
+    "Mask's Black Areas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스크의 검은 영역"
+          }
+        }
+      }
+    },
+    "Master" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스터"
+          }
+        }
+      }
+    },
+    "Match the clicked pixel, or the average of the pixels around it" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클릭한 픽셀 또는 그 주변 픽셀의 평균값과 일치시킵니다."
+          }
+        }
+      }
+    },
+    "Medium Contrast" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "중간 대비"
+          }
+        }
+      }
+    },
+    "Midtones" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "중간톤"
+          }
+        }
+      }
+    },
+    "Mixer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "믹서"
+          }
+        }
+      }
+    },
+    "mm" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "mm"
+          }
+        }
+      }
+    },
+    "Mode" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모드"
+          }
+        }
+      }
+    },
+    "Monochromatic" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "단색"
+          }
+        }
+      }
+    },
+    "More ink (darker) or less before dithering" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "디더링 전에 잉크를 더 많이(어둡게) 또는 더 적게 사용합니다."
+          }
+        }
+      }
+    },
+    "Motion Blur" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모션 블러"
+          }
+        }
+      }
+    },
+    "Move Layer Down" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 아래로 이동"
+          }
+        }
+      }
+    },
+    "Move Layer Up" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 위로 이동"
+          }
+        }
+      }
+    },
+    "Move Out of Folder" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그룹 밖으로 이동"
+          }
+        }
+      }
+    },
+    "Nearest" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "최근접"
+          }
+        }
+      }
+    },
+    "New" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새로 만들기"
+          }
+        }
+      }
+    },
+    "New adjustment layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 조정 레이어"
+          }
+        }
+      }
+    },
+    "New Adjustment Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 조정 레이어"
+          }
+        }
+      }
+    },
+    "New blank layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 빈 레이어"
+          }
+        }
+      }
+    },
+    "New Blank Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 빈 레이어"
+          }
+        }
+      }
+    },
+    "New blank layer (⇧⌘N)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 빈 레이어 (⇧⌘N)"
+          }
+        }
+      }
+    },
+    "New canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 캔버스"
+          }
+        }
+      }
+    },
+    "New canvas (⌘N)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 캔버스 (⌘N)"
+          }
+        }
+      }
+    },
+    "New canvas (⌘N) · Drop images here for new tabs" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 캔버스 (⌘N) · 이미지를 여기에 놓으면 새 탭으로 엽니다"
+          }
+        }
+      }
+    },
+    "New Canvas…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 캔버스…"
+          }
+        }
+      }
+    },
+    "New color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 색상"
+          }
+        }
+      }
+    },
+    "New folder" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 폴더"
+          }
+        }
+      }
+    },
+    "New: %lld × %lld pixels · %@ uncompressed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "New: %1$lld × %#@pixels@ · %3$@ uncompressed"
+          },
+          "substitutions" : {
+            "pixels" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixel"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixels"
+                    }
+                  },
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixels"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새: %1$lld × %#@pixels@ · %3$@ 비압축"
+          },
+          "substitutions" : {
+            "pixels" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg 픽셀"
+                    }
+                  },
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg 픽셀"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "No layers yet" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어가 아직 없습니다"
+          }
+        }
+      }
+    },
+    "No lens metadata on this layer. Profile sliders set generic correction strength." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 레이어에는 렌즈 메타데이터가 없습니다. 프로필 슬라이더는 일반 보정 강도로 설정됩니다."
+          }
+        }
+      }
+    },
+    "Noise Reduction" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "노이즈 감소"
+          }
+        }
+      }
+    },
+    "North America" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "북미"
+          }
+        }
+      }
+    },
+    "Object" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "개체"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용 안 함"
+          }
+        }
+      }
+    },
+    "Off leaves the picture as it is. Guided straightens from lines you draw on the picture." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용 안 함을 선택하면 사진을 그대로 둡니다. 가이드를 선택하면 사진에 그린 선을 기준으로 수평/수직을 맞춥니다."
+          }
+        }
+      }
+    },
+    "Off shows the layer as it was, to compare" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "끄면 비교할 수 있도록 원래 레이어를 보여 줍니다."
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확인"
+          }
+        }
+      }
+    },
+    "Only print dimensions and resolution change. Pixels stay unchanged." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "인쇄 크기와 해상도만 변경됩니다. 픽셀은 그대로 유지됩니다."
+          }
+        }
+      }
+    },
+    "Opacity" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "불투명도"
+          }
+        }
+      }
+    },
+    "Opacity percent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "불투명도 백분율"
+          }
+        }
+      }
+    },
+    "Open in a new project tab" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "새 프로젝트 탭에서 엽니다."
+          }
+        }
+      }
+    },
+    "Open project" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "프로젝트 열기"
+          }
+        }
+      }
+    },
+    "Open Project…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "프로젝트 열기…"
+          }
+        }
+      }
+    },
+    "Open Recent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "최근 사용 항목 열기"
+          }
+        }
+      }
+    },
+    "Optics" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "광학"
+          }
+        }
+      }
+    },
+    "Option temporarily selects the eyedropper in painting tools. Shift constrains shapes/movement or adds to a selection; Option subtracts from selections or draws from center. Command-drag moves selected pixels; Command-Option-drag copies them. Option-drag duplicates layers/folders/effects; Option-click at a layer boundary toggles clipping. Command-click a thumbnail loads its selection. Control bypasses snapping. Right-drag adjusts brush size. Modifier-and-mouse gestures are fixed." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Option 키를 사용하면 페인팅 도구에서 일시적으로 스포이드가 선택됩니다. Shift 키는 도형이나 이동을 제한하거나 선택 영역에 추가합니다. Option 키는 선택 영역에서 빼거나 중심에서부터 그립니다. Command 키를 누른 채 드래그하면 선택한 픽셀이 이동합니다. Command와 Option 키를 함께 누른 채 드래그하면 픽셀이 복사됩니다. Option 키를 누른 채 드래그하면 레이어, 폴더, 효과가 복제됩니다. 레이어 경계에서 Option 키를 누른 채 클릭하면 클리핑이 전환됩니다. 축소판을 Command 키를 누른 채 클릭하면 해당 선택 영역이 불러와집니다. Control 키를 누르면 스냅이 무시됩니다. 마우스 오른쪽 버튼으로 드래그하면 브러시 크기가 조절됩니다. 보조 키와 마우스를 조합한 동작은 고정되어 있어 변경할 수 없습니다."
+          }
+        }
+      }
+    },
+    "Option-click to set the source" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Option 키를 누른 채 클릭하여 원본 지점을 설정합니다."
+          }
+        }
+      }
+    },
+    "Orange" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "주황"
+          }
+        }
+      }
+    },
+    "Orientation" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "방향"
+          }
+        }
+      }
+    },
+    "Original" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본"
+          }
+        }
+      }
+    },
+    "Original " : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 "
+          }
+        }
+      }
+    },
+    "Original %@ histogram" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 %@ 히스토그램"
+          }
+        }
+      }
+    },
+    "Original pixels · alpha-weighted histogram" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 픽셀 · 알파 가중 히스토그램"
+          }
+        }
+      }
+    },
+    "Original pixels · selection and alpha-weighted histogram" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원본 픽셀 · 선택 영역 및 알파 가중 히스토그램"
+          }
+        }
+      }
+    },
+    "Outer Glow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "외부 글로우"
+          }
+        }
+      }
+    },
+    "Outside" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "바깥쪽"
+          }
+        }
+      }
+    },
+    "Paint" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페인트"
+          }
+        }
+      }
+    },
+    "Paint Overlay" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페인트 오버레이"
+          }
+        }
+      }
+    },
+    "Paint with the foreground color (B), or erase pixels away (E)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경색으로 그리거나(B) 픽셀을 지웁니다(E)."
+          }
+        }
+      }
+    },
+    "Pan" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이동"
+          }
+        }
+      }
+    },
+    "Paper" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "용지"
+          }
+        }
+      }
+    },
+    "Paper sizes, most used first" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "용지 크기(많이 쓰는 규격 순)"
+          }
+        }
+      }
+    },
+    "Parametric" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "매개변수"
+          }
+        }
+      }
+    },
+    "Parametric lifts tonal regions. Point places anchors on the curve." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "매개변수는 톤 영역을 끌어올립니다. 포인트는 곡선에 점을 배치합니다."
+          }
+        }
+      }
+    },
+    "Paste" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "붙여넣기"
+          }
+        }
+      }
+    },
+    "Percent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "퍼센트"
+          }
+        }
+      }
+    },
+    "Performance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "성능"
+          }
+        }
+      }
+    },
+    "Perspective" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원근"
+          }
+        }
+      }
+    },
+    "Perspective allows stronger keystone. Rectilinear keeps the warp gentler." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "원근은 더 강한 키스톤 효과를 허용합니다. 직선은 왜곡을 더 완만하게 유지합니다."
+          }
+        }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사진"
+          }
+        }
+      }
+    },
+    "Photography and print proofs" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사진 및 인쇄 교정"
+          }
+        }
+      }
+    },
+    "Pink" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "분홍색"
+          }
+        }
+      }
+    },
+    "Pixel Grid (800% and above)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "픽셀 격자 (800% 이상)"
+          }
+        }
+      }
+    },
+    "Pixel Shape" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "픽셀 모양"
+          }
+        }
+      }
+    },
+    "pixels" : {
+
+    },
+    "Pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "픽셀"
+          }
+        }
+      }
+    },
+    "pixels/inch" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "픽셀/인치"
+          }
+        }
+      }
+    },
+    "Point" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포인트"
+          }
+        }
+      }
+    },
+    "Point Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포인트 색상"
+          }
+        }
+      }
+    },
+    "Polygonal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다각형"
+          }
+        }
+      }
+    },
+    "Portrait" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "세로"
+          }
+        }
+      }
+    },
+    "Position" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "위치"
+          }
+        }
+      }
+    },
+    "Positive straightens lines that bow outward (barrel); negative, lines that bow inward (pincushion)." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "양수 값은 바깥쪽으로 휘어진 선(배럴)을, 음수 값은 안쪽으로 휘어진 선(핀쿠션)을 곧게 폅니다."
+          }
+        }
+      }
+    },
+    "Positive values tighten the detected mask inward; negative values expand it outward" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "양수 값은 감지된 마스크를 안쪽으로 좁히고, 음수 값은 바깥쪽으로 넓힙니다."
+          }
+        }
+      }
+    },
+    "Postcard" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "엽서"
+          }
+        }
+      }
+    },
+    "Poster 18×24 in" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포스터 18×24in"
+          }
+        }
+      }
+    },
+    "Poster 24×36 in" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포스터 24×36in"
+          }
+        }
+      }
+    },
+    "Poster 50×70 cm" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포스터 50×70cm"
+          }
+        }
+      }
+    },
+    "Posters" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포스터"
+          }
+        }
+      }
+    },
+    "ppi" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ppi"
+          }
+        }
+      }
+    },
+    "Preserve Luminosity" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "광도 유지"
+          }
+        }
+      }
+    },
+    "Preset" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "프리셋"
+          }
+        }
+      }
+    },
+    "Preset sizes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사전 설정 크기"
+          }
+        }
+      }
+    },
+    "Preset sizes for screens and common formats" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "화면 및 일반적인 형식에 맞는 사전 설정 크기"
+          }
+        }
+      }
+    },
+    "Presets" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사전 설정"
+          }
+        }
+      }
+    },
+    "Press 1–9 for 10–90%, 0 for 100%" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1~9 키를 눌러 10~90%로, 0 키를 눌러 100%로 설정합니다."
+          }
+        }
+      }
+    },
+    "Press L to switch between Freehand and Polygonal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L 키를 눌러 자유형과 다각형 사이를 전환합니다"
+          }
+        }
+      }
+    },
+    "Press M to switch between Rectangle and Ellipse" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "M 키를 눌러 사각형과 타원 사이를 전환합니다"
+          }
+        }
+      }
+    },
+    "Press Tab to switch between Wand and Object" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tab 키를 눌러 마술봉과 개체 사이를 전환합니다"
+          }
+        }
+      }
+    },
+    "Pressure" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "압력"
+          }
+        }
+      }
+    },
+    "Preview" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기"
+          }
+        }
+      }
+    },
+    "Print" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "인쇄"
+          }
+        }
+      }
+    },
+    "Print: edited in RGB, JPEG export converts to CMYK" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "인쇄용: RGB로 편집하고, JPEG로 내보낼 때 CMYK로 변환합니다."
+          }
+        }
+      }
+    },
+    "Process" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "처리"
+          }
+        }
+      }
+    },
+    "Project tabs" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "프로젝트 탭"
+          }
+        }
+      }
+    },
+    "Projection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투영"
+          }
+        }
+      }
+    },
+    "Protect bright areas near the edge" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가장자리 근처의 밝은 영역을 보호합니다."
+          }
+        }
+      }
+    },
+    "Proximity Match" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "근접 일치"
+          }
+        }
+      }
+    },
+    "Pucker" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오목"
+          }
+        }
+      }
+    },
+    "Pull the mask onto the image's own edges, which recovers hair and fur" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스크를 이미지 자체의 가장자리로 끌어당겨 머리카락과 털을 되살립니다."
+          }
+        }
+      }
+    },
+    "Pulls red and blue fringes apart toward the center to reduce color edging." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "빨강과 파랑 프린지를 중심 쪽으로 당겨 분리해 색 번짐을 줄입니다."
+          }
+        }
+      }
+    },
+    "Purple" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "보라색"
+          }
+        }
+      }
+    },
+    "Push Left" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "왼쪽 밀기"
+          }
+        }
+      }
+    },
+    "Put each pixel's brightness back afterwards, so only the color moves" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이후 각 픽셀의 밝기를 원래대로 되돌려 색상만 이동하도록 합니다."
+          }
+        }
+      }
+    },
+    "px" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "px"
+          }
+        }
+      }
+    },
+    "Quality" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "품질"
+          }
+        }
+      }
+    },
+    "Quit and reopen Compositor to use " : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다음 언어를 사용하려면 Compositor를 종료한 후 다시 여세요: "
+          }
+        }
+      }
+    },
+    "Quit and reopen Compositor to use %@." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 사용을 위해 Compositor를 종료한 후 다시 여세요."
+          }
+        }
+      }
+    },
+    "Radial" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "방사형"
+          }
+        }
+      }
+    },
+    "Radius" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "반경"
+          }
+        }
+      }
+    },
+    "Range" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "범위"
+          }
+        }
+      }
+    },
+    "Rate" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "속도"
+          }
+        }
+      }
+    },
+    "Ratio" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "비율"
+          }
+        }
+      }
+    },
+    "Read colors from the active layer only, or from every visible layer as shown" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "활성 레이어에서만 색상을 읽거나 표시된 대로 보이는 모든 레이어에서 색상을 읽습니다."
+          }
+        }
+      }
+    },
+    "Reading the file to see what needs converting." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파일을 읽어 변환이 필요한 항목을 확인하는 중입니다."
+          }
+        }
+      }
+    },
+    "Reading the Photoshop file…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Photoshop 파일을 읽는 중…"
+          }
+        }
+      }
+    },
+    "Ready when you are" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시작할 준비가 되었습니다"
+          }
+        }
+      }
+    },
+    "Rec. 709" : {
+
+    },
+    "Rec. 2020" : {
+
+    },
+    "Reconstruct" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "재구성"
+          }
+        }
+      }
+    },
+    "Rectangle" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사각형"
+          }
+        }
+      }
+    },
+    "Rectilinear" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "직선"
+          }
+        }
+      }
+    },
+    "Red" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "빨강"
+          }
+        }
+      }
+    },
+    "Red Primary" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "빨강 원색"
+          }
+        }
+      }
+    },
+    "Red, green, and blue of the pixel under the pointer." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포인터 아래 픽셀의 빨강, 초록, 파란색 값입니다."
+          }
+        }
+      }
+    },
+    "Redo" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다시 실행"
+          }
+        }
+      }
+    },
+    "Redo (⇧⌘Z)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다시 실행 (⇧⌘Z)"
+          }
+        }
+      }
+    },
+    "Redo %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 다시 실행"
+          }
+        }
+      }
+    },
+    "Reds" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "빨강 계열"
+          }
+        }
+      }
+    },
+    "Relative to current dimensions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "현재 크기 기준 상대값"
+          }
+        }
+      }
+    },
+    "Release Clipping Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클리핑 마스크 해제"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "제거"
+          }
+        }
+      }
+    },
+    "Remove Background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "배경 제거"
+          }
+        }
+      }
+    },
+    "Remove Chromatic Aberration" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색수차 제거"
+          }
+        }
+      }
+    },
+    "Remove every guide line." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 안내선을 제거합니다."
+          }
+        }
+      }
+    },
+    "Remove point" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점 제거"
+          }
+        }
+      }
+    },
+    "Rename Layer…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 이름 변경…"
+          }
+        }
+      }
+    },
+    "Replaces this curve with a straight line or a contrast curve." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 곡선을 직선 또는 대비 곡선으로 바꿉니다."
+          }
+        }
+      }
+    },
+    "Resample" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "리샘플"
+          }
+        }
+      }
+    },
+    "Reset" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "재설정"
+          }
+        }
+      }
+    },
+    "Reset curve" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "곡선 재설정"
+          }
+        }
+      }
+    },
+    "Resize" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "크기 조절"
+          }
+        }
+      }
+    },
+    "Resizes layer pixels and applies existing transforms. Undo restores the originals." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 픽셀의 크기를 조절하고 기존 변형을 적용합니다. 실행 취소하면 원본으로 복원됩니다."
+          }
+        }
+      }
+    },
+    "Resolution" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "해상도"
+          }
+        }
+      }
+    },
+    "Restore All" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모두 복구"
+          }
+        }
+      }
+    },
+    "Restore Defaults" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "기본값 복원"
+          }
+        }
+      }
+    },
+    "Result: %lld × %lld pixels" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Result: %1$lld × %#@pixels@"
+          },
+          "substitutions" : {
+            "pixels" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixel"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixels"
+                    }
+                  },
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg pixels"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "결과: %1$lld × %#@pixels@"
+          },
+          "substitutions" : {
+            "pixels" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg 픽셀"
+                    }
+                  },
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "machine_translated",
+                      "value" : "%arg 픽셀"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Reverse" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "반전"
+          }
+        }
+      }
+    },
+    "RGB" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RGB"
+          }
+        }
+      }
+    },
+    "RGB changes brightness. Red, green, and blue also shift the color." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RGB는 밝기를 바꿉니다. 빨강, 초록, 파랑은 색상도 함께 바꿉니다."
+          }
+        }
+      }
+    },
+    "RGB histogram" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RGB 히스토그램"
+          }
+        }
+      }
+    },
+    "Right" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오른쪽"
+          }
+        }
+      }
+    },
+    "Round the rectangle's corners by this many pixels; 0 keeps them square" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사각형의 모서리를 지정한 픽셀 수만큼 둥글게 만듭니다. 0이면 모서리가 직각으로 유지됩니다."
+          }
+        }
+      }
+    },
+    "Rulers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "눈금자"
+          }
+        }
+      }
+    },
+    "Sample" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "샘플"
+          }
+        }
+      }
+    },
+    "Sample Ring" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "샘플 링"
+          }
+        }
+      }
+    },
+    "Sample Size" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "샘플 크기"
+          }
+        }
+      }
+    },
+    "Sampling" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "샘플링"
+          }
+        }
+      }
+    },
+    "Saturation" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "채도"
+          }
+        }
+      }
+    },
+    "Saturation and brightness" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "채도와 밝기"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "저장"
+          }
+        }
+      }
+    },
+    "Save As…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다른 이름으로 저장…"
+          }
+        }
+      }
+    },
+    "Scale width and height together, about the center" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "너비와 높이를 중심을 기준으로 함께 조정합니다."
+          }
+        }
+      }
+    },
+    "Search shortcuts" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "단축키 검색"
+          }
+        }
+      }
+    },
+    "Select" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택"
+          }
+        }
+      }
+    },
+    "Select a tool" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "도구를 선택하세요"
+          }
+        }
+      }
+    },
+    "Select everything except those colors, such as all but a green screen" : {
+
+    },
+    "Select layers by clicking the canvas. When off, hold Command to select a layer." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스를 클릭하여 레이어를 선택합니다. 사용 안 함으로 설정하면 Command 키를 누른 채 클릭하여 레이어를 선택합니다."
+          }
+        }
+      }
+    },
+    "Select only similar pixels connected to the one you click; off selects them everywhere" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클릭한 픽셀과 연결된 비슷한 픽셀만 선택합니다. 사용 안 함으로 설정하면 어디에서든 선택합니다."
+          }
+        }
+      }
+    },
+    "Select this picked color." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 색상을 선택합니다."
+          }
+        }
+      }
+    },
+    "Selected" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택됨"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "설정"
+          }
+        }
+      }
+    },
+    "Settings…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "설정…"
+          }
+        }
+      }
+    },
+    "Shadow Clipping Indicator" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "섀도 클리핑 표시기"
+          }
+        }
+      }
+    },
+    "Shadows" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "섀도"
+          }
+        }
+      }
+    },
+    "Shape" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모양"
+          }
+        }
+      }
+    },
+    "Shapes fill with the foreground color; click to change it" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "도형은 전경색으로 채워집니다. 클릭하여 변경합니다."
+          }
+        }
+      }
+    },
+    "Sharpening" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "샤프닝"
+          }
+        }
+      }
+    },
+    "Shift-click adds a color, Option-click takes one away." : {
+
+    },
+    "Shift-U (or Tab) steps through Rectangle, Ellipse and Line" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Shift-U(또는 Tab) 키를 누르면 사각형, 타원, 선 순서로 전환됩니다"
+          }
+        }
+      }
+    },
+    "Show" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "표시"
+          }
+        }
+      }
+    },
+    "Show %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 표시"
+          }
+        }
+      }
+    },
+    "Show %@ in the preview" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기에서 %@ 표시"
+          }
+        }
+      }
+    },
+    "Show All" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모두 보기"
+          }
+        }
+      }
+    },
+    "Show clipped highlights in red on the preview." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기에서 클리핑된 하이라이트를 빨간색으로 표시합니다."
+          }
+        }
+      }
+    },
+    "Show clipped shadows in blue on the preview." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기에서 클리핑된 섀도를 파란색으로 표시합니다."
+          }
+        }
+      }
+    },
+    "Show Controls" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "컨트롤 표시"
+          }
+        }
+      }
+    },
+    "Show Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 표시"
+          }
+        }
+      }
+    },
+    "Show the transform box and handles (⌘H). When hidden, drag anywhere to move the layer." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "변형 상자와 핸들을 표시합니다 (⌘H). 숨겨져 있을 때는 아무 곳이나 드래그하여 레이어를 이동합니다."
+          }
+        }
+      }
+    },
+    "Show the whole image (⌘0)" : {
+
+    },
+    "Show the whole layer (⌘0)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 전체 보기 (⌘0)"
+          }
+        }
+      }
+    },
+    "Show Transform Controls" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "변형 컨트롤 표시"
+          }
+        }
+      }
+    },
+    "Shrink the mask to drop the rim of background color around the subject, or grow it" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스크를 축소하면 피사체 주위의 배경색 테두리가 사라지고, 확대하면 다시 나타납니다."
+          }
+        }
+      }
+    },
+    "Size" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "크기"
+          }
+        }
+      }
+    },
+    "Sizes for social posts" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "소셜 게시물용 크기"
+          }
+        }
+      }
+    },
+    "Sizes of common screens and resolutions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "일반적인 화면 및 해상도 크기"
+          }
+        }
+      }
+    },
+    "Smear" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "스미어"
+          }
+        }
+      }
+    },
+    "Smooth" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "부드럽게"
+          }
+        }
+      }
+    },
+    "Smooth selection edges; turn off for hard pixel edges" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역의 가장자리를 부드럽게 처리합니다. 끄면 가장자리가 거친 픽셀 형태로 표시됩니다."
+          }
+        }
+      }
+    },
+    "Smooth the detected object outline; turn off for the raw pixel mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "감지된 개체의 윤곽선을 부드럽게 처리합니다. 끄면 원본 픽셀 마스크가 그대로 표시됩니다."
+          }
+        }
+      }
+    },
+    "Smoothing" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "보정"
+          }
+        }
+      }
+    },
+    "Smudge" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "스머지"
+          }
+        }
+      }
+    },
+    "Snap" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "스냅"
+          }
+        }
+      }
+    },
+    "Snap To" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다음에 스냅"
+          }
+        }
+      }
+    },
+    "Social" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "소셜"
+          }
+        }
+      }
+    },
+    "Spot Healing" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "스팟 복구"
+          }
+        }
+      }
+    },
+    "Square" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사각형"
+          }
+        }
+      }
+    },
+    "sRGB" : {
+
+    },
+    "sRGB · Transparent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sRGB · 투명"
+          }
+        }
+      }
+    },
+    "Standard" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "표준"
+          }
+        }
+      }
+    },
+    "Start of the hue range, in degrees." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조 범위의 시작을 도 단위로 나타냅니다."
+          }
+        }
+      }
+    },
+    "Start transparent, or with a Background layer filled in white or a color of your choice" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명하게 시작하거나, 흰색 또는 원하는 색상으로 채운 배경 레이어로 시작합니다."
+          }
+        }
+      }
+    },
+    "Strength" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "강도"
+          }
+        }
+      }
+    },
+    "Stroke" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선"
+          }
+        }
+      }
+    },
+    "Strong Contrast" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "강한 대비"
+          }
+        }
+      }
+    },
+    "Style" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "스타일"
+          }
+        }
+      }
+    },
+    "Subdivisions" : {
+
+    },
+    "Subject" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "피사체"
+          }
+        }
+      }
+    },
+    "Subtract" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "빼기"
+          }
+        }
+      }
+    },
+    "Swap colors" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색상 교체"
+          }
+        }
+      }
+    },
+    "Swap foreground and background (X)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전경색과 배경색을 서로 바꿉니다(X)."
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시스템"
+          }
+        }
+      }
+    },
+    "System Default" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시스템 기본값"
+          }
+        }
+      }
+    },
+    "Tabloid" : {
+
+    },
+    "Take back every stroke" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 획을 되돌립니다."
+          }
+        }
+      }
+    },
+    "Targeted adjustment" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "타겟 조정"
+          }
+        }
+      }
+    },
+    "Targeted Adjustment" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "타겟 조정"
+          }
+        }
+      }
+    },
+    "Targeted adjustment: drag on the image to change that color's saturation, or its hue with Command held" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "타겟 조정: 이미지를 드래그하면 해당 색상의 채도가 바뀌고, Command 키를 누른 상태로 드래그하면 색조가 바뀝니다."
+          }
+        }
+      }
+    },
+    "Text color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트 색상"
+          }
+        }
+      }
+    },
+    "Text fields keep standard macOS editing keys. Dialogs share the Apply/Cancel assignments above. Numeric fields use Up/Down, with Shift for larger steps. Standard macOS commands include ⌘Q to quit and ⌃⌘F for full screen. The shortcut editor itself always uses Return to save and Esc to cancel when not recording." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트 필드는 표준 macOS 편집 키를 그대로 사용합니다. 대화상자는 위에 표시된 적용/취소 단축키를 공유합니다. 숫자 필드는 위/아래 방향키를 사용하며, Shift 키를 누르면 더 큰 단위로 조정됩니다. 표준 macOS 명령에는 종료를 위한 ⌘Q와 전체 화면을 위한 ⌃⌘F가 있습니다. 단축키 편집기 자체는 녹화 중이 아닐 때 항상 Return 키로 저장하고 Esc 키로 취소합니다."
+          }
+        }
+      }
+    },
+    "The Background layer's color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "배경 레이어의 색상"
+          }
+        }
+      }
+    },
+    "The brush trails the pointer on a string this long, so a shaky hand still draws a smooth line" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "브러시가 이 정도 길이의 줄에 묶인 것처럼 포인터를 따라가므로, 손이 떨려도 매끄러운 선을 그릴 수 있습니다."
+          }
+        }
+      }
+    },
+    "The brush's diameter in the layer's pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 픽셀 단위의 브러시 지름입니다."
+          }
+        }
+      }
+    },
+    "The characters to draw with, in any order: each spot gets the one whose ink best matches its tone" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그릴 때 사용할 문자입니다. 순서는 상관없으며, 각 지점에는 그 톤에 가장 가까운 잉크 농도를 지닌 문자가 사용됩니다."
+          }
+        }
+      }
+    },
+    "The height of each line of characters" : {
+
+    },
+    "The web and most screens" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "웹 및 대부분의 화면"
+          }
+        }
+      }
+    },
+    "Theme" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "테마"
+          }
+        }
+      }
+    },
+    "This Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 레이어"
+          }
+        }
+      }
+    },
+    "Three-Way" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "3방향"
+          }
+        }
+      }
+    },
+    "Three-Way shows shadows, midtones, and highlights. The other choices show one wheel." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Three-Way를 선택하면 섀도, 중간톤, 하이라이트가 표시됩니다. 다른 항목을 선택하면 휠이 하나만 표시됩니다."
+          }
+        }
+      }
+    },
+    "Tint" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조"
+          }
+        }
+      }
+    },
+    "Tolerance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "허용치"
+          }
+        }
+      }
+    },
+    "Tonal Contrast" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "톤 대비"
+          }
+        }
+      }
+    },
+    "Tones from black on the left to white on the right: blacks, shadows, midtones, highlights, whites. Control-click to show the vectorscope." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "왼쪽의 검정에서 오른쪽의 흰색까지 이어지는 톤으로, 블랙, 섀도, 중간톤, 하이라이트, 화이트 순으로 표시됩니다. Control 키를 누른 채 클릭하면 벡터스코프가 표시됩니다."
+          }
+        }
+      }
+    },
+    "Tones per channel: 2 is pure black and white" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "채널당 톤 수입니다. 2로 설정하면 완전한 흑백이 됩니다."
+          }
+        }
+      }
+    },
+    "Tools" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "도구"
+          }
+        }
+      }
+    },
+    "Top" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "위쪽"
+          }
+        }
+      }
+    },
+    "Top Left Pixel Color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "왼쪽 위 픽셀 색상"
+          }
+        }
+      }
+    },
+    "Tracking" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자간"
+          }
+        }
+      }
+    },
+    "Transform" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "변형"
+          }
+        }
+      }
+    },
+    "Transform Layer" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 변형"
+          }
+        }
+      }
+    },
+    "Transform Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마스크 변형"
+          }
+        }
+      }
+    },
+    "Transform Selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역 변형"
+          }
+        }
+      }
+    },
+    "Transparent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명"
+          }
+        }
+      }
+    },
+    "Transparent canvas" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명 캔버스"
+          }
+        }
+      }
+    },
+    "Transparent canvas · sRGB" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명 캔버스 · sRGB"
+          }
+        }
+      }
+    },
+    "Transparent Pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명 픽셀"
+          }
+        }
+      }
+    },
+    "Trim" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자르기"
+          }
+        }
+      }
+    },
+    "Trim Away" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "제거할 가장자리"
+          }
+        }
+      }
+    },
+    "Trim…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자르기…"
+          }
+        }
+      }
+    },
+    "Twirl Clockwise" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시계 방향 돌리기"
+          }
+        }
+      }
+    },
+    "Two Colors" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "두 가지 색상"
+          }
+        }
+      }
+    },
+    "Type" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "문자"
+          }
+        }
+      }
+    },
+    "Ultra HD and HDR video" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ultra HD 및 HDR 비디오"
+          }
+        }
+      }
+    },
+    "Underlying pixels · alpha-weighted histogram" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "하위 픽셀 · 알파 가중 히스토그램"
+          }
+        }
+      }
+    },
+    "Undo" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실행 취소"
+          }
+        }
+      }
+    },
+    "Undo (⌘Z)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실행 취소 (⌘Z)"
+          }
+        }
+      }
+    },
+    "Undo %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 실행 취소"
+          }
+        }
+      }
+    },
+    "Uniform" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "균일"
+          }
+        }
+      }
+    },
+    "Unit" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "단위"
+          }
+        }
+      }
+    },
+    "Units" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "단위"
+          }
+        }
+      }
+    },
+    "Unsaved changes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "저장되지 않은 변경 사항"
+          }
+        }
+      }
+    },
+    "Updating preview…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "미리보기 업데이트 중…"
+          }
+        }
+      }
+    },
+    "Updating…" : {
+
+    },
+    "Upright" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "업라이트"
+          }
+        }
+      }
+    },
+    "Use 1–%@ pixels per side, up to %lld megapixels, and 1–9,600 pixels/inch." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Use 1–%1$@ pixels per side, up to %2$lld megapixel, and 1–9,600 pixels/inch."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Use 1–%1$@ pixels per side, up to %2$lld megapixels, and 1–9,600 pixels/inch."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Use 1–%1$@ pixels per side, up to %2$lld megapixels, and 1–9,600 pixels/inch."
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "한 변당 1~%1$@ 픽셀, 최대 %2$lld메가픽셀, 1~9,600 픽셀/인치 범위의 값을 사용하십시오."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "한 변당 1~%1$@ 픽셀, 최대 %2$lld메가픽셀, 1~9,600 픽셀/인치 범위의 값을 사용하십시오."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Use gridlines every %lld–%@ pixels and %lld–%lld subdivisions, no more than the pixels between gridlines." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Use gridlines every %1$lld–%2$@ pixels and %3$lld–%4$lld subdivisions, no more than the pixels between gridlines."
+          }
+        }
+      }
+    },
+    "Vectorscope" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "벡터스코프"
+          }
+        }
+      }
+    },
+    "Version 1" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "버전 1"
+          }
+        }
+      }
+    },
+    "Version 2" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "버전 2"
+          }
+        }
+      }
+    },
+    "Version 3" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "버전 3"
+          }
+        }
+      }
+    },
+    "Version 4" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "버전 4"
+          }
+        }
+      }
+    },
+    "Version 5" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "버전 5"
+          }
+        }
+      }
+    },
+    "Version 6" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "버전 6"
+          }
+        }
+      }
+    },
+    "Vignette" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "비네트"
+          }
+        }
+      }
+    },
+    "Visualize Range" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "범위 시각화"
+          }
+        }
+      }
+    },
+    "Wand" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "마술봉"
+          }
+        }
+      }
+    },
+    "White" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흰색"
+          }
+        }
+      }
+    },
+    "White · Reveal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흰색 · 나타내기"
+          }
+        }
+      }
+    },
+    "White background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흰색 배경"
+          }
+        }
+      }
+    },
+    "White Balance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "화이트 밸런스"
+          }
+        }
+      }
+    },
+    "White Balance Selector" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "화이트 밸런스 선택 도구"
+          }
+        }
+      }
+    },
+    "Wide-gamut Apple displays" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "넓은 색 영역의 Apple 디스플레이"
+          }
+        }
+      }
+    },
+    "Width" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "너비"
+          }
+        }
+      }
+    },
+    "Working…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "작업 중…"
+          }
+        }
+      }
+    },
+    "Yellow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "노란색"
+          }
+        }
+      }
+    },
+    "Yellows" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "노랑 계열"
+          }
+        }
+      }
+    },
+    "Zoom" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확대/축소"
+          }
+        }
+      }
+    },
+    "Zoom In" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확대"
+          }
+        }
+      }
+    },
+    "Zoom in (⌘+)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확대 (⌘+)"
+          }
+        }
+      }
+    },
+    "Zoom in (⌘+), now %@. At 100%% each pixel of the JPEG is one pixel of the screen, as on the canvas" : {
+
+    },
+    "Zoom Out" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "축소"
+          }
+        }
+      }
+    },
+    "Zoom out (⌘−)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "축소 (⌘−)"
+          }
+        }
+      }
+    },
+    "Zoom out (⌘−), now %@" : {
+
+    },
+    "Zoom percentage" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확대/축소 비율"
+          }
+        }
+      }
+    },
+    "Zoom percentage (0.1–3200%). Press Return to apply." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확대/축소 비율입니다 (0.1~3200%). Return 키를 누르면 적용됩니다."
+          }
+        }
+      }
+    },
+    "한국어" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "한국어"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.3"
+}
