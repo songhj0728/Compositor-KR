@@ -1,3 +1,25 @@
+# Attention!
+한국어
+
+이 작업은 robbietilton의 Compositor 프로그램을 기반으로 한 포크 버전입니다.
+
+현재 한글화와 포토샵을 대체하기 위한 기능들을 준비하고 있습니다.
+
+포토샵을 사용해 본 사용자라면 큰 어려움 없이 사용할 수 있도록 개발하고 있으며, 무료로 이용할 수 있습니다.
+
+현재 버전에서는 PSD로 변환할 경우 포토샵에서 레이어 작업은 가능하지만, 텍스트 등의 일부 요소는 편집이 불가능할 수 있습니다.
+
+English
+
+This project is a fork of Compositor by robbietilton.
+
+We are currently working on Korean localization and additional features aimed at making the application a practical alternative to Adobe Photoshop.
+
+The goal is to make the application familiar and easy to use for users who are already accustomed to Photoshop. It will be free to use.
+
+In the current version, PSD files can be converted and opened in Photoshop with their layer structure preserved. However, some elements, such as text, may not be editable after conversion.
+
+
 # Compositor
 
 Adobe Photoshop costs too much and tools like GIMP don’t feel familiar enough for me to stay in flow. That’s why I built Compositor.
