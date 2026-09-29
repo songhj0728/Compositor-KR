@@ -1,22 +1,22 @@
 INFO core: Swift Core (CompositorCore.dll)
 INFO .NET runtime: 10.0.12
-INFO Microsoft.WindowsAppRuntime.dll: 2.0
-INFO Microsoft.ui.xaml.dll: 3.2.0.2511 (D98F5FF9B47F(ContainerAdministrator)-693f472aeaf89c6dff66256ee6fcd453e5d553b8)
+INFO Microsoft.WindowsAppRuntime.dll: 2.0.0.0
+INFO Microsoft.ui.xaml.dll: 3.2.3.0
 INFO OS: Microsoft Windows NT 10.0.26200.0
 PASS window activated and visible — Compositor Core spike — Swift Core (CompositorCore.dll)
 PASS C# → C ABI → Core on the UI thread — 보정 그룹 | >인물 레이어 | >하늘 | 배경
 PASS ListView renders the Core's rows — ▸ 보정 그룹
 PASS buttons → Core → list (add, undo, redo) — rows 4 → 5 → 4 → 5
 PASS Core on a background thread, result back on the UI thread — 500 rows, top '백그라운드 499'
-INFO 500 layers: adding 4.4 ms (8.9 µs each, undo step each); reading the outline row by row 20.3 ms (500 rows)
-INFO 2000 layers: adding 52.4 ms (26.2 µs each, undo step each); reading the outline row by row 327.5 ms (2000 rows)
+INFO 500 layers: adding 5.7 ms (11.4 µs each, undo step each); reading the outline row by row 20.8 ms (500 rows)
+INFO 2000 layers: adding 60.7 ms (30.4 µs each, undo step each); reading the outline row by row 334.7 ms (2000 rows)
 INFO loaded msvcp_win.dll from C:\WINDOWS\System32\msvcp_win.dll
 INFO loaded Microsoft.WindowsAppRuntime.dll from app folder
 INFO loaded Microsoft.UI.Xaml.dll from app folder
 INFO loaded Microsoft.UI.Xaml.Controls.dll from app folder
 INFO loaded CompositorCore.DLL from app folder
-INFO loaded VCRUNTIME140.dll from app folder
 INFO loaded swiftCore.dll from app folder
+INFO loaded VCRUNTIME140.dll from app folder
 INFO loaded MSVCP140.dll from app folder
 INFO loaded VCRUNTIME140_1.dll from app folder
 PASS window rendered to window.png — 852×569

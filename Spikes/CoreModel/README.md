@@ -15,7 +15,7 @@ with the same tests, and both implement one C header, so the same host programs 
 | `swift/Sources/CoreModel/` | The Swift Core (391 lines). Swift standard library only. |
 | `swift/Sources/CoreModelCABI/` | The Swift Core behind the C header (`@_cdecl`), built as `CompositorCore.dll` / `.dylib`. |
 | `swift/Sources/WindowsAPIDemo/` | Swift calling Win32, shell and COM APIs directly, using the Core. |
-| `swift/Tests/CoreModelTests/` | 17 XCTest cases. |
+| `swift/Tests/CoreModelTests/` | 18 XCTest cases. |
 | `cpp/include`, `cpp/src/core.cpp` | The C++20 Core (443 lines). Standard library only. |
 | `cpp/src/c_api.cpp` | The C++ Core behind the same C header, built as `CompositorCoreCpp.dll`. |
 | `cpp/tests/core_tests.cpp` | The same cases for the C++ Core. |
@@ -23,6 +23,7 @@ with the same tests, and both implement one C header, so the same host programs 
 | `include/compositor_core.h` | The shared C boundary (12 functions). |
 | `hosts/cpp/host.cpp` | A stand-in UI in C++ driving a Core only through the C header, Korean names included. |
 | `hosts/csharp/` | The same in C#: the binding a C# WinUI 3 app would use (`CompositorCore.cs`) and its checks. |
+| `hosts/winui/` | A WinUI 3 test window (Windows App SDK 2.5.1, .NET 10) on either Core, with a self-test. Report: [winui-test.md](winui-test.md). |
 | `check-core-boundaries.sh` | Fails if either Core imports or names a platform, UI or GPU framework. |
 | `CMakeLists.txt` | Builds the C++ Core, its tests and the C++ host against both Cores. |
 | `../../.github/workflows/spike-core-model.yml` | CI for all of the above on Windows and macOS. |
@@ -34,13 +35,14 @@ Build commands for each platform are the steps of `spike-core-model.yml`; locall
 
 | | Windows | macOS |
 |---|---|---|
-| Swift Core — SwiftPM, 17 tests | ✅ local (Swift 6.4.0, MSVC 19.44) and CI (`windows-latest`) | ✅ CI (`macos-26`, Xcode 26.6) |
+| Swift Core — SwiftPM, 18 tests | ✅ local (Swift 6.4.0, MSVC 19.44) and CI (`windows-latest`) | ✅ CI (`macos-26`, Xcode 26.6) |
 | Swift Core — **Xcode build system** (`xcodebuild test` on the package) | n/a | ✅ CI |
 | Swift → Win32/COM directly (`WindowsAPIDemo`) | ✅ local and CI | n/a |
 | Swift Core as a C-ABI library | ✅ `CompositorCore.dll`, 12 exports | ✅ `libCompositorCore.dylib` |
 | C++ Core, tests | ✅ MSVC `/W4 /permissive-`, 0 warnings; CI | ✅ Apple Clang; CI |
 | C++ host → Swift Core / → C++ Core | ✅ / ✅ identical output | ✅ / ✅ |
 | C# host → Swift Core / → C++ Core | ✅ / ✅ local and CI (csc 4.8, C# 5) | n/a |
+| **WinUI 3 window** → Swift Core / → C++ Core | ✅ / ✅ local and CI — see [winui-test.md](winui-test.md) | n/a |
 | Swift using the C++ Core (interop), 2 tests | ✅ after C++ changes for Swift (below) | ✅ CI |
 | Boundary check (no framework in either Core) | ✅ | ✅ |
 | LLDB on Swift code | ✅ local: breakpoints, backtrace, Korean strings | (Xcode, as today) |
@@ -163,8 +165,8 @@ Checked three ways:
 - **C++ Core** has the stronger Windows tooling but means rewriting ~11,000 lines of model and format code and putting
   the macOS app behind an interop layer with sharp edges (exceptions, lifetimes).
 - **For a C# WinUI front end, the C boundary exists either way** and should be generated, not hand-written.
-- **Next:** the WinUI 3 window test, against this spike's C boundary and both DLLs (it needs the Windows App SDK and
-  .NET, to be installed only with the owner's go-ahead). It informs, but doesn't settle, the UI choice.
+- **WinUI 3 window test: done** — both Cores work behind a C# WinUI 3 window; no fatal problem found, and it doesn't
+  separate the two Cores. Details, versions, deployment files and problems in [winui-test.md](winui-test.md).
 - **Before choosing the Core language or the UI:** settle the Core boundary — steps 0–5 of the inventory's plan. They're
   language-neutral, keep the macOS app unchanged in behavior, and turn today's model into something either Core could
   hold.

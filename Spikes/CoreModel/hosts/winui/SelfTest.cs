@@ -40,7 +40,11 @@ namespace CoreModelWinUI
                 foreach (string dll in new[] { "Microsoft.WindowsAppRuntime.dll", "Microsoft.ui.xaml.dll" })
                 {
                     string path = Path.Combine(AppContext.BaseDirectory, dll);
-                    Info(dll + ": " + (File.Exists(path) ? FileVersionInfo.GetVersionInfo(path).FileVersion : "not in the app folder"));
+                    // The numeric version: on Korean Windows the version *string* comes from ko-KR\*.mui, which the
+                    // Windows App SDK ships from an older build (3.2.0.2511 beside a 3.2.3.2609 DLL).
+                    var version = File.Exists(path) ? FileVersionInfo.GetVersionInfo(path) : null;
+                    Info(dll + ": " + (version == null ? "not in the app folder"
+                        : $"{version.FileMajorPart}.{version.FileMinorPart}.{version.FileBuildPart}.{version.FilePrivatePart}"));
                 }
                 Info("OS: " + Environment.OSVersion.VersionString);
 
