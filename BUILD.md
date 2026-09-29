@@ -20,7 +20,26 @@ xcodebuild -project <current-project>.xcodeproj -scheme <current-scheme> -destin
 
 Use the actual project/scheme discovered in the checkout rather than copying stale command examples.
 
-## Windows workflow (planned)
+## Shared code (Windows and macOS)
+
+`CMakeLists.txt` builds the code both apps share — today the C pixel algorithms in `Compositor/Rendering` — and its
+tests in `Tests/`. It reads the same source files the Xcode project compiles; it does not build the macOS app.
+
+On Windows (Visual Studio 2022 or its Build Tools, with CMake) or macOS (Xcode command-line tools and CMake):
+
+```bash
+cmake -S . -B build
+cmake --build build --config Release
+ctest --test-dir build --build-config Release --output-on-failure
+```
+
+CI runs this on Windows and macOS for every push (`.github/workflows/shared.yml`), next to the Xcode build and tests
+(`.github/workflows/verify.yml`).
+
+Rules for the shared C code: plain C11 that MSVC and Clang both compile — no Clang blocks (`^{ }`), no Grand Central
+Dispatch, no Apple headers. Use `pixel_parallel_for` (`PixelParallel.h`) to spread work over the cores.
+
+## Windows app workflow (planned)
 
 Windows support is not a reason to discard the current Xcode workflow.
 

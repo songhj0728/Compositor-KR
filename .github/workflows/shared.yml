@@ -1,0 +1,40 @@
+name: Shared code
+
+# Builds the code the macOS and Windows apps share (CMakeLists.txt) on both systems and runs its tests, so a change
+# that only works on one of them fails here. The macOS app itself is built and tested by verify.yml.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: shared-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  shared:
+    name: shared (${{ matrix.os }})
+    # Push covers same-repo branches. pull_request runs only for forks, so a PR is not tested twice.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        # MSVC on Windows; Apple Clang on Apple silicon, as the app ships.
+        os: [windows-latest, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
