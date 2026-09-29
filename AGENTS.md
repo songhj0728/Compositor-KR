@@ -36,4 +36,23 @@ These repository instructions are vendor-neutral and apply to Claude Code, Codex
 9. For architecture migrations, plan first and execute in reviewable steps.
 10. Do not silently remove or replace existing features.
 
+### Main branch synchronization
+
+11. `main` is the continuously developed macOS/reference branch. Do not freeze macOS development while Windows or multiplatform work is in progress.
+12. The Windows/multiplatform branch must periodically synchronize with `main`. Do not allow the branches to diverge for a long period and then attempt one large catch-up merge.
+13. When synchronizing, preserve the Windows/multiplatform work already completed. Do not discard, reset, or overwrite platform-specific work merely to resolve conflicts.
+14. Before resolving a conflict, determine whether the changed code is:
+    - shared/core behavior that should converge across platforms,
+    - macOS-specific implementation,
+    - Windows-specific implementation, or
+    - project/build/documentation infrastructure.
+15. Shared behavior should normally be reconciled into common code and tests. Platform-specific UI, OS integration, and GPU backend code may remain different.
+16. If a `main` change is relevant only to macOS, do not force a Windows equivalent just to keep the branches textually identical.
+17. If a `main` change changes shared document semantics, project format, image-processing behavior, or other cross-platform behavior, make an explicit plan for bringing the same semantics to Windows.
+18. After synchronization, run the relevant tests/builds for the affected platform(s) and verify that both the macOS reference behavior and Windows work remain intact.
+19. Prefer frequent, small synchronization steps over a large periodic rewrite. If synchronization reveals architectural duplication, fix the architecture rather than copying the macOS implementation into Windows.
+20. Never merge or rebase `main` into the Windows branch blindly. Inspect the incoming changes, summarize conflicts, and verify the result before considering the synchronization complete.
+
 The current macOS implementation is the reference implementation. Windows support should be added feature-by-feature using the same document semantics and tests, rather than by maintaining a second copy of the application.
+
+The goal is not for the macOS and Windows branches to contain identical code. The goal is for them to share the same product behavior and core semantics wherever practical while keeping platform-specific implementations appropriately separate.
