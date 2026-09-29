@@ -29,6 +29,12 @@ internal static class HostTests
             Check(document.SetVisible(sky, false), "hide");
             Check(document.Rename(people, "인물 레이어"), "rename");
             Check(!document.Rename(12345, "nothing"), "renaming a missing layer fails");
+            try
+            {
+                document.Group(new[] { background, background }, "twice");  // Once crashed both Cores.
+                Check(false, "grouping the same layer twice is refused");
+            }
+            catch (InvalidOperationException) { }
             Check(document.UndoName == "Rename Layer", "undo name after rename");
 
             var rows = document.Outline();

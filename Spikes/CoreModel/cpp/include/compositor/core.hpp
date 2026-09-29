@@ -77,7 +77,7 @@ struct LayerNode {
     bool operator==(const LayerNode &) const = default;
 };
 
-enum class DocumentErrorCode { noSuchLayer, notAGroup, notSiblings, wouldContainItself, emptySelection };
+enum class DocumentErrorCode { noSuchLayer, notAGroup, notSiblings, wouldContainItself, emptySelection, duplicateLayer };
 
 struct DocumentError : std::runtime_error {
     DocumentErrorCode code;

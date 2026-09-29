@@ -39,6 +39,7 @@ static const char *describe(DocumentErrorCode code) {
     case DocumentErrorCode::notSiblings: return "layers are not siblings";
     case DocumentErrorCode::wouldContainItself: return "a group can't contain itself";
     case DocumentErrorCode::emptySelection: return "nothing selected";
+    case DocumentErrorCode::duplicateLayer: return "the same layer twice";
     }
     return "document error";
 }
@@ -140,6 +141,9 @@ void Document::move(LayerID id, std::optional<LayerID> parent, std::size_t index
 
 LayerID Document::group(const std::vector<LayerID> &ids, std::string name) {
     if (ids.empty()) throw DocumentError(DocumentErrorCode::emptySelection);
+    std::vector<LayerID> sorted = ids;
+    std::sort(sorted.begin(), sorted.end());
+    if (std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end()) throw DocumentError(DocumentErrorCode::duplicateLayer);
     std::vector<std::size_t> indices;
     std::optional<LayerID> parent;
     for (std::size_t i = 0; i < ids.size(); ++i) {

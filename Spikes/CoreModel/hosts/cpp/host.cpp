@@ -53,6 +53,8 @@ int main() {
     CHECK(cc_set_visible(history, sky, 0) == 1);
     CHECK(cc_rename(history, people, "인물 레이어") == 1);
     CHECK(cc_rename(history, 12345, "nothing") == 0);  // No such layer: fails, records nothing.
+    cc_layer_id twice[] = {background, background};    // Once crashed both Cores; now refused.
+    CHECK(cc_group(history, twice, 2, "twice") == 0);
     CHECK(undoName(history) == "Rename Layer");
 
     std::printf("Outline:\n");

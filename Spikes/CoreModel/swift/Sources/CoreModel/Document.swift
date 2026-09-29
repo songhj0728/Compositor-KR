@@ -6,6 +6,8 @@ public enum DocumentError: Error, Equatable {
     /// A group can't be moved inside itself.
     case wouldContainItself
     case emptySelection
+    /// The same layer twice in one request.
+    case duplicateLayer(LayerID)
 }
 
 /// A canvas and its layer tree. A value: copying one is cheap, and the copies are independent, which is what
@@ -68,6 +70,8 @@ public struct Document: Equatable, Sendable {
     @discardableResult
     public mutating func group(_ ids: [LayerID], named name: String) throws -> LayerID {
         guard !ids.isEmpty else { throw DocumentError.emptySelection }
+        var seen = Set<LayerID>()
+        for id in ids where !seen.insert(id).inserted { throw DocumentError.duplicateLayer(id) }
         let locations = try ids.map { id -> (parent: LayerID?, index: Int) in
             guard let spot = location(of: id) else { throw DocumentError.noSuchLayer(id) }
             return spot

@@ -55,6 +55,16 @@ static void groupingNeedsSiblings() {
     CHECK(throwsCode(DocumentErrorCode::notSiblings, [&] { document.group({a, inside}, "X"); }));
 }
 
+// Found through the WinUI spike: the same layer twice once corrupted the heap.
+static void groupingRejectsDuplicates() {
+    Document document(10, 10);
+    auto a = document.addLayer("A");
+    document.addLayer("B");
+    Document before = document;
+    CHECK(throwsCode(DocumentErrorCode::duplicateLayer, [&] { document.group({a, a}, "X"); }));
+    CHECK(document == before);
+}
+
 static void ungroupPutsChildrenBack() {
     Document document(10, 10);
     auto a = document.addLayer("A"), b = document.addLayer("B"), c = document.addLayer("C");
@@ -148,6 +158,7 @@ int main() {
     addingStacksBottomToTop();
     groupingKeepsOrderAndTakesTopmostPlace();
     groupingNeedsSiblings();
+    groupingRejectsDuplicates();
     ungroupPutsChildrenBack();
     groupCantMoveIntoItself();
     visibleLayersFollowGroups();

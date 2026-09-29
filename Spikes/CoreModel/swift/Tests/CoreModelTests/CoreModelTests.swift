@@ -35,6 +35,18 @@ final class DocumentTests: XCTestCase {
         }
     }
 
+    // Found through the WinUI spike: the same layer twice once took the process down.
+    func testGroupingRejectsTheSameLayerTwice() throws {
+        var document = Document(width: 10, height: 10)
+        let a = try document.addLayer(named: "A")
+        try document.addLayer(named: "B")
+        let before = document
+        XCTAssertThrowsError(try document.group([a, a], named: "X")) {
+            XCTAssertEqual($0 as? DocumentError, .duplicateLayer(a))
+        }
+        XCTAssertEqual(document, before)
+    }
+
     func testUngroupPutsChildrenBackInPlace() throws {
         var document = Document(width: 10, height: 10)
         let a = try document.addLayer(named: "A")
