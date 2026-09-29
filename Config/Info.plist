@@ -43,9 +43,9 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/robbietilton/Compositor/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/songhj0728/Compositor-KR/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>KZvD724t8QpzTR4OGrHrsCWt538TJ/g/qrTZii+o214=</string>
+	<string>XY+hYTf/saW/+ovovKWKvTmj+jyob4m0ug5852yr/QM=</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

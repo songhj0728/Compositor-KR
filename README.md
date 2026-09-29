@@ -33,13 +33,9 @@ Because it’s open source, you can download the Xcode project and add, remove, 
 ## Installation
 
 ### Download
-Get Compositor from [robbietilton.com/compositor](https://robbietilton.com/compositor), or download the latest release directly from [GitHub Releases](https://github.com/robbietilton/Compositor/releases/latest).
+Download the latest Compositor-KR release from [GitHub Releases](https://github.com/songhj0728/Compositor-KR/releases/latest). The app checks this repository for updates on its own.
 
-### Homebrew
-
-```sh
-brew install --cask robbietilton-compositor
-```
+The original, English-only Compositor is at [robbietilton.com/compositor](https://robbietilton.com/compositor) and [github.com/robbietilton/Compositor](https://github.com/robbietilton/Compositor).
 
 ## Features
 
