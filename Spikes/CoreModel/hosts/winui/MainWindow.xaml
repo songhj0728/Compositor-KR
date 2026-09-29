@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="CoreModelWinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid x:Name="Root" Padding="16" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="Header" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
+            <Button x:Name="AddButton" Content="Add Layer" Click="AddLayer" />
+            <Button x:Name="GroupButton" Content="Group Top Two" Click="GroupTopTwo" />
+            <Button x:Name="HideButton" Content="Show/Hide Selected" Click="ToggleSelected" />
+            <Button x:Name="UndoButton" Content="Undo" Click="Undo" />
+            <Button x:Name="RedoButton" Content="Redo" Click="Redo" />
+        </StackPanel>
+        <ListView x:Name="Layers" Grid.Row="2" SelectionMode="Single" BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <TextBlock x:Name="Status" Grid.Row="3" />
+    </Grid>
+</Window>

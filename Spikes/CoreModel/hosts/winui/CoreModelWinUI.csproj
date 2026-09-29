@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Spike: a WinUI 3 window calling a Core through the C header, via the same C# binding as hosts/csharp. Not an app.
+      dotnet build -c Release -p:Core=Swift -p:CoreDllDir=<folder with CompositorCore.dll> -p:SwiftRuntimeDir=<…>
+      dotnet build -c Release -p:Core=Cpp   -p:CoreDllDir=<folder with CompositorCoreCpp.dll>
+    Run with `selftest <folder>` to check itself, write selftest.txt and window.png there, and exit.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>CoreModelWinUI</RootNamespace>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <!-- Unpackaged, with the Windows App SDK runtime copied next to the app: nothing to install on the machine. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- CompositorCore.cs is C# 5-compatible and predates nullable annotations. -->
+    <Nullable>disable</Nullable>
+
+    <!-- Which Core: Swift (CompositorCore.dll) or Cpp (CompositorCoreCpp.dll). -->
+    <Core Condition="'$(Core)' == ''">Swift</Core>
+    <DefineConstants Condition="'$(Core)' == 'Cpp'">$(DefineConstants);CPP_CORE</DefineConstants>
+    <DefineConstants Condition="'$(Core)' == 'Swift'">$(DefineConstants);SWIFT_CORE</DefineConstants>
+    <IntermediateOutputPath>obj\$(Core)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>bin\$(Core)\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\csharp\CompositorCore.cs" Link="CompositorCore.cs" />
+  </ItemGroup>
+
+  <!-- The Core's DLL, and for the Swift Core the Swift runtime it links, copied next to the app. -->
+  <ItemGroup Condition="'$(Core)' == 'Swift'">
+    <None Include="$(CoreDllDir)\CompositorCore.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(SwiftRuntimeDir)\swiftCore.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Core)' == 'Cpp'">
+    <None Include="$(CoreDllDir)\CompositorCoreCpp.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>

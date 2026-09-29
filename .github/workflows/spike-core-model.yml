@@ -80,6 +80,40 @@ jobs:
           }
           if ($failed) { exit 1 }
 
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      # A WinUI 3 window (Windows App SDK 2.5.1, stable) on each Core: builds hosts/winui, runs its self-test, and
+      # reports every line as an annotation. The Swift runtime and VC++ runtime are copied next to the app.
+      - name: WinUI 3 window against both Cores
+        shell: pwsh
+        run: |
+          $swiftCore = (swift build --package-path swift -c release --show-bin-path)
+          $cppCore = (Resolve-Path ../../build/spike/bin/Release).Path
+          $swiftRuntime = Split-Path (where.exe swiftCore.dll | Select-Object -First 1)
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          $vcRuntime = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC14*.CRT" -Directory | Select-Object -Last 1
+          Write-Output "::notice title=WinUI build::Swift runtime $swiftRuntime; VC++ runtime $vcRuntime"
+          $failed = $false
+          foreach ($core in 'Swift', 'Cpp') {
+            $dir = if ($core -eq 'Swift') { $swiftCore } else { $cppCore }
+            $out = dotnet build hosts/winui/CoreModelWinUI.csproj -c Release "-p:Core=$core" "-p:CoreDllDir=$dir" "-p:SwiftRuntimeDir=$swiftRuntime" 2>&1 | Out-String
+            if ($LASTEXITCODE) { Write-Output "::error title=WinUI build ($core)::$($out -replace "`r?`n", '%0A')"; $failed = $true; continue }
+            $bin = (Resolve-Path "hosts/winui/bin/$core/Release").Path
+            Copy-Item "$vcRuntime\vcruntime140.dll", "$vcRuntime\vcruntime140_1.dll", "$vcRuntime\msvcp140.dll" $bin
+            $results = Join-Path $env:RUNNER_TEMP "winui-$core"
+            $process = Start-Process -FilePath "$bin\CoreModelWinUI.exe" -ArgumentList 'selftest', $results -PassThru
+            if (-not $process.WaitForExit(180000)) { $process.Kill(); Write-Output "::error title=WinUI self-test ($core)::timed out"; $failed = $true; continue }
+            $report = if (Test-Path "$results\selftest.txt") { Get-Content "$results\selftest.txt" -Encoding UTF8 } else { @('no selftest.txt') }
+            $report | Write-Output
+            $level = if ($process.ExitCode -eq 0) { 'notice' } else { 'error' }
+            Write-Output "::$level title=WinUI self-test on the $core Core (exit $($process.ExitCode))::$($report -join '%0A')"
+            if ($process.ExitCode -ne 0) { $failed = $true }
+          }
+          if ($failed) { exit 1 }
+
       - name: Swift uses the C++ Core
         run: swift test --package-path cpp
 
