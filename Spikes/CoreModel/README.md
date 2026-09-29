@@ -40,13 +40,14 @@ Build commands for each platform are the steps of `spike-core-model.yml`; locall
 | Swift Core as a C-ABI library | ✅ `CompositorCore.dll`, 12 exports | ✅ `libCompositorCore.dylib` |
 | C++ Core, tests | ✅ MSVC `/W4 /permissive-`, 0 warnings; CI | ✅ Apple Clang; CI |
 | C++ host → Swift Core / → C++ Core | ✅ / ✅ identical output | ✅ / ✅ |
-| C# host → Swift Core / → C++ Core | ✅ / ✅ local (csc 4.8, C# 5) | n/a |
+| C# host → Swift Core / → C++ Core | ✅ / ✅ local and CI (csc 4.8, C# 5) | n/a |
 | Swift using the C++ Core (interop), 2 tests | ✅ after C++ changes for Swift (below) | ✅ CI |
 | Boundary check (no framework in either Core) | ✅ | ✅ |
 | LLDB on Swift code | ✅ local: breakpoints, backtrace, Korean strings | (Xcode, as today) |
 
-CI evidence: run 36591449719 on `spike/core-model` (both jobs, every step green). The C# host step and the boundary
-check were added after it and run on the next push. The macOS app itself was not touched; `verify.yml` (build and all
+CI evidence: [run 36595610253](https://github.com/songhj0728/Compositor-KR/actions/runs/36595610253) on `spike/core-model`, both jobs,
+every step green, including the C# host on `windows-latest` and the boundary check on both. Getting there took three
+fixes to the CI itself (below). The macOS app itself was not touched; `verify.yml` (build and all
 tests) passes on both branches.
 
 ## Swift ↔ C# boundary: the actual code and what it costs
@@ -107,6 +108,9 @@ it keeps shipping — the kind of rewrite AGENTS.md rule 2 asks to avoid. The fi
 Observed in this spike, not hypothetical:
 - **CI setup broke once**: the Swift install action 404'd on a version string (`6.4` vs `6.4.0`). Windows Swift CI
   depends on a community action (`compnerd/gha-setup-swift`) and download naming.
+- The other two CI fixes in this spike were not about Swift: a shell script using GNU-only regex (`\s`) behaved
+  differently under macOS's BSD `grep`, and the old `csc.exe` misread forward-slash relative paths. Both are the kind
+  of cross-platform CI friction any two-OS build will meet, whichever Core language.
 - **Toolchain rough edges**: warnings from the toolchain's own WinSDK module; `swift run` couldn't launch without
   Developer Mode (symlinks); MSVC is still required; `BOOL` imports as `Bool`, losing `GetMessageW`'s `-1`.
 - **Size**: the Windows toolchain is ~5 GB plus ~3.4 GB of VS Build Tools per developer machine.
