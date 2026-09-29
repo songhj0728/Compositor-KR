@@ -1,5 +1,5 @@
 #include "SmearPixels.h"
-#include <dispatch/dispatch.h>
+#include "PixelParallel.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -8,6 +8,41 @@ static inline float smear_weight(float u, float hardness) {
     if (u <= hardness) return 1;
     float t = (1 - u) / (1 - hardness);
     return t * t * (3 - 2 * t);
+}
+
+// One pass of the exchange: `b` from `a`, both w × h pixels of four floats, each pixel sharing its `k`.
+typedef struct {
+    const float *a;
+    float *b;
+    const float *k;
+    size_t w, h;
+} smear_pass;
+
+static void smear_pass_row(void *context, size_t y) {
+    const smear_pass *pass = context;
+    const float *a = pass->a, *k = pass->k;
+    float *b = pass->b;
+    const size_t w = pass->w, h = pass->h;
+    for (size_t x = 0; x < w; ++x) {
+        size_t i = y * w + x;
+        float kp = k[i];
+        const float *p = a + i * 4;
+        float *out = b + i * 4;
+        out[0] = p[0]; out[1] = p[1]; out[2] = p[2]; out[3] = p[3];
+        if (kp <= 0) continue;
+        // A neighbor past the dab's area or the canvas trades nothing: its share there is the lesser of the two.
+        size_t neighbors[4]; int count = 0;
+        if (x > 0) neighbors[count++] = i - 1;
+        if (x + 1 < w) neighbors[count++] = i + 1;
+        if (y > 0) neighbors[count++] = i - w;
+        if (y + 1 < h) neighbors[count++] = i + w;
+        for (int j = 0; j < count; ++j) {
+            float share = fminf(kp, k[neighbors[j]]);
+            if (share <= 0) continue;
+            const float *q = a + neighbors[j] * 4;
+            for (int c = 0; c < 4; ++c) out[c] += share * (q[c] - p[c]);
+        }
+    }
 }
 
 void smear_blur_dab(uint8_t *rgba, size_t width, size_t height, size_t stride, double cx, double cy, double radius,
@@ -33,32 +68,12 @@ void smear_blur_dab(uint8_t *rgba, size_t width, size_t height, size_t stride, d
             for (int c = 0; c < 4; ++c) a[(y * w + x) * 4 + c] = row[x * 4 + c];
         }
     }
-    for (int pass = 0; pass < iterations; ++pass) {
+    smear_pass pass = { NULL, NULL, k, w, h };
+    for (int i = 0; i < iterations; ++i) {
         // Rows are independent within a pass: shared out over the cores for big brushes.
-        void (^row)(size_t) = ^(size_t y) {
-            for (size_t x = 0; x < w; ++x) {
-                size_t i = y * w + x;
-                float kp = k[i];
-                const float *p = a + i * 4;
-                float *out = b + i * 4;
-                out[0] = p[0]; out[1] = p[1]; out[2] = p[2]; out[3] = p[3];
-                if (kp <= 0) continue;
-                // A neighbor past the dab's area or the canvas trades nothing: its share there is the lesser of the two.
-                size_t neighbors[4]; int count = 0;
-                if (x > 0) neighbors[count++] = i - 1;
-                if (x + 1 < w) neighbors[count++] = i + 1;
-                if (y > 0) neighbors[count++] = i - w;
-                if (y + 1 < h) neighbors[count++] = i + w;
-                for (int j = 0; j < count; ++j) {
-                    float share = fminf(kp, k[neighbors[j]]);
-                    if (share <= 0) continue;
-                    const float *q = a + neighbors[j] * 4;
-                    for (int c = 0; c < 4; ++c) out[c] += share * (q[c] - p[c]);
-                }
-            }
-        };
-        if (n >= 16384) dispatch_apply(h, DISPATCH_APPLY_AUTO, row);
-        else for (size_t y = 0; y < h; ++y) row(y);
+        pass.a = a; pass.b = b;
+        if (n >= 16384) pixel_parallel_for(h, &pass, smear_pass_row);
+        else for (size_t y = 0; y < h; ++y) smear_pass_row(&pass, y);
         float *swap = a; a = b; b = swap;
     }
     for (size_t y = 0; y < h; ++y) {
