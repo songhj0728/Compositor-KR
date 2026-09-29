@@ -4,6 +4,15 @@
 
 Evolve the existing macOS application into a macOS + Windows product without throwing away the working application.
 
+## Status
+
+- Phase 0: the branch carries Compositor-KR 1.4.1 from main. macOS build and tests run in CI (`verify.yml`).
+- Phase 1: done — [docs/multiplatform/inventory.md](docs/multiplatform/inventory.md).
+- Phase 2: first boundary — the C pixel code no longer depends on Grand Central Dispatch (`PixelParallel`).
+- Phase 4: first foundation — `CMakeLists.txt` builds and tests the C pixel code on Windows and macOS
+  (`shared.yml`). The Windows app itself waits on [docs/multiplatform/windows-decisions.md](docs/multiplatform/windows-decisions.md).
+- Phase 6: golden tests exist for Liquify and Smear (`Tests/Pixels`); the other algorithms still need them.
+
 ## Phase 0 — Baseline
 
 - Keep main stable.
