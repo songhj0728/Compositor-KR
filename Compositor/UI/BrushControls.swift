@@ -17,7 +17,7 @@ struct BrushControls: View {
                     ForEach(BlurToolMode.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
-                .help("Liquify pushes pixels · Blur softens · Smudge drags color along")
+                .help("Blur softens · Sharpen crisps · Smudge drags color along")
             }
             if session.tool == .spotHealing {
                 Picker("Type", selection: $session.spotHealingMode) {

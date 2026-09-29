@@ -110,7 +110,7 @@ nonisolated enum PSDAdjustmentCoding {
         let curves = settings.channels.prefix(4).map { points -> [CurvePoint] in
             // Photoshop's curves take at most 16 points; more are thinned out evenly, keeping both ends.
             guard points.count > 16 else { return points }
-            notes.append("Curves with more than 16 points were simplified to 16.")
+            notes.append(String(localized: "Curves with more than 16 points were simplified to 16."))
             return (0..<16).map { points[Int((Double($0) * Double(points.count - 1) / 15).rounded())] }
         }
         func write(_ points: [CurvePoint], _ buffer: inout PSDWriteBuffer) {
@@ -137,7 +137,7 @@ nonisolated enum PSDAdjustmentCoding {
 
     /// Version 2, Colorize, the colorize and master settings, then each color range's band and settings.
     static func hue(_ settings: HueSaturationSettings, notes: inout [String]) -> Data {
-        if settings.invertRange { notes.append("Hue/Saturation's inverted range isn't in Photoshop and was saved as a normal range.") }
+        if settings.invertRange { notes.append(String(localized: "Hue/Saturation's inverted range isn't in Photoshop and was saved as a normal range.")) }
         func triple(_ adjustment: RangeAdjustment, hue: ClosedRange<Double>, saturation: ClosedRange<Double>,
                     _ buffer: inout PSDWriteBuffer) {
             buffer.i16(Int16(clamp(adjustment.hue.rounded(), hue)))

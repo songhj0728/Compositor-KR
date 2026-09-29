@@ -75,3 +75,47 @@ extension NSColor {
         return NSColor(colorSpace: space, components: [red, green, blue, alpha], count: 4)
     }
 }
+
+extension CanvasDocument {
+    /// Whether the canvas shows no transparency: its lowest visible layer is opaque pixels over the whole canvas,
+    /// drawn plainly (full opacity, Normal, unmasked), as a Background layer is.
+    var hasOpaqueBackground: Bool {
+        guard let bottom = renderLayers.first, bottom.adjustment == nil, let image = bottom.asset?.image,
+              bottom.opacity >= 1, bottom.blendMode == .normal, bottom.mask?.isEnabled != true,
+              bottom.effectiveOpacity(in: Dictionary(uniqueKeysWithValues: layers.map { ($0.id, $0) })) >= 1 else { return false }
+        let transform = bottom.transform
+        let upright = transform.rotation.truncatingRemainder(dividingBy: 360) == 0
+        guard upright, CGRect(origin: transform.origin, size: transform.size).contains(CGRect(origin: .zero, size: size)) else { return false }
+        return OpaqueImageCheck.isOpaque(image)
+    }
+}
+
+/// Whether an image's pixels are all opaque, read from a small copy and remembered for the last image asked about,
+/// so the status bar can ask on every redraw.
+nonisolated enum OpaqueImageCheck {
+    private static let last = OSAllocatedUnfairLock<(image: CGImage, opaque: Bool)?>(uncheckedState: nil)
+
+    static func isOpaque(_ image: CGImage) -> Bool {
+        if let known = last.withLock({ $0 }), known.image === image { return known.opaque }
+        let opaque = measure(image)
+        last.withLock { $0 = (image, opaque) }
+        return opaque
+    }
+
+    private static func measure(_ image: CGImage) -> Bool {
+        switch image.alphaInfo {
+        case .none, .noneSkipFirst, .noneSkipLast: return true
+        default: break
+        }
+        let side = 64
+        let width = min(side, image.width), height = min(side, image.height)
+        guard let context = try? BrushRaster.context(width: width, height: height, mask: false),
+              let data = context.data?.assumingMemoryBound(to: UInt8.self) else { return false }
+        context.interpolationQuality = .low
+        BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height), mask: false, context: context)
+        for y in 0..<height {
+            for x in 0..<width where data[y * context.bytesPerRow + x * 4 + 3] < 250 { return false }
+        }
+        return true
+    }
+}

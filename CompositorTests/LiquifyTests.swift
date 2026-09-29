@@ -156,6 +156,7 @@ struct LiquifyTests {
             }
             _ = field.renderChanges()
         }
-        #expect(elapsed < .milliseconds(100))
+        // About 40 ms normally; Xcode's test plan measures code coverage, which makes the C several times slower.
+        #expect(elapsed < .milliseconds(300))
     }
 }

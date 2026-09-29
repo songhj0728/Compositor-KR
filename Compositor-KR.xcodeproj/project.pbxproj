@@ -28,7 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		8F311F99304F03BB0017D14F /* Compositor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Compositor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8F311F99304F03BB0017D14F /* Compositor-KR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Compositor-KR.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F311FA6304F03BC0017D14F /* CompositorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CompositorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F311FB0304F03BC0017D14F /* CompositorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CompositorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -90,7 +90,7 @@
 		8F311F9A304F03BB0017D14F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8F311F99304F03BB0017D14F /* Compositor.app */,
+				8F311F99304F03BB0017D14F /* Compositor-KR.app */,
 				8F311FA6304F03BC0017D14F /* CompositorTests.xctest */,
 				8F311FB0304F03BC0017D14F /* CompositorUITests.xctest */,
 			);
@@ -100,9 +100,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8F311F98304F03BB0017D14F /* Compositor */ = {
+		8F311F98304F03BB0017D14F /* Compositor-KR */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8F311FBA304F03BC0017D14F /* Build configuration list for PBXNativeTarget "Compositor" */;
+			buildConfigurationList = 8F311FBA304F03BC0017D14F /* Build configuration list for PBXNativeTarget "Compositor-KR" */;
 			buildPhases = (
 				8F311F95304F03BB0017D14F /* Sources */,
 				8F311F96304F03BB0017D14F /* Frameworks */,
@@ -115,12 +115,12 @@
 			fileSystemSynchronizedGroups = (
 				8F311F9B304F03BB0017D14F /* Compositor */,
 			);
-			name = Compositor;
+			name = "Compositor-KR";
 			packageProductDependencies = (
 				5A9C0D1E2F3A4B5C6D7E8F03 /* Sparkle */,
 			);
 			productName = Compositor;
-			productReference = 8F311F99304F03BB0017D14F /* Compositor.app */;
+			productReference = 8F311F99304F03BB0017D14F /* Compositor-KR.app */;
 			productType = "com.apple.product-type.application";
 		};
 		8F311FA5304F03BC0017D14F /* CompositorTests */ = {
@@ -192,7 +192,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 8F311F94304F03BB0017D14F /* Build configuration list for PBXProject "Compositor" */;
+			buildConfigurationList = 8F311F94304F03BB0017D14F /* Build configuration list for PBXProject "Compositor-KR" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -210,7 +210,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8F311F98304F03BB0017D14F /* Compositor */,
+				8F311F98304F03BB0017D14F /* Compositor-KR */,
 				8F311FA5304F03BC0017D14F /* CompositorTests */,
 				8F311FAF304F03BC0017D14F /* CompositorUITests */,
 			);
@@ -268,12 +268,12 @@
 /* Begin PBXTargetDependency section */
 		8F311FA8304F03BC0017D14F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 8F311F98304F03BB0017D14F /* Compositor */;
+			target = 8F311F98304F03BB0017D14F /* Compositor-KR */;
 			targetProxy = 8F311FA7304F03BC0017D14F /* PBXContainerItemProxy */;
 		};
 		8F311FB2304F03BC0017D14F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 8F311F98304F03BB0017D14F /* Compositor */;
+			target = 8F311F98304F03BB0017D14F /* Compositor-KR */;
 			targetProxy = 8F311FB1304F03BC0017D14F /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -410,13 +410,15 @@
 		8F311FBB304F03BC0017D14F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Config/Compositor.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Config/Compositor-KR.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=*]" = "Config/Compositor-KR.entitlements";
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
@@ -427,14 +429,16 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Compositor-KR";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.7;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor;
+				PRODUCT_MODULE_NAME = Compositor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -450,14 +454,16 @@
 		8F311FBC304F03BC0017D14F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Config/Compositor.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Config/Compositor-KR.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3E4X3B9Z9T;
+				DEVELOPMENT_TEAM = 78U738RSNN;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -466,14 +472,16 @@
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Compositor-KR";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.7;
-				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor;
+				MARKETING_VERSION = 1.4;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wonderassembly.compositor-kr";
+				PRODUCT_MODULE_NAME = Compositor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -490,13 +498,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 34;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3E4X3B9Z9T;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.3.7;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -504,7 +513,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Compositor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Compositor";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Compositor-KR.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Compositor-KR";
 			};
 			name = Debug;
 		};
@@ -512,13 +521,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 34;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3E4X3B9Z9T;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.3.7;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -526,19 +536,20 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Compositor.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Compositor";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Compositor-KR.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Compositor-KR";
 			};
 			name = Release;
 		};
 		8F311FC1304F03BC0017D14F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 34;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3E4X3B9Z9T;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.3.7;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -546,19 +557,20 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = Compositor;
+				TEST_TARGET_NAME = "Compositor-KR";
 			};
 			name = Debug;
 		};
 		8F311FC2304F03BC0017D14F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 34;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 3E4X3B9Z9T;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.3.7;
+				MARKETING_VERSION = 1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -566,14 +578,14 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = Compositor;
+				TEST_TARGET_NAME = "Compositor-KR";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		8F311F94304F03BB0017D14F /* Build configuration list for PBXProject "Compositor" */ = {
+		8F311F94304F03BB0017D14F /* Build configuration list for PBXProject "Compositor-KR" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8F311FB8304F03BC0017D14F /* Debug */,
@@ -582,7 +594,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8F311FBA304F03BC0017D14F /* Build configuration list for PBXNativeTarget "Compositor" */ = {
+		8F311FBA304F03BC0017D14F /* Build configuration list for PBXNativeTarget "Compositor-KR" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8F311FBB304F03BC0017D14F /* Debug */,

@@ -21,6 +21,18 @@
         }
       }
     },
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Compositor-KR"
+          }
+        }
+      }
+    },
     "CFBundleName" : {
       "comment" : "Bundle name",
       "extractionState" : "extracted_with_value",
@@ -28,12 +40,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Compositor"
+            "value" : "Compositor-KR"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "machine_translated",
+            "state" : "needs_review",
             "value" : "Compositor"
           }
         }

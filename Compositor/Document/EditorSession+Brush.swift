@@ -27,7 +27,8 @@ extension EditorSession {
     }
     func beginBrush(at point: CGPoint) {
         // Spot Healing and Clone Stamp rework image pixels; they have nothing to do on a mask.
-        if tool == .blur, blurMode != .blur { beginWarp(at: point); return }
+        // Smudge, and Blur on a layer's pixels, work a copy dab by dab. Blur on a mask, and Sharpen, paint a worked copy.
+        if tool == .blur, blurMode == .smudge || (blurMode == .blur && !isMaskSelected) { beginWarp(at: point); return }
         guard tool == .brush || tool == .blur || (tool.isBrushTool && !isMaskSelected), canPaint, let layer = activeLayer, let document else { return }
         var clone: (image: CGImage, offset: CGSize)?
         if tool == .cloneStamp {
@@ -39,9 +40,9 @@ extension EditorSession {
             cloneOffset = offset
             clone = (image, offset)
         }
-        // Blur paints a softened copy of the layer, in place, through the brush tip.
+        // Blur and Sharpen paint a softened or crisped copy of the layer, in place, through the brush tip.
         if tool == .blur {
-            guard let image = blurSample(document, mask: isMaskSelected) else { return }
+            guard let image = blurSample(document, mask: isMaskSelected, sharpen: blurMode == .sharpen) else { return }
             clone = (image, .zero)
         }
         finishOpacityEdit()

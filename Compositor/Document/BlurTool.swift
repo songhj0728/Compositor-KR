@@ -2,13 +2,23 @@ import AppKit
 import CoreImage
 
 extension EditorSession {
-    /// What a Blur stroke paints: the active layer (or, with `mask`, its mask) as the canvas shows it, at document
-    /// size, softened by an amount that follows the brush size. It is taken when the stroke starts, so going over an
-    /// area again in a new stroke softens it further, as in Photoshop.
-    func blurSample(_ document: CanvasDocument, mask: Bool = false) -> CGImage? {
+    /// What a Blur or Sharpen stroke paints: the active layer (or, with `mask`, its mask) as the canvas shows it, at
+    /// document size, softened or crisped a little. It is taken when the stroke starts, so going over an area again in
+    /// a new stroke works it further, as in Photoshop. The amount follows the brush but stays small: a strong blur
+    /// painted at full strength would lay the area's average color down like paint.
+    func blurSample(_ document: CanvasDocument, mask: Bool = false, sharpen: Bool = false) -> CGImage? {
         guard let layer = activeLayer else { return nil }
-        let sigma = min(30, max(1.5, Double(brushSettings.diameter) / 10))
+        let diameter = Double(brushSettings.diameter)
         let extent = CGRect(x: 0, y: 0, width: document.width, height: document.height)
+        func worked(_ image: CIImage) -> CIImage {
+            // Edge pixels carry on past the canvas, so its border doesn't soften toward transparent or black.
+            let clamped = image.clampedToExtent()
+            let result = sharpen
+                ? clamped.applyingFilter("CIUnsharpMask", parameters: [kCIInputRadiusKey: min(3, max(1, diameter / 50)),
+                                                                         kCIInputIntensityKey: 0.6])
+                : clamped.applyingGaussianBlur(sigma: min(4, max(1, diameter / 40)))
+            return result.cropped(to: extent)
+        }
         if mask {
             guard let owned = layer.mask,
                   let context = try? BrushRaster.context(width: document.width, height: document.height, mask: true) else { return nil }
@@ -27,15 +37,13 @@ extension EditorSession {
             context.restoreGState()
             LayerRenderer.drawCoverage(owned.asset.image, transform: placement, in: context)
             guard let sharp = context.makeImage() else { return nil }
-            let soft = CIImage(cgImage: sharp).clampedToExtent().applyingGaussianBlur(sigma: sigma).cropped(to: extent)
-            return try? PixelAdjust.render(soft, width: sharp.width, height: sharp.height, isMask: true)
+            return try? PixelAdjust.render(worked(CIImage(cgImage: sharp)), width: sharp.width, height: sharp.height, isMask: true)
         }
         guard let image = layer.asset?.image,
               let context = try? BrushRaster.context(width: document.width, height: document.height, mask: false) else { return nil }
         let transform = displayedTransform(for: layer)
         LayerRenderer.draw(image, transform: transform, center: transform.center, in: context)
         guard let sharp = context.makeImage() else { return nil }
-        let soft = CIImage(cgImage: sharp).applyingGaussianBlur(sigma: sigma).cropped(to: extent)
-        return try? PixelAdjust.render(soft, width: sharp.width, height: sharp.height, isMask: false)
+        return try? PixelAdjust.render(worked(CIImage(cgImage: sharp)), width: sharp.width, height: sharp.height, isMask: false)
     }
 }

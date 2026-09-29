@@ -190,6 +190,51 @@ final class ProjectController {
         } catch { await showError("Couldn’t export JPEG", error: error) }
     }
 
+    /// A layered Photoshop document: layers, folders, masks, clipping and adjustment layers stay editable there.
+    func exportPSD() async {
+        guard session.document != nil, begin() else { return }
+        defer { session.isProjectBusy = false }
+        guard let snapshot = session.projectSnapshot() else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.photoshopImage]
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        panel.title = String(localized: "Export PSD")
+        panel.nameFieldStringValue = (session.projectURL?.deletingPathExtension().lastPathComponent ?? "Untitled") + ".psd"
+        // Photoshop reads every adjustment layer Compositor writes; unticked, they're saved as their pixels instead.
+        let editable = NSButton(checkboxWithTitle: String(localized: "Keep adjustment layers editable"), target: nil, action: nil)
+        editable.state = .on
+        editable.toolTip = String(localized: "Off saves each adjustment as the pixels it makes, for apps that can't read adjustment layers")
+        let accessory = NSView(frame: NSRect(x: 0, y: 0, width: 360, height: 36))
+        editable.frame.origin = NSPoint(x: 16, y: 9)
+        editable.sizeToFit()
+        accessory.addSubview(editable)
+        panel.accessoryView = accessory
+        let response: NSApplication.ModalResponse
+        if let window { response = await panel.beginSheetModal(for: window) }
+        else { response = await panel.begin() }
+        guard response == .OK, let url = panel.url else { return }
+        let options = PSDExportOptions(editableAdjustments: editable.state == .on, collapsedGroups: session.collapsedGroupIDs)
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let result = try await ImageExporter.shared.psd(snapshot, options: options)
+            try await ImageExporter.shared.write(result.data, to: url)
+            guard !result.notes.isEmpty else { return }
+            // What didn't carry over as it is, one line per layer and message.
+            let lines = result.notes.map { note in
+                note.layerName.isEmpty ? "• \(note.message)" : "• \(note.layerName): \(note.message)"
+            }
+            let alert = NSAlert()
+            alert.alertStyle = .informational
+            alert.messageText = String(localized: "Exported as PSD")
+            alert.informativeText = String(localized: "Some things were saved differently for Photoshop:") + "\n"
+                + (lines.prefix(12) + (lines.count > 12 ? [String(localized: "…and \(lines.count - 12) more")] : [])).joined(separator: "\n")
+            alert.addButton(withTitle: String(localized: "OK"))
+            _ = await show(alert)
+        } catch { await showError("Couldn’t export PSD", error: error) }
+    }
+
     private func saveCurrent(asNew: Bool = false) async -> Bool {
         guard session.document != nil else { return true }
         guard let prepared = await prepareSave(asNew: asNew) else { return false }

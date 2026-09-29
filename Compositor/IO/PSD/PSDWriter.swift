@@ -27,7 +27,7 @@ extension ImageExporter {
         let profile = DocumentColorProfile(rawValue: manifest.colorSpace) ?? .sRGB
         var builder = PSDLayerBuilder(snapshot: snapshot, profile: profile, options: options)
         if profile == .cmyk {
-            builder.note(nil, "The CMYK project was saved as RGB: its layers are edited in RGB.")
+            builder.note(nil, String(localized: "The CMYK project was saved as RGB: its layers are edited in RGB."))
         }
         // Adjustments Photoshop has no layer for are saved as what they make of the layers below.
         builder.bake = { [unowned self] id in try self.bakedAdjustment(snapshot, id: id) }
@@ -116,7 +116,9 @@ nonisolated struct PSDLayerBuilder {
         var pixels = PSDWriteBuffer()
         for entry in entries {
             Self.writeRecord(&records, entry)
+            // In the order the record lists them: color and transparency, then the mask.
             for channel in entry.channels { pixels.bytes(channel.payload) }
+            if let mask = entry.mask { pixels.bytes(mask.payload) }
         }
         var info = PSDWriteBuffer()
         info.bytes(records.data)
@@ -183,7 +185,7 @@ nonisolated struct PSDLayerBuilder {
                     entry.mask = try mask(of: record, over: record.transform)
                     return entry
                 }
-                note(record.name, "Photoshop has no adjustment layer for this, so its result was saved as pixels.")
+                note(record.name, String(localized: "Photoshop has no adjustment layer for this, so its result was saved as pixels."))
             }
             guard let image = try bake?(record.id) else { return entry }
             let canvas = LayerTransform(origin: .zero, size: CGSize(width: image.width, height: image.height))
@@ -195,15 +197,15 @@ nonisolated struct PSDLayerBuilder {
             entry.mask = try mask(of: record, over: record.transform)
             return entry
         }
-        if record.text != nil { note(record.name, "Text was saved as pixels.") }
-        if record.shape != nil { note(record.name, "The shape was saved as pixels.") }
+        if record.text != nil { note(record.name, String(localized: "Text was saved as pixels.")) }
+        if record.shape != nil { note(record.name, String(localized: "The shape was saved as pixels.")) }
         // Effects (stroke, shadow) are drawn into the layer, mask and all, as the canvas shows them.
         var layerMask = snapshot.mask(for: record)
         layerMask?.isEnabled = true
         let clip = layerMask?.clipImage(placement: layerMask?.placement, over: record.transform, width: image.width, height: image.height)
         if let effects = LayerEffectsRenderer.cached(image, mask: snapshot.mask(for: record)?.isEnabled == true ? clip : nil,
                                                      effects: record.effects) {
-            note(record.name, "Layer effects were merged into the layer's pixels.")
+            note(record.name, String(localized: "Layer effects were merged into the layer's pixels."))
             try fill(&entry, image: effects.image,
                      transform: LayerEffectsRenderer.placed(record.transform, image: effects.image, inset: effects.inset))
             if snapshot.mask(for: record)?.isEnabled == false { entry.mask = try mask(of: record, over: record.transform) }
@@ -237,7 +239,7 @@ nonisolated struct PSDLayerBuilder {
 
     /// Keeps the layer's pixels only where `source` has some.
     private mutating func multiplyCoverage(of source: UUID, into entry: inout Entry, name: String) throws {
-        note(name, "Its clipping mask isn't the layer right below it, which Photoshop can't do, so it was applied to the pixels.")
+        note(name, String(localized: "Its clipping mask isn't the layer right below it, which Photoshop can't do, so it was applied to the pixels."))
         guard entry.right > entry.left, entry.bottom > entry.top, let base = records[source],
               let image = snapshot.images[source]?.image else { entry.channels = PSDPlanes.emptyChannels; return }
         let rect = CGRect(x: entry.left, y: entry.top, width: entry.right - entry.left, height: entry.bottom - entry.top)

@@ -55,6 +55,16 @@
         }
       }
     },
+    "…and %lld more" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "…외 %lld개"
+          }
+        }
+      }
+    },
     "· encoded preview, fitted to window" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -906,6 +916,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "흐림 효과"
+          }
+        }
+      }
+    },
+    "Blur softens · Sharpen crisps · Smudge drags color along" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흐림 효과는 부드럽게, 선명 효과는 또렷하게 하고, 스머지는 색상을 끌고 갑니다."
           }
         }
       }
@@ -1811,6 +1831,16 @@
         }
       }
     },
+    "Curves with more than 16 points were simplified to 16." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점이 16개보다 많은 곡선은 16개로 단순화했습니다."
+          }
+        }
+      }
+    },
     "Curves…" : {
       "localizations" : {
         "ko" : {
@@ -2521,12 +2551,42 @@
         }
       }
     },
+    "Export PSD" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PSD 내보내기"
+          }
+        }
+      }
+    },
+    "Export PSD…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PSD 내보내기…"
+          }
+        }
+      }
+    },
     "Export…" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "내보내기…"
+          }
+        }
+      }
+    },
+    "Exported as PSD" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PSD로 내보냈습니다"
           }
         }
       }
@@ -3446,6 +3506,16 @@
         }
       }
     },
+    "Hue/Saturation's inverted range isn't in Photoshop and was saved as a normal range." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "색조/채도의 범위 반전은 포토샵에 없어 일반 범위로 저장했습니다."
+          }
+        }
+      }
+    },
     "Image" : {
       "localizations" : {
         "ko" : {
@@ -3664,8 +3734,28 @@
     "ISO B" : {
 
     },
+    "Its clipping mask isn't the layer right below it, which Photoshop can't do, so it was applied to the pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "클리핑 기준이 바로 아래 레이어가 아니어서(포토샵에서는 불가능) 픽셀에 적용해 저장했습니다."
+          }
+        }
+      }
+    },
     "JIS B" : {
 
+    },
+    "Keep adjustment layers editable" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "조정 레이어를 편집 가능하게 유지"
+          }
+        }
+      }
     },
     "Keep the source moving with the brush between strokes; off starts every stroke at the source point" : {
       "localizations" : {
@@ -3743,6 +3833,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "레이어 효과"
+          }
+        }
+      }
+    },
+    "Layer effects were merged into the layer's pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 효과를 레이어 픽셀에 합쳐 저장했습니다."
           }
         }
       }
@@ -3924,6 +4024,7 @@
       }
     },
     "Liquify" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -3934,6 +4035,7 @@
       }
     },
     "Liquify pushes pixels · Blur softens · Smudge drags color along" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -4509,6 +4611,16 @@
         }
       }
     },
+    "Off saves each adjustment as the pixels it makes, for apps that can't read adjustment layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "끄면 조정 레이어를 읽지 못하는 앱을 위해 각 조정 결과를 픽셀로 저장합니다."
+          }
+        }
+      }
+    },
     "Off shows the layer as it was, to compare" : {
       "localizations" : {
         "ko" : {
@@ -4555,6 +4667,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "불투명도 백분율"
+          }
+        }
+      }
+    },
+    "Opaque background" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "불투명 배경"
           }
         }
       }
@@ -4866,6 +4988,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "사진 및 인쇄 교정"
+          }
+        }
+      }
+    },
+    "Photoshop has no adjustment layer for this, so its result was saved as pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포토샵에 해당하는 조정 레이어가 없어 결과를 픽셀로 저장했습니다."
           }
         }
       }
@@ -6062,6 +6194,16 @@
         }
       }
     },
+    "Sharpen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선명 효과"
+          }
+        }
+      }
+    },
     "Sharpening" : {
       "localizations" : {
         "ko" : {
@@ -6328,6 +6470,16 @@
         }
       }
     },
+    "Some things were saved differently for Photoshop:" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "포토샵에 맞게 일부 항목이 다르게 저장되었습니다:"
+          }
+        }
+      }
+    },
     "Spot Healing" : {
       "localizations" : {
         "ko" : {
@@ -6352,6 +6504,7 @@
 
     },
     "sRGB · Transparent" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -6558,6 +6711,16 @@
         }
       }
     },
+    "Text was saved as pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트를 픽셀로 저장했습니다."
+          }
+        }
+      }
+    },
     "The Background layer's color" : {
       "localizations" : {
         "ko" : {
@@ -6598,8 +6761,28 @@
         }
       }
     },
+    "The CMYK project was saved as RGB: its layers are edited in RGB." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CMYK 프로젝트는 레이어가 RGB로 편집되므로 RGB로 저장되었습니다."
+          }
+        }
+      }
+    },
     "The height of each line of characters" : {
 
+    },
+    "The shape was saved as pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "도형을 픽셀로 저장했습니다."
+          }
+        }
+      }
     },
     "The web and most screens" : {
       "localizations" : {

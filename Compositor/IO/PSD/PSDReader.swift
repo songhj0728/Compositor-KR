@@ -372,6 +372,9 @@ nonisolated enum PSDReader {
                 remaining = max(0, remaining - raster.image.width * raster.image.height)
             }
             record.mask = layer.maskFromRender ? nil : layer.maskImage
+            record.maskBounds = CGRect(x: layer.maskLeft, y: layer.maskTop,
+                                       width: layer.maskRight - layer.maskLeft, height: layer.maskBottom - layer.maskTop)
+            record.maskDefault = layer.maskDefault
             record.maskEnabled = !layer.maskDisabled
             record.maskLinked = layer.maskLinked
             if !isGroup { record.adjustment = PSDAdjustments.parse(layer.extra) }
@@ -472,7 +475,7 @@ nonisolated enum PSDAdjustments {
 
     /// Version, then records of input black, input white, output black, output white and gamma × 100: composite,
     /// red, green, blue.
-    private static func levels(_ data: Data) -> LayerAdjustment? {
+    static func levels(_ data: Data) -> LayerAdjustment? {
         guard data.count >= 2 + 4 * 10 else { return nil }
         var settings = LevelsSettings()
         for channel in 0..<4 {
@@ -522,7 +525,7 @@ nonisolated enum PSDAdjustments {
     }
 
     /// Version, Colorize, the colorize and master settings, then each color range's band and settings.
-    private static func hue(_ data: Data) -> LayerAdjustment? {
+    static func hue(_ data: Data) -> LayerAdjustment? {
         guard data.count >= 16 else { return nil }
         let colorize = data[2] != 0
         func triple(_ at: Int) -> RangeAdjustment {
@@ -534,8 +537,13 @@ nonisolated enum PSDAdjustments {
         var offset = 16
         for range in ColorRange.colorRanges {
             guard offset + 14 <= data.count else { break }
-            settings.bands[range] = HueBand(falloffStart: Double(i16(data, offset)), rangeStart: Double(i16(data, offset + 2)),
-                                            rangeEnd: Double(i16(data, offset + 4)), falloffEnd: Double(i16(data, offset + 6)))
+            // Degrees, taken into 0…360 whichever way round they were written.
+            func degrees(_ at: Int) -> Double {
+                let value = Double(i16(data, at)).truncatingRemainder(dividingBy: 360)
+                return value < 0 ? value + 360 : value
+            }
+            settings.bands[range] = HueBand(falloffStart: degrees(offset), rangeStart: degrees(offset + 2),
+                                            rangeEnd: degrees(offset + 4), falloffEnd: degrees(offset + 6))
             settings.adjustments[range] = triple(offset + 8)
             offset += 14
         }
