@@ -28,6 +28,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Cores use no platform, UI or GPU framework
+        shell: bash
+        run: ./check-core-boundaries.sh
+
       - name: Install Swift
         uses: compnerd/gha-setup-swift@main
         with:
@@ -52,6 +56,17 @@ jobs:
           # The Swift runtime DLLs come from the toolchain on PATH.
           ctest --test-dir ../../build/spike --build-config Release --output-on-failure
 
+      # C#, as a WinUI 3 app would call the Cores. csc.exe ships with Windows (.NET Framework); nothing to install.
+      - name: C# host against both Cores
+        shell: pwsh
+        run: |
+          $csc = "$env:WINDIR/Microsoft.NET/Framework64/v4.0.30319/csc.exe"
+          $bin = "../../build/spike/bin/Release"
+          & $csc -nologo -platform:x64 -codepage:65001 "-out:$bin/host_cs_swift.exe" hosts/csharp/CompositorCore.cs hosts/csharp/HostTests.cs
+          & $csc -nologo -platform:x64 -codepage:65001 -define:CPP_CORE "-out:$bin/host_cs_cpp.exe" hosts/csharp/CompositorCore.cs hosts/csharp/HostTests.cs
+          & "$bin/host_cs_swift.exe"; if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & "$bin/host_cs_cpp.exe"; if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
       - name: Swift uses the C++ Core
         run: swift test --package-path cpp
 
@@ -64,6 +79,10 @@ jobs:
         working-directory: Spikes/CoreModel
     steps:
       - uses: actions/checkout@v7
+
+      - name: Cores use no platform, UI or GPU framework
+        shell: bash
+        run: ./check-core-boundaries.sh
 
       - name: Select Xcode 26.6
         run: sudo xcode-select -s /Applications/Xcode_26.6.app

@@ -1,0 +1,2 @@
+# Shell scripts run under bash on every runner, including Windows ones that check out with CRLF.
+*.sh text eol=lf

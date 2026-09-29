@@ -1,15 +1,12 @@
 # Spike: a shared document Core — Swift or C++?
 
-**Status: evidence only. No decision is made here, and nothing in this folder is part of the app.** The macOS app
-does not build, link or reference any of it (it lives outside the Xcode project's synchronized folders).
+**Status: evidence for a decision that has not been made.** Nothing in this folder is part of the app; the macOS app
+does not build, link or reference it (it lives outside the Xcode project's synchronized folders). Swift is **not**
+chosen as the Core language, and WinUI 3 remains a Windows UI candidate, not a choice. The Core's boundary is to be
+settled before either — see [document-model-inventory.md](../../docs/multiplatform/document-model-inventory.md).
 
-The question comes from [docs/multiplatform/windows-decisions.md](../../docs/multiplatform/windows-decisions.md) §1:
-before moving the real document model anywhere, test whether a platform-independent Core written in Swift works on
-Windows, and compare it with a C++ Core used from native UIs on each platform.
-
-Both Cores implement the same small model — `Document`, `Layer`, `LayerGroup`, `Transform`, and undo/redo
-`History` — with the same behavior and the same tests, and both expose the same C header, so one host program runs
-against either.
+Both Cores implement the same small model — `Document`, `Layer`, `LayerGroup`, `Transform`, undo/redo `History` —
+with the same tests, and both implement one C header, so the same host programs (C++ and C#) run against either.
 
 ## What's here
 
@@ -21,144 +18,154 @@ against either.
 | `swift/Tests/CoreModelTests/` | 17 XCTest cases. |
 | `cpp/include`, `cpp/src/core.cpp` | The C++20 Core (443 lines). Standard library only. |
 | `cpp/src/c_api.cpp` | The C++ Core behind the same C header, built as `CompositorCoreCpp.dll`. |
-| `cpp/tests/core_tests.cpp` | The same cases for the C++ Core (no test framework). |
-| `cpp/Package.swift`, `cpp/swift-interop/` | Swift using the C++ Core directly through Swift's C++ interoperability — how the macOS app would consume it. |
-| `include/compositor_core.h` | The shared C boundary: what a Windows UI (WinUI via C# or C++/WinRT, or Win32) would call. |
-| `hosts/cpp/host.cpp` | A stand-in UI that drives a Core only through the C header, including Korean names. Built against both Cores. |
-| `CMakeLists.txt` | Builds the C++ Core, its tests and the host (against both Cores). |
-| `../../.github/workflows/spike-core-model.yml` | CI for all of the above on Windows and macOS (runs only when the spike changes). |
+| `cpp/tests/core_tests.cpp` | The same cases for the C++ Core. |
+| `cpp/Package.swift`, `cpp/swift-interop/` | Swift using the C++ Core directly (C++ interoperability) — how the macOS app would consume it. |
+| `include/compositor_core.h` | The shared C boundary (12 functions). |
+| `hosts/cpp/host.cpp` | A stand-in UI in C++ driving a Core only through the C header, Korean names included. |
+| `hosts/csharp/` | The same in C#: the binding a C# WinUI 3 app would use (`CompositorCore.cs`) and its checks. |
+| `check-core-boundaries.sh` | Fails if either Core imports or names a platform, UI or GPU framework. |
+| `CMakeLists.txt` | Builds the C++ Core, its tests and the C++ host against both Cores. |
+| `../../.github/workflows/spike-core-model.yml` | CI for all of the above on Windows and macOS. |
 
-## Build commands
-
-Windows (Visual Studio 2022 Build Tools with the C++ workload and Windows SDK, Swift 6.4, CMake), from a
-*x64 Native Tools* prompt, in `Spikes/CoreModel`:
-
-```
-swift test --package-path swift                                   # Swift Core tests
-swift build --package-path swift && <bin>\WindowsAPIDemo.exe       # Swift calling Windows APIs
-swift build --package-path swift -c release --product CompositorCore
-cmake -S . -B build -DSWIFT_CORE_DIR=<swift release bin path>      # swift build -c release --show-bin-path
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure             # C++ Core + host on both Cores
-swift test --package-path cpp                                     # Swift using the C++ Core
-```
-
-macOS: the same commands, plus the Xcode build system on the Swift package:
-`xcodebuild test -scheme CoreModelSpike-Package -destination 'platform=macOS'` (in `swift/`).
+Build commands for each platform are the steps of `spike-core-model.yml`; locally on Windows they run from an
+*x64 Native Tools* prompt with Swift 6.4 on `PATH`.
 
 ## Results
 
-### Windows — run on this machine, 2026-09-29
-
-Swift 6.4.0 (x86_64-unknown-windows-msvc), MSVC 19.44 (VS 2022 Build Tools), Windows SDK 10.0.26100, CMake 4.4.
-
-| Check | Result |
-|---|---|
-| Swift Core: 17 tests | ✅ pass |
-| Swift → Win32/COM demo (window + Swift message callback, UTF-16, `SHGetKnownFolderPath` + `CoTaskMemFree`, DPI) | ✅ pass |
-| Swift Core as a DLL: exports all 12 C functions | ✅ (checked with `dumpbin`) |
-| C++ Core: 11 test groups, MSVC `/W4 /permissive-` | ✅ pass, 0 warnings |
-| Host program against the **C++** Core DLL | ✅ pass |
-| Host program against the **Swift** Core DLL | ✅ pass — identical output, Korean names round-trip and are cut on character boundaries |
-| Swift using the C++ Core (C++ interop), 2 tests | ✅ pass, after adding Swift-only accessors to the C++ Core (see below) |
-| LLDB on the Swift code | ✅ breakpoints, backtrace, variables (Korean strings display correctly) |
-
-### macOS — not run yet
-
-There is no Mac here. `spike-core-model.yml` runs every command above on `macos-26` with Xcode 26.6, including
-`xcodebuild` on the Swift package; it has not run because the spike hasn't been pushed. **Until it does, the macOS
-column below is expectation, not evidence.** The Swift Core uses nothing macOS lacks; the only platform branch is
-which C library provides `cos`/`sin` (`Darwin` vs `ucrt`).
-
-The macOS app was not touched.
-
-## The nine questions (Swift Core)
-
-1. **Does a platform-independent Swift model compile reliably on Windows?** Yes, for this model: stock Swift 6.4,
-   no changes for Windows except the C-library import for `cos`/`sin`. The toolchain itself warns about its own
-   WinSDK module (`wchar_t … broken by a context change`) — harmless here, but a sign the Windows toolchain is less
-   polished than Xcode's.
-2. **Can a Windows UI consume it cleanly?** Through a C ABI, yes: a C++ program uses `CompositorCore.dll` exactly as
-   it uses the C++ Core's DLL. A WinUI 3 app in C# (P/Invoke) or C++/WinRT would call the same header. *Not tested:*
-   an actual WinUI 3 window — that needs the Windows App SDK (and the .NET SDK or C++/WinRT), which weren't installed.
-   Writing the WinUI app itself in Swift (via the swift-winrt bindings) was not tested either.
-3. **The actual interop boundary.** Swift → C ABI (`@_cdecl`, opaque handles, UTF-8 strings, status codes) → UI
-   language. The C++ Core needs exactly the same boundary for a C# UI; only a C++/WinRT UI could skip it. So for a
-   C#/WinUI front end, the boundary is the same size whichever Core is chosen (~125 lines each here). `@_cdecl` is
-   an underscored attribute (widely used, but formally unofficial).
-4. **Can Swift call Windows APIs without glue?** Yes. `import WinSDK` exposes Win32, the shell and COM functions
-   directly; a Swift closure works as a `WNDPROC`. Rough edges: `BOOL` arrives as `Bool`, so `GetMessageW`'s `-1`
-   error can't be told from `TRUE`; UTF-16 strings need small helpers. WinRT/WinUI APIs are *not* in WinSDK — they
-   need generated bindings (swift-winrt), which is where glue would appear.
-5. **Can one Swift Core build with Xcode and on Windows?** SwiftPM builds it on Windows (verified). On macOS it's a
-   normal Swift package that Xcode opens and the app can depend on; the CI job checks this with `xcodebuild` (not yet
-   run).
-6. **Build system and dependencies.** Windows: Swift toolchain (~5 GB installed; winget also installed Python 3.10
-   for LLDB) plus VS Build Tools (~3.4 GB). The app must ship the Swift runtime: the Core DLL (326 KB) needs only
-   `swiftCore.dll` (5.9 MB) — because the Core avoids Foundation. Using Foundation would add ~50 MB (ICU alone is
-   37 MB). C++ Core DLL: 42 KB, needs only the VC++ runtime.
-7. **Can the Core stay free of UI/GPU frameworks?** Yes, and it's easy to check: both Cores import only their
-   standard libraries. Keeping Swift free of Foundation is a rule to enforce (e.g. no `UUID`, `Data`, `Date`), not
-   something the language does for us.
-8. **Debugging and CI.** LLDB works on Windows from the command line (verified); Visual Studio's debugger can step
-   Swift but doesn't understand Swift types (not verified here). VS Code with the Swift extension is the practical
-   IDE. CI: `compnerd/gha-setup-swift` on `windows-latest`; Xcode on `macos-26`. The C++ Core gets the full
-   Visual Studio debugger and sanitizers on Windows.
-9. **Long-term risk for a Photoshop-class app** — see the recommendation.
-
-## Swift Core vs C++ Core
-
-| | Swift Core | C++ Core |
+| | Windows | macOS |
 |---|---|---|
-| macOS app uses it | Directly, as today's code does. The existing model is already Swift. | Through C++ interop: works, but needs Swift-specific accessors and must never throw (below). |
-| Windows UI uses it | Through the C header (same as C++ for C#). A Swift WinUI app could use it directly (untested). | Directly from C++/WinRT; through the C header from C#. |
-| Migrating today's model | Move and trim existing Swift code. | Rewrite the existing Swift model, mask and format code (several thousand lines: .comp, PSD, masks, history) — against AGENTS.md's "do not rewrite all Swift into C++". |
-| Undo snapshots | Copy-on-write values: snapshots share unchanged data for free. | Copies are deep. Sharing needs explicit `shared_ptr<const …>` design. |
-| Errors | `throws`, checked by the compiler. | Exceptions, which **crash the process** if they reach Swift (verified: `0xe06d7363`). Every Swift-facing call needs a non-throwing wrapper. |
-| Tooling on Windows | Younger: needed MSVC anyway, long-path and symlink (Developer Mode) friction, toolchain warnings. | Mature: MSVC, Visual Studio debugger, sanitizers, profilers. |
-| Ecosystem for imaging (codecs, color, GPU) | Small on Windows; most libraries are C/C++ reached through the C boundary anyway. | Large and native. |
-| Runtime to ship on Windows | +6 MB Swift runtime. | None beyond VC++ runtime. |
-| Hiring / contributors | Swift developers rarely know Windows. | Common for Windows imaging. |
+| Swift Core — SwiftPM, 17 tests | ✅ local (Swift 6.4.0, MSVC 19.44) and CI (`windows-latest`) | ✅ CI (`macos-26`, Xcode 26.6) |
+| Swift Core — **Xcode build system** (`xcodebuild test` on the package) | n/a | ✅ CI |
+| Swift → Win32/COM directly (`WindowsAPIDemo`) | ✅ local and CI | n/a |
+| Swift Core as a C-ABI library | ✅ `CompositorCore.dll`, 12 exports | ✅ `libCompositorCore.dylib` |
+| C++ Core, tests | ✅ MSVC `/W4 /permissive-`, 0 warnings; CI | ✅ Apple Clang; CI |
+| C++ host → Swift Core / → C++ Core | ✅ / ✅ identical output | ✅ / ✅ |
+| C# host → Swift Core / → C++ Core | ✅ / ✅ local (csc 4.8, C# 5) | n/a |
+| Swift using the C++ Core (interop), 2 tests | ✅ after C++ changes for Swift (below) | ✅ CI |
+| Boundary check (no framework in either Core) | ✅ | ✅ |
+| LLDB on Swift code | ✅ local: breakpoints, backtrace, Korean strings | (Xcode, as today) |
 
-C++ interop friction found (Swift using the C++ Core): C++ default arguments aren't imported; template types such as
-`std::optional<uint64_t>` can't be named from Swift, so the C++ header needed typedefs; methods returning a
-reference or a pointer into the object (`name()`, `layer()`) aren't imported at all, so the C++ Core needed copying
-accessors (`nameCopy()`, `isGroupNode()`). All solvable, but each is C++ API bent for Swift.
+CI evidence: run 36591449719 on `spike/core-model` (both jobs, every step green). The C# host step and the boundary
+check were added after it and run on the next push. The macOS app itself was not touched; `verify.yml` (build and all
+tests) passes on both branches.
 
-## Recommendation (not a decision)
+## Swift ↔ C# boundary: the actual code and what it costs
 
-Neither option is ruled out by this spike. What it does show:
+A C# WinUI 3 app can't call Swift (or C++) directly; it calls C functions. The chain is:
 
-- **Swift Core is technically viable on Windows today** for model-type code: it compiled, tested, exported a C ABI
-  and called Windows APIs without C/C++ glue. It keeps the existing Swift model and the macOS app's path unchanged,
-  which is its main advantage.
-- **The C++ Core is the lower-risk *Windows* choice but the higher-risk *migration*:** mature tooling, but the macOS
-  app would consume it through an interop layer that crashes on exceptions and needs Swift-shaped accessors, and the
-  existing Swift model would have to be rewritten.
-- For a C#-based WinUI front end, **the boundary is a C ABI either way**, so the UI side doesn't decide between them.
+```
+C# view model  →  CompositorCore.cs (DllImport + wrapper)  →  compositor_core.h  →  Swift @_cdecl functions  →  Core
+```
 
-Explicit risks of the Swift path:
-1. Windows Swift tooling maturity (debugger, IDE, toolchain regressions) over a multi-year product.
-2. Swift-on-Windows depends on a small set of maintainers; WinUI-from-Swift (swift-winrt) even more so.
-3. Discipline required to keep Foundation and Apple frameworks out of the Core; a slip adds ~50 MB and Apple-only
-   behavior.
-4. Performance-critical imaging will still be C/C++ (as today's pixel code is) — the Swift Core must stay a model,
-   not become the pixel engine.
+| Layer | Lines here | Per new Core function |
+|---|---|---|
+| `compositor_core.h` | 49 (12 functions) | 1–2 lines |
+| Swift exports (`CoreModelCABI.swift`) | 127 | ~8–12 lines: unwrap handle, convert strings, catch errors, return a status |
+| C++ exports (`c_api.cpp`), for comparison | 122 | ~8 lines, same shape |
+| C# binding (`CompositorCore.cs`) | 161 | 2 lines of `DllImport` + ~3–10 lines of wrapper |
 
-Explicit risks of the C++ path:
-1. A rewrite of the existing Swift model and formats, with two implementations during the transition.
-2. Exception-safety and lifetime rules at the Swift boundary, in every call the macOS app makes.
-3. Losing copy-on-write snapshots, which the current undo design relies on for memory.
+What keeps it maintainable, and what it costs:
+- **Mechanical, not clever.** Opaque handle, UTF-8 byte strings, status codes, caller-owned buffers. The C# side turns
+  failures into exceptions and frees the handle through `SafeHandle`. Both Cores behave identically behind it.
+- **Four places change per function** (header, export, C# import, C# wrapper). For a Core of hundreds of operations
+  this should be **generated** (from the header, or from Swift/C++ declarations) rather than written by hand — a tool
+  to build or adopt before the real migration, whichever Core language is picked.
+- **Same cost for either Core.** A C# UI needs this C layer for C++ too; only a C++/WinRT UI could skip it for a C++
+  Core. So the UI language, not the Core language, decides whether this layer exists.
+- `@_cdecl` is widely used but formally unofficial (underscored); an official spelling has been proposed for Swift.
+- Not covered: callbacks from Core to UI (change notifications), bulk pixel transfer, threading. Those need design
+  before a real UI — likely "UI polls or receives a change token", and pixel data stays out of C#.
 
-Suggested next steps, still before choosing:
-1. Push this spike so CI produces the macOS results.
-2. A WinUI 3 window (C# or C++/WinRT) showing the layer outline from **both** DLLs — needs the Windows App SDK.
-3. Put one real pixel buffer through both Cores (the image-buffer boundary from
-   [inventory.md](../../docs/multiplatform/inventory.md)) to see copy-on-write vs. explicit sharing with real memory.
+## C++ Core: results and what adopting it would mean
+
+Both platforms ✅ (table above). On the macOS side, Swift using the C++ Core surfaced four frictions:
+1. A C++ exception reaching Swift **terminates the process** (verified: `0xe06d7363`). Every Swift-facing C++ call
+   needs a non-throwing wrapper.
+2. Methods returning a reference or pointer into an object (`name()`, `layer()`) **aren't imported**; the Core
+   needed copying accessors (`nameCopy()`, `isGroupNode()`).
+3. C++ default arguments aren't imported.
+4. Template types (`std::optional<uint64_t>`) can't be named in Swift; the Core needed typedefs.
+
+### Moving the existing Swift model to C++: the work
+
+From the [inventory](../../docs/multiplatform/document-model-inventory.md):
+- **Model**: 47 types in 21 files, 8,180 lines of Swift (the files also hold related logic).
+- **Formats**: PSD reader/writer 2,830 lines; `.comp` store 278 lines (+ controller 445, partly UI).
+- **Tests**: 38 test files (7,726 lines) exercise these types from Swift; with a C++ Core they'd test it through
+  interop or be rewritten in C++.
+- **macOS call sites**: 17 files outside Document/IO use model types directly; each would go through the interop
+  layer and its rules above.
+- **Semantics to preserve**: copy-on-write undo snapshots (`DocumentHistory` shares unchanged images between steps);
+  C++ would need an explicit shared-immutable design to match memory use.
+
+Roughly 11,000 lines of model and format code rewritten in another language, with the macOS app switched over while
+it keeps shipping — the kind of rewrite AGENTS.md rule 2 asks to avoid. The first five steps of the inventory's plan
+(separating the model, geometry types, image handle) would be needed either way and don't commit to a language.
+
+## Swift Core on Windows: toolchain and CI risks
+
+Observed in this spike, not hypothetical:
+- **CI setup broke once**: the Swift install action 404'd on a version string (`6.4` vs `6.4.0`). Windows Swift CI
+  depends on a community action (`compnerd/gha-setup-swift`) and download naming.
+- **Toolchain rough edges**: warnings from the toolchain's own WinSDK module; `swift run` couldn't launch without
+  Developer Mode (symlinks); MSVC is still required; `BOOL` imports as `Bool`, losing `GetMessageW`'s `-1`.
+- **Size**: the Windows toolchain is ~5 GB plus ~3.4 GB of VS Build Tools per developer machine.
+- Longer-term: a small maintainer base for Swift-on-Windows (and more so for Swift/WinRT bindings); IDE support is
+  VS Code + LLDB rather than Visual Studio; fewer Windows developers know Swift.
+
+Mitigations: pin toolchain versions in CI (done); keep the Core's Windows build and tests in CI on every push (done);
+keep the C boundary so the UI never depends on Swift tooling; keep pixel-heavy code in C (already shared).
+
+## Working without Foundation in the Core
+
+What it means day to day (Swift, Windows runtime sizes measured):
+
+| Core uses | Runtime to ship on Windows | What you lose |
+|---|---|---|
+| Standard library only (this spike) | **5.8 MB** (`swiftCore.dll`) | `UUID`, `Data`, `Date`, `JSONEncoder`, `CGFloat`/`CGPoint`/`CGRect`, `URL`, `FileManager`, string formatting helpers |
+| `FoundationEssentials` | **13.5 MB** — verified: `UUID`, `Data`, `Codable` JSON round-trip, no ICU | `CGFloat`/`CGPoint`/`CGRect`, locale-aware formatting, `URL` networking |
+| Full `Foundation` | **~63 MB** (ICU alone 37 MB) | — |
+
+Practical constraints of the stdlib-only Core:
+- IDs need a Core type (the spike's `LayerID`), or `UUID` via FoundationEssentials. `.comp` stores UUID strings, so
+  either must encode identically.
+- **Geometry needs Core types**: on Windows, `CGFloat`/`CGPoint`/`CGSize`/`CGRect` exist only in full Foundation, and
+  `CGAffineTransform`/`CGPath` not at all — so today's model, which stores them, must switch to its own (as the
+  spike's `Point`/`Transform`). `CGFloat` encodes as a JSON number like `Double`, so `.comp` files don't change.
+- `cos`/`sin` come from the C library (`Darwin` / `ucrt`) — a two-line `#if`.
+- JSON (the `.comp` manifest) needs `Codable` encoders → FoundationEssentials, or the platform does the encoding.
+
+When a feature needs Foundation, in order of preference:
+1. **Keep it at the platform edge**: file access, URLs, dates for display — the app (Swift on macOS, C# on Windows)
+   does it and hands the Core values.
+2. **Use `FoundationEssentials`, not `Foundation`**: `#if canImport(FoundationEssentials) import FoundationEssentials
+   #else import Foundation #endif` (Apple platforms have no separate FoundationEssentials module). +7.7 MB, no ICU.
+3. **Full Foundation** only for something that truly needs ICU (locale-aware text), and preferably outside the Core.
+
+## The Core stays free of platform, UI and GPU frameworks
+
+Checked three ways:
+1. `check-core-boundaries.sh` (CI, both platforms): Swift Core imports only `Darwin`/`ucrt`/`Glibc`; C++ Core
+   includes only standard headers; neither names `NS*`, `CG*`, `CI*`, `MTL*`, `VN*`, SwiftUI, AppKit, Metal,
+   Core Image, WinUI, WinRT, Direct3D, `HWND` or Vulkan types. Injected violations are caught.
+2. **Link-level (Windows)**: `CompositorCore.dll` (release) depends only on `swiftCore.dll`, `KERNEL32.dll`, the VC++
+   runtime and the CRT — no UI or GPU library.
+3. Both Cores compile and pass their tests on each platform without any platform SDK in their sources.
+
+## Recommendation (still not a decision)
+
+- **Swift Core** is technically viable on both platforms and keeps the existing model and the macOS app's path. Its
+  risks are Windows tooling and ecosystem, and the discipline to keep Foundation and CoreGraphics out of the Core.
+- **C++ Core** has the stronger Windows tooling but means rewriting ~11,000 lines of model and format code and putting
+  the macOS app behind an interop layer with sharp edges (exceptions, lifetimes).
+- **For a C# WinUI front end, the C boundary exists either way** and should be generated, not hand-written.
+- **Next, before choosing:** steps 0–5 of the inventory's plan. They're language-neutral, keep the macOS app unchanged
+  in behavior, and turn today's model into something either Core could hold. Then the WinUI 3 window test against the
+  real boundary.
 
 ## Notes from this machine
 
-Local-environment issues, not findings about the approaches: the session's working folder has a very long path, so
-MSVC (260-character limit) and git needed short build folders or `core.longpaths`; SwiftPM warned it could not make
-its `.build` symlinks and `swift run` failed to launch (Windows Developer Mode off), so executables were run directly;
-`windows.h` defines `small` as a macro, which broke a variable name in the host.
+The session's working folder has a very long path, so MSVC (260-character limit) and git needed short build folders
+or `core.longpaths`; SwiftPM couldn't make its `.build` symlinks (Developer Mode off), so executables were run
+directly; `windows.h` defines `small` as a macro, which broke a variable name in the C++ host; winget installed
+Python 3.10 alongside Swift (for LLDB).
