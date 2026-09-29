@@ -16,7 +16,8 @@ internal static class HostTests
 
     private static int Main()
     {
-        Console.OutputEncoding = Encoding.UTF8;
+        // Setting it fails without a console (as on CI runners); the text is still UTF-8 through the pipe then.
+        try { Console.OutputEncoding = Encoding.UTF8; } catch (System.IO.IOException) { }
         using (var document = new LayerDocument(1920, 1080))
         {
             ulong background = document.AddLayer("배경");
