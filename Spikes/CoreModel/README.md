@@ -163,9 +163,11 @@ Checked three ways:
 - **C++ Core** has the stronger Windows tooling but means rewriting ~11,000 lines of model and format code and putting
   the macOS app behind an interop layer with sharp edges (exceptions, lifetimes).
 - **For a C# WinUI front end, the C boundary exists either way** and should be generated, not hand-written.
-- **Next, before choosing:** steps 0–5 of the inventory's plan. They're language-neutral, keep the macOS app unchanged
-  in behavior, and turn today's model into something either Core could hold. Then the WinUI 3 window test against the
-  real boundary.
+- **Next:** the WinUI 3 window test, against this spike's C boundary and both DLLs (it needs the Windows App SDK and
+  .NET, to be installed only with the owner's go-ahead). It informs, but doesn't settle, the UI choice.
+- **Before choosing the Core language or the UI:** settle the Core boundary — steps 0–5 of the inventory's plan. They're
+  language-neutral, keep the macOS app unchanged in behavior, and turn today's model into something either Core could
+  hold.
 
 ## Notes from this machine
 
