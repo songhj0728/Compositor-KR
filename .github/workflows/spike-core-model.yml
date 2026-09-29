@@ -1,0 +1,87 @@
+name: Spike — Core model
+
+# Builds and tests the document-model spike (Spikes/CoreModel) on Windows and macOS: the Swift Core, the C++ Core,
+# the host program against both, and Swift using the C++ Core. Only runs when the spike changes.
+
+on:
+  push:
+    paths: ['Spikes/CoreModel/**', '.github/workflows/spike-core-model.yml']
+  pull_request:
+    paths: ['Spikes/CoreModel/**', '.github/workflows/spike-core-model.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: spike-core-model-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: Spikes/CoreModel
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.4-release
+          swift-build: 6.4-RELEASE
+
+      - name: Swift Core — build and test
+        run: swift test --package-path swift
+
+      - name: Swift calls Windows APIs
+        run: swift run --package-path swift WindowsAPIDemo
+
+      - name: Swift Core as a DLL
+        run: swift build --package-path swift -c release --product CompositorCore
+
+      - name: C++ Core and the host against both Cores
+        shell: pwsh
+        run: |
+          $swiftCore = (swift build --package-path swift -c release --show-bin-path)
+          cmake -S . -B ../../build/spike "-DSWIFT_CORE_DIR=$swiftCore"
+          cmake --build ../../build/spike --config Release
+          # The Swift runtime DLLs come from the toolchain on PATH.
+          ctest --test-dir ../../build/spike --build-config Release --output-on-failure
+
+      - name: Swift uses the C++ Core
+        run: swift test --package-path cpp
+
+  macos:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: macos-26
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: Spikes/CoreModel
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - name: Swift Core — SwiftPM
+        run: swift test --package-path swift
+
+      # The same package through Xcode's build system, as the macOS app would consume it.
+      - name: Swift Core — Xcode
+        working-directory: Spikes/CoreModel/swift
+        run: xcodebuild test -scheme CoreModelSpike-Package -destination 'platform=macOS' -quiet
+
+      - name: C++ Core and the host against both Cores
+        run: |
+          swift build --package-path swift -c release --product CompositorCore
+          cmake -S . -B ../../build/spike -DSWIFT_CORE_DIR="$(swift build --package-path swift -c release --show-bin-path)"
+          cmake --build ../../build/spike --config Release
+          ctest --test-dir ../../build/spike --build-config Release --output-on-failure
+
+      - name: Swift uses the C++ Core
+        run: swift test --package-path cpp
