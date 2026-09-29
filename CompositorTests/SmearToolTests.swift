@@ -134,19 +134,22 @@ struct BlurDriftTests {
         return session
     }
 
-    /// Row 50's darkness from x 50 to 150: where it's centered, and how much there is.
-    private func darkness(_ image: CGImage) throws -> (center: Double, total: Double, peak: Int) {
+    /// Row 50's darkness from x 50 to 150: where it's centered, how far it's spread (its standard deviation), and how
+    /// much there is.
+    private func darkness(_ image: CGImage) throws -> (center: Double, spread: Double, total: Double, peak: Int) {
         let context = try BrushRaster.context(width: image.width, height: image.height, mask: false)
         BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height), mask: false, context: context)
         let data = try #require(context.data).assumingMemoryBound(to: UInt8.self)
-        var weighted = 0.0, total = 0.0, peak = 0
+        var weighted = 0.0, squared = 0.0, total = 0.0, peak = 0
         for x in 50...150 {
             let dark = 255 - Int(data[50 * context.bytesPerRow + x * 4])
             weighted += Double(dark) * (Double(x) + 0.5)
+            squared += Double(dark) * (Double(x) + 0.5) * (Double(x) + 0.5)
             total += Double(dark)
             peak = max(peak, dark)
         }
-        return (weighted / max(1, total), total, peak)
+        let center = weighted / max(1, total)
+        return (center, max(0, squared / max(1, total) - center * center).squareRoot(), total, peak)
     }
 
     @Test func repeatedClicksDoNotPullTowardTheCenter() throws {
@@ -159,10 +162,12 @@ struct BlurDriftTests {
         let after = try darkness(#require(s.activeLayer?.asset?.image))
         // Softened: the line spreads, its darkest point lighter than before.
         #expect(after.peak < before.peak - 30)
-        // Not moved: its middle stays where it was, and nothing is gained or lost.
-        #expect(abs(after.center - before.center) < 0.5, "moved from \(before.center) to \(after.center)")
-        // Each click is kept in 8 bits, so the faintest edge of the spread rounds away a little: a few percent over 25.
-        #expect(abs(after.total - before.total) / before.total < 0.05)
+        // Not pulled along: a soft brush's weight falls toward its rim, so a line off its center spreads a little more
+        // toward the center than away, but its middle stays where it was next to how far it has spread (the old Blur
+        // dragged it 3.4 pixels here). And nothing is gained or lost, give or take 8-bit rounding.
+        #expect(abs(after.center - before.center) < 0.15 * after.spread,
+                "moved from \(before.center) to \(after.center), spread \(after.spread)")
+        #expect(abs(after.total - before.total) / before.total < 0.03, "from \(before.total) to \(after.total)")
     }
 
     @Test func aFlatAreaStaysFlat() throws {

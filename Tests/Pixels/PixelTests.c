@@ -59,15 +59,17 @@ static void reconstruct_dabs(float *field, size_t w, size_t h, long dirty[4]) {
                     (double)h * 0.5, (double)w * 0.7, 0.2, 0.9, dirty);
 }
 
-static void smear_dabs(uint8_t *rgba, size_t w, size_t h) {
-    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.5, (double)h * 0.45, (double)w * 0.35, 0.25, 0.9, 6);
-    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.3, (double)h * 0.6, (double)w * 0.2, 0.6, 0.5, 3);
+// Two dabs from a fresh count, so their rounding is the same every time.
+static void smear_dabs(uint8_t *rgba, size_t w, size_t h, double sigma1, double sigma2) {
+    smear_reset_dab_count();
+    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.5, (double)h * 0.45, (double)w * 0.35, 0.25, 0.9, sigma1);
+    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.3, (double)h * 0.6, (double)w * 0.2, 0.6, 0.5, sigma2);
 }
 
 // Compilers and CPUs round sines, square roots and fused multiply-adds slightly differently, so results are compared
 // within a tolerance: a pixel may be off by a level or two, or a displacement by a fraction of a pixel, where a value
-// lands right on a threshold, but on average they must match to within a hundredth of a level — a 5% change to
-// how strongly Smear blurs already moves them by four hundredths.
+// lands right on a threshold, but on average they must match to within a hundredth of a level — Smear 5% weaker
+// already moves them by eight hundredths.
 static void expect_bytes_near(const char *name, const uint8_t *actual, const uint8_t *expected, size_t n) {
     int worst = 0;
     double total = 0;
@@ -118,7 +120,7 @@ static void test_liquify_and_smear_match_reference(void) {
 
     const size_t MW = 24, MH = 24;
     uint8_t *smear = make_image(MW, MH);
-    smear_dabs(smear, MW, MH);
+    smear_dabs(smear, MW, MH, 2.0, 1.2);
     expect_bytes_near("smear", smear, reference_smear, MW * MH * 4);
 
     free(source); free(field); free(render); free(scaledSource); free(scaled); free(smear);
@@ -148,7 +150,7 @@ static big_results run_big(void) {
     reconstruct_dabs(field, W, H, dirty);
     r.reconstructed = field;
     r.smear = make_image(MW, MH);
-    smear_dabs(r.smear, MW, MH);
+    smear_dabs(r.smear, MW, MH, 6.0, 3.0);
     free(source); free(scaledSource);
     return r;
 }

@@ -3480,6 +3480,26 @@
         }
       }
     },
+    "How far out from an edge Sharpen crisps it, in pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선명 효과가 가장자리에서 또렷하게 만드는 범위(픽셀)입니다."
+          }
+        }
+      }
+    },
+    "How far the blur softens, in pixels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흐림 효과가 부드럽게 퍼지는 거리(픽셀)입니다."
+          }
+        }
+      }
+    },
     "How fast Reconstruct, Twirl, Pucker and Bloat work while the brush is held still" : {
       "localizations" : {
         "ko" : {

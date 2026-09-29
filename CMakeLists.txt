@@ -47,6 +47,9 @@ if(MSVC)
     # The sources are UTF-8. Without this, MSVC reads them in the system code page (949 on Korean Windows) and
     # mangles the non-ASCII characters in comments (warning C4819).
     target_compile_options(compositor_pixels PRIVATE /utf-8)
+    # SmearPixels.c counts dabs with C11 <stdatomic.h>, which MSVC only compiles with this switch (VS 2022 17.5+).
+    # Still labeled experimental by Microsoft; see docs/multiplatform/inventory.md.
+    target_compile_options(compositor_pixels PRIVATE /experimental:c11atomics)
 endif()
 
 if(COMPOSITOR_BUILD_TESTS)

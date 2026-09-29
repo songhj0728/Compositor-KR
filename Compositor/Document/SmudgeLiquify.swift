@@ -41,6 +41,8 @@ final class WarpStroke {
     let diameter: CGFloat
     let hardness: CGFloat
     let strength: CGFloat
+    /// Blur: how far one stroke across a spot softens it, in canvas pixels, whatever the brush's size.
+    let blurRadius: CGFloat
     let width: Int
     let height: Int
     /// Where the working copy sits on the canvas: across it, or, in the layer's own grid, where the layer is.
@@ -77,6 +79,7 @@ final class WarpStroke {
         diameter = max(2, settings.diameter)
         hardness = min(0.98, max(0, settings.hardness))
         strength = min(1, max(0.01, settings.opacity))
+        blurRadius = min(50, max(0.5, settings.blurRadius))
         // Blur works in the layer's grid up to a budget of several canvases; a huge layer's is the canvas's instead.
         let budget = min(DocumentLimits.maxSurfacePixels, max(16_000_000, 4 * Int(canvas.width) * Int(canvas.height)))
         inLayerGrid = blurs && image.width * image.height <= budget
@@ -127,7 +130,10 @@ final class WarpStroke {
             return
         }
         let distance = hypot(point.x - from.x, point.y - from.y)
-        let spacing = max(1, diameter * (blurs ? 0.1 : 0.08))
+        // Smudge drags the pixels one dab's spacing at a time and mixes them with what's there: spaced widely, each step
+        // left a faint copy of what it dragged, echoes along the stroke. A pixel apart (a little more for a huge brush)
+        // the steps run together into one smear, as Photoshop's does.
+        let spacing = max(1, diameter * (blurs ? 0.1 : 0.005))
         guard distance >= spacing else { return }
         let steps = Int((distance / spacing).rounded(.up))
         for step in 1...steps {
@@ -147,12 +153,13 @@ final class WarpStroke {
         }
     }
 
-    /// One Blur dab: a pass or two of diffusion for small brushes, up to six for big ones, so a brush's softening
-    /// keeps up with its size (in the working copy's pixels).
+    /// One Blur dab. Dabs fall a tenth of the brush apart, so about ten cross each spot a stroke passes over; each
+    /// spreads by the Radius over √10, so together, at full strength, the stroke softens by the Radius. In the working
+    /// copy's pixels.
     private func blur(at center: CGPoint) {
-        let point = center.applying(toGrid), gridDiameter = diameter * gridScale
-        let passes = Int(min(6, max(1, (gridDiameter / 40).rounded())))
-        smear_blur_dab(pixels, width, height, context.bytesPerRow, point.x, point.y, gridDiameter / 2, hardness, strength, Int32(passes))
+        let point = center.applying(toGrid)
+        smear_blur_dab(pixels, width, height, context.bytesPerRow, point.x, point.y, diameter * gridScale / 2, hardness, strength,
+                       blurRadius * gridScale / CGFloat(10).squareRoot())
     }
 
     private func pickUp(at center: CGPoint) {
@@ -186,10 +193,13 @@ final class WarpStroke {
                 let p = (y * width + x) * 4, c = ((dy + r) * side + dx + r) * 4
                 for k in 0..<4 {
                     let under = Float(pixels[p + k])
-                    let painted = under + (carried[c + k] - under) * w
+                    // What was under the brush at the last dab, laid down here at the smudge's strength, as Photoshop
+                    // does: all of it drags the pixels along; less mixes them with what's here, softening the trail.
+                    let painted = under + (carried[c + k] - under) * w * keep
                     pixels[p + k] = UInt8(max(0, min(255, painted.rounded())))
-                    // The brush picks up some of what it just left, more the weaker the smudge.
-                    carried[c + k] = painted + (carried[c + k] - painted) * keep
+                    // The brush then carries what it just left, and nothing older: holding on to what it picked up
+                    // at the start stamped it again at every dab, a trail of ghost copies.
+                    carried[c + k] = painted
                 }
             }
         }
