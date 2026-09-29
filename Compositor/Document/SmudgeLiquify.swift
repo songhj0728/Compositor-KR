@@ -30,9 +30,10 @@ nonisolated enum BlurToolMode: String, CaseIterable, Sendable {
     }
 }
 
-/// A Smudge or Blur stroke in progress. It works on the active layer as the canvas shows it, at document size,
-/// changing it dab by dab; the canvas shows that working copy in place of the layer. When the stroke ends, the result
-/// is painted into the layer's own pixels along the stroke's path (see `EditorSession.finishWarp`).
+/// A Smudge or Blur stroke in progress. Smudge works on the active layer as the canvas shows it, at document size;
+/// Blur on the layer's own pixels, at their own resolution, so a scaled-down photo keeps its detail. It changes that
+/// working copy dab by dab, and the canvas shows it in place of the layer. When the stroke ends, the result is painted
+/// into the layer's own pixels along the stroke's path (see `EditorSession.finishWarp`).
 final class WarpStroke {
     let layer: ImageLayer
     /// Blur rather than Smudge: each dab diffuses what's under it (see `smear_blur_dab`), where it is.
@@ -42,6 +43,13 @@ final class WarpStroke {
     let strength: CGFloat
     let width: Int
     let height: Int
+    /// Where the working copy sits on the canvas: across it, or, in the layer's own grid, where the layer is.
+    let placement: LayerTransform
+    /// The working copy is the layer's own pixels (Blur on a layer small enough), rather than the canvas's.
+    let inLayerGrid: Bool
+    /// Document points into the working copy's pixels, and how many of them a document pixel spans.
+    private let toGrid: CGAffineTransform
+    private let gridScale: CGFloat
     let context: CGContext
     private let pixels: UnsafeMutablePointer<UInt8>
     /// Every dab's center, for painting the result into the layer.
@@ -69,9 +77,25 @@ final class WarpStroke {
         diameter = max(2, settings.diameter)
         hardness = min(0.98, max(0, settings.hardness))
         strength = min(1, max(0.01, settings.opacity))
-        width = Int(canvas.width); height = Int(canvas.height)
-        context = try BrushRaster.context(width: width, height: height, mask: false)
-        LayerRenderer.draw(image, transform: transform, center: transform.center, in: context)
+        // Blur works in the layer's grid up to a budget of several canvases; a huge layer's is the canvas's instead.
+        let budget = min(DocumentLimits.maxSurfacePixels, max(16_000_000, 4 * Int(canvas.width) * Int(canvas.height)))
+        inLayerGrid = blurs && image.width * image.height <= budget
+        if inLayerGrid {
+            width = image.width; height = image.height
+            placement = transform
+            let mapping = BrushRaster.pixelToDocument(transform, width: width, height: height)
+            toGrid = mapping.inverted()
+            gridScale = 1 / max(1e-6, abs(mapping.a * mapping.d - mapping.b * mapping.c).squareRoot())
+            context = try BrushRaster.context(width: width, height: height, mask: false)
+            BrushRaster.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height), mask: false, context: context)
+        } else {
+            width = Int(canvas.width); height = Int(canvas.height)
+            placement = LayerTransform(origin: .zero, size: canvas)
+            toGrid = .identity
+            gridScale = 1
+            context = try BrushRaster.context(width: width, height: height, mask: false)
+            LayerRenderer.draw(image, transform: transform, center: transform.center, in: context)
+        }
         guard let data = context.data else { throw ExportError.render }
         // Top-left rows: a document point's row is its y.
         pixels = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
@@ -124,10 +148,11 @@ final class WarpStroke {
     }
 
     /// One Blur dab: a pass or two of diffusion for small brushes, up to six for big ones, so a brush's softening
-    /// keeps up with its size.
+    /// keeps up with its size (in the working copy's pixels).
     private func blur(at center: CGPoint) {
-        let passes = Int(min(6, max(1, (diameter / 40).rounded())))
-        smear_blur_dab(pixels, width, height, context.bytesPerRow, center.x, center.y, diameter / 2, hardness, strength, Int32(passes))
+        let point = center.applying(toGrid), gridDiameter = diameter * gridScale
+        let passes = Int(min(6, max(1, (gridDiameter / 40).rounded())))
+        smear_blur_dab(pixels, width, height, context.bytesPerRow, point.x, point.y, gridDiameter / 2, hardness, strength, Int32(passes))
     }
 
     private func pickUp(at center: CGPoint) {
@@ -174,7 +199,7 @@ final class WarpStroke {
 extension EditorSession {
     func beginWarp(at point: CGPoint) {
         guard canPaint, !isMaskSelected, let layer = activeLayer, let image = layer.asset?.image, let document else {
-            if isMaskSelected { brushError = "Smudge works on a layer's pixels, not its mask." }
+            brushError = isMaskSelected ? "Smudge works on a layer's pixels, not its mask." : paintRefusal
             return
         }
         finishOpacityEdit()
@@ -203,7 +228,9 @@ extension EditorSession {
             settings.hardness = 1
             settings.opacity = 1
             let stroke = try makeRasterEdit(for: current, settings: settings)
-            stroke.clone = (result, .zero)
+            // In the layer's grid the result sits over the layer's own pixels; otherwise across the canvas.
+            stroke.clone = warp.inLayerGrid ? (result, stroke.sourceRect, true)
+                : (result, CGRect(x: 0, y: 0, width: result.width, height: result.height), false)
             stroke.replacesWithClone = true
             stroke.editName = (warp.blurs ? BlurToolMode.blur : .smudge).rawValue
             for point in warp.points { try stroke.append(point) }

@@ -24,6 +24,14 @@ struct SmearToolTests {
         return Int(try #require(context.data).assumingMemoryBound(to: UInt8.self)[y * context.bytesPerRow + x * 4])
     }
 
+    /// The Blur (or Sharpen) sample a stroke on the layer starts with, and a reader of it at the layer's pixels.
+    private func sample(_ session: EditorSession, sharpen: Bool = false) throws -> (Int) throws -> Int {
+        let layer = try #require(session.activeLayer)
+        let stroke = try session.makeRasterEdit(for: layer)
+        let sample = try #require(session.blurSample(for: stroke, sharpen: sharpen))
+        return { x in try self.gray(sample.image, x: x - Int(sample.placed.minX), y: 50 - Int(sample.placed.minY)) }
+    }
+
     @Test func modesAreBlurSharpenAndSmudge() {
         #expect(BlurToolMode.allCases == [.blur, .sharpen, .smudge])
         #expect(EditorSession().blurMode == .blur)
@@ -34,25 +42,23 @@ struct SmearToolTests {
     @Test func blurSoftensTheEdgeWithoutPaintingTheAverageColor() throws {
         let s = try session(left: 0, right: 1)
         s.brushSettings.diameter = 200
-        let document = try #require(s.document)
-        let soft = try #require(s.blurSample(document))
-        #expect(try gray(soft, x: 85) < 5)
-        #expect(try gray(soft, x: 115) > 250)
-        let edge = try gray(soft, x: 99)
+        let soft = try sample(s)
+        #expect(try soft(85) < 5)
+        #expect(try soft(115) > 250)
+        let edge = try soft(99)
         #expect(edge > 60 && edge < 200)
         // The canvas's own border doesn't soften toward transparent.
-        #expect(try gray(soft, x: 199) > 250)
+        #expect(try soft(199) > 250)
     }
 
     @Test func sharpenDeepensTheEdgeOnBothSides() throws {
         let s = try session(left: 0.4, right: 0.6)
         s.brushSettings.diameter = 100
-        let document = try #require(s.document)
-        let crisp = try #require(s.blurSample(document, sharpen: true))
-        #expect(try gray(crisp, x: 99) < 100)
-        #expect(try gray(crisp, x: 100) > 155)
+        let crisp = try sample(s, sharpen: true)
+        #expect(try crisp(99) < 100)
+        #expect(try crisp(100) > 155)
         // Away from the edge, flat gray stays as it is.
-        #expect(abs(try gray(crisp, x: 30) - 102) <= 2)
+        #expect(abs(try crisp(30) - 102) <= 2)
     }
 
     @Test func sharpenStrokesPaintAndCommitOneUndoStep() throws {

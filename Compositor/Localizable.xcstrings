@@ -359,7 +359,14 @@
       }
     },
     "A subdivision every %@ pixels." : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@픽셀마다 분할선이 그려집니다."
+          }
+        }
+      }
     },
     "A2" : {
       "extractionState" : "stale",
@@ -454,12 +461,33 @@
         }
       }
     },
+    "Add layer mask (Option-click for a black mask)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 마스크 추가 (Option 키를 누른 채 클릭하면 검은색 마스크)"
+          }
+        }
+      }
+    },
     "Add layer mask (the selection becomes black)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "레이어 마스크 추가 (선택 영역이 검은색이 됨)"
+          }
+        }
+      }
+    },
+    "Add layer mask revealing the selection (Option-click to hide it)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택 영역을 드러내는 레이어 마스크 추가 (Option 키를 누른 채 클릭하면 선택 영역을 가림)"
           }
         }
       }
@@ -1131,7 +1159,14 @@
       }
     },
     "Choose a custom grid color" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용자 지정 격자 색상 선택"
+          }
+        }
+      }
     },
     "Choose the %@ color" : {
       "localizations" : {
@@ -1274,7 +1309,14 @@
       }
     },
     "Click the image to pick the color to select." : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지를 클릭하여 선택할 색상을 고릅니다."
+          }
+        }
+      }
     },
     "Click the image to widen this range to include that color" : {
       "localizations" : {
@@ -1410,7 +1452,14 @@
       }
     },
     "Color for the added canvas" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "늘어난 캔버스 영역의 색상"
+          }
+        }
+      }
     },
     "Color Grading" : {
       "localizations" : {
@@ -1473,7 +1522,14 @@
       }
     },
     "Color that fills transparent areas" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "투명한 영역을 채울 색상"
+          }
+        }
+      }
     },
     "Color the result while keeping its tones, for a sepia or a cyanotype" : {
       "localizations" : {
@@ -2226,7 +2282,14 @@
       }
     },
     "Drag or scroll to move around; double-click switches between Fit and 100%" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "드래그하거나 스크롤하여 이동합니다. 더블 클릭하면 맞춤과 100% 사이를 전환합니다."
+          }
+        }
+      }
     },
     "Drag to resize the panel" : {
       "localizations" : {
@@ -2872,7 +2935,14 @@
       }
     },
     "Fuzziness" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "허용량"
+          }
+        }
+      }
     },
     "Gaussian" : {
       "localizations" : {
@@ -3035,7 +3105,14 @@
       }
     },
     "Gridline every" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "격자선 간격"
+          }
+        }
+      }
     },
     "Group Selected Layers" : {
       "localizations" : {
@@ -3374,7 +3451,14 @@
       }
     },
     "How far a color may be from the picked ones and still be selected" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "고른 색상과 얼마나 달라도 선택에 포함할지 정합니다."
+          }
+        }
+      }
     },
     "How far each color channel (0–255) can differ from the clicked color and still be selected" : {
       "localizations" : {
@@ -4071,6 +4155,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "가로세로 비율 잠금"
+          }
+        }
+      }
+    },
+    "Lock aspect ratio. Hold Shift while dragging a handle to turn it the other way." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가로세로 비율을 잠급니다. 핸들을 드래그하는 동안 Shift 키를 누르고 있으면 반대로 동작합니다."
           }
         }
       }
@@ -5033,7 +5127,14 @@
       }
     },
     "pixels" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "픽셀"
+          }
+        }
+      }
     },
     "Pixels" : {
       "localizations" : {
@@ -6092,9 +6193,27 @@
       }
     },
     "Select everything except those colors, such as all but a green screen" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "그린 스크린을 뺀 나머지처럼, 해당 색상을 제외한 모든 영역을 선택합니다."
+          }
+        }
+      }
+    },
+    "Select layers by clicking the canvas. Hold Command to turn it the other way while you click." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "캔버스를 클릭하여 레이어를 선택합니다. 클릭할 때 Command 키를 누르고 있으면 반대로 동작합니다."
+          }
+        }
+      }
     },
     "Select layers by clicking the canvas. When off, hold Command to select a layer." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -6215,7 +6334,14 @@
       }
     },
     "Shift-click adds a color, Option-click takes one away." : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Shift 키를 누른 채 클릭하면 색상을 추가하고, Option 키를 누른 채 클릭하면 색상을 뺍니다."
+          }
+        }
+      }
     },
     "Shift-U (or Tab) steps through Rectangle, Ellipse and Line" : {
       "localizations" : {
@@ -6318,7 +6444,14 @@
       }
     },
     "Show the whole image (⌘0)" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이미지 전체 보기 (⌘0)"
+          }
+        }
+      }
     },
     "Show the whole layer (⌘0)" : {
       "localizations" : {
@@ -6585,7 +6718,14 @@
       }
     },
     "Subdivisions" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "분할 수"
+          }
+        }
+      }
     },
     "Subject" : {
       "localizations" : {
@@ -6772,7 +6912,14 @@
       }
     },
     "The height of each line of characters" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "문자 한 줄의 높이"
+          }
+        }
+      }
     },
     "The shape was saved as pixels." : {
       "localizations" : {
@@ -7115,6 +7262,16 @@
         }
       }
     },
+    "Ungroup Layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이어 그룹 해제"
+          }
+        }
+      }
+    },
     "Uniform" : {
       "localizations" : {
         "ko" : {
@@ -7167,7 +7324,14 @@
       }
     },
     "Updating…" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "업데이트 중…"
+          }
+        }
+      }
     },
     "Upright" : {
       "localizations" : {
@@ -7231,6 +7395,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Use gridlines every %1$lld–%2$@ pixels and %3$lld–%4$lld subdivisions, no more than the pixels between gridlines."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "격자선 간격은 %lld~%@픽셀, 분할 수는 %lld~%lld로 하되 격자선 사이의 픽셀 수를 넘지 않게 설정하십시오."
           }
         }
       }
@@ -7466,7 +7636,14 @@
       }
     },
     "Zoom in (⌘+), now %@. At 100%% each pixel of the JPEG is one pixel of the screen, as on the canvas" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "확대 (⌘+), 현재 %@. 100%%에서는 캔버스처럼 JPEG의 한 픽셀이 화면의 한 픽셀로 표시됩니다."
+          }
+        }
+      }
     },
     "Zoom Out" : {
       "localizations" : {
@@ -7489,7 +7666,14 @@
       }
     },
     "Zoom out (⌘−), now %@" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "축소 (⌘−), 현재 %@"
+          }
+        }
+      }
     },
     "Zoom percentage" : {
       "localizations" : {
