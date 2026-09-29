@@ -146,7 +146,8 @@ Result: model files that import only Foundation/CoreGraphics — checkable with 
 - **Swift Core:** move them into a local Swift package (`Core/`) the Xcode app depends on; Windows builds it with
   SwiftPM. **C++ Core:** port these files; the macOS app calls them through C++ interop (see the spike for what that
   costs).
-- Only after this step: the WinUI 3 window test against the real Core boundary.
+- The WinUI 3 window test does not wait for this plan: it runs against the spike's C boundary first. The final UI
+  choice waits for the Core boundary (steps 0–5).
 
 ### Not in this plan
 Tools and the editor session (`EditorSession`, brush/type/shape tools' interaction), the canvas and GPU rendering,
