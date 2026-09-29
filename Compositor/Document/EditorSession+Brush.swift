@@ -76,8 +76,9 @@ extension EditorSession {
             }
             // Blur and Sharpen paint a softened or crisped copy of the layer, in place, through the brush tip.
             if tool == .blur {
-                guard let sample = blurSample(for: stroke, sharpen: blurMode == .sharpen) else { return }
-                stroke.clone = sample
+                guard let blur = blurSample(for: stroke, sharpen: blurMode == .sharpen) else { return }
+                stroke.clone = blur.sample
+                stroke.cloneRender = blur.render
             }
             stroke.isBlur = tool == .blur
             brushStroke = stroke
