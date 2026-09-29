@@ -2,5 +2,14 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>Compositor-KR</title>
+    <item>
+      <title>Version 1.4.1</title>
+      <pubDate>Tue, 29 Sep 2026 10:51:37 +0000</pubDate>
+      <sparkle:version>36</sparkle:version>
+      <sparkle:shortVersionString>1.4.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <link>https://github.com/songhj0728/Compositor-KR/releases/tag/v1.4.1</link>
+      <enclosure url="https://github.com/songhj0728/Compositor-KR/releases/download/v1.4.1/Compositor-KR.dmg" sparkle:edSignature="cmv5YN+i6OgCjRe9/mMMesXgoQ9KKgihWHWwuZhNyri3rElDDDQvfYQ95IOGU86ujy3YmjUh4GePxQEuGYMvAg==" length="9421994" type="application/octet-stream"/>
+    </item>
   </channel>
 </rss>
