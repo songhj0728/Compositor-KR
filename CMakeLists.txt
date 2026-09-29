@@ -43,9 +43,18 @@ if(NOT WIN32)
     endif()
 endif()
 
+if(MSVC)
+    # The sources are UTF-8. Without this, MSVC reads them in the system code page (949 on Korean Windows) and
+    # mangles the non-ASCII characters in comments (warning C4819).
+    target_compile_options(compositor_pixels PRIVATE /utf-8)
+endif()
+
 if(COMPOSITOR_BUILD_TESTS)
     enable_testing()
     add_executable(compositor_pixel_tests Tests/Pixels/PixelTests.c)
     target_link_libraries(compositor_pixel_tests PRIVATE compositor_pixels)
+    if(MSVC)
+        target_compile_options(compositor_pixel_tests PRIVATE /utf-8)
+    endif()
     add_test(NAME pixels COMMAND compositor_pixel_tests)
 endif()
