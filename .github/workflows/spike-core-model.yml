@@ -57,21 +57,26 @@ jobs:
           ctest --test-dir ../../build/spike --build-config Release --output-on-failure
 
       # C#, as a WinUI 3 app would call the Cores. csc.exe ships with Windows (.NET Framework); nothing to install.
+      # Failures are reported as annotations (::error::), which show without signing in to read the log.
       - name: C# host against both Cores
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
           $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
           $bin = (Resolve-Path ../../build/spike/bin/Release).Path
-          Get-ChildItem $bin -Filter *.dll | ForEach-Object Name
+          $dlls = (Get-ChildItem $bin -Filter *.dll | ForEach-Object Name) -join ', '
+          Write-Output "::notice title=C# host::DLLs next to the host: $dlls"
+          $failed = $false
           foreach ($core in 'swift', 'cpp') {
             $define = if ($core -eq 'cpp') { '-define:CPP_CORE' } else { '-define:SWIFT_CORE' }
             $exe = Join-Path $bin "host_cs_$core.exe"
-            & $csc -nologo -platform:x64 -codepage:65001 $define "-out:$exe" hosts/csharp/CompositorCore.cs hosts/csharp/HostTests.cs
-            if ($LASTEXITCODE) { throw "csc failed for $core ($LASTEXITCODE)" }
-            & $exe
-            if ($LASTEXITCODE) { throw "C# host on the $core Core exited with $LASTEXITCODE" }
+            $out = & $csc -nologo -platform:x64 -codepage:65001 $define "-out:$exe" hosts/csharp/CompositorCore.cs hosts/csharp/HostTests.cs 2>&1 | Out-String
+            if ($LASTEXITCODE) { Write-Output "::error title=csc ($core)::$($out -replace "`r?`n", '%0A')"; $failed = $true; continue }
+            $out = & $exe 2>&1 | Out-String
+            $code = $LASTEXITCODE
+            Write-Output $out
+            if ($code) { Write-Output "::error title=C# host on the $core Core (exit $code)::$($out -replace "`r?`n", '%0A')"; $failed = $true }
           }
+          if ($failed) { exit 1 }
 
       - name: Swift uses the C++ Core
         run: swift test --package-path cpp
