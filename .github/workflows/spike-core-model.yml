@@ -63,13 +63,15 @@ jobs:
         run: |
           $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
           $bin = (Resolve-Path ../../build/spike/bin/Release).Path
+          # Full Windows paths: csc 4.x misreads relative paths written with forward slashes.
+          $sources = 'CompositorCore.cs', 'HostTests.cs' | ForEach-Object { (Resolve-Path (Join-Path hosts (Join-Path csharp $_))).Path }
           $dlls = (Get-ChildItem $bin -Filter *.dll | ForEach-Object Name) -join ', '
           Write-Output "::notice title=C# host::DLLs next to the host: $dlls"
           $failed = $false
           foreach ($core in 'swift', 'cpp') {
             $define = if ($core -eq 'cpp') { '-define:CPP_CORE' } else { '-define:SWIFT_CORE' }
             $exe = Join-Path $bin "host_cs_$core.exe"
-            $out = & $csc -nologo -platform:x64 -codepage:65001 $define "-out:$exe" hosts/csharp/CompositorCore.cs hosts/csharp/HostTests.cs 2>&1 | Out-String
+            $out = & $csc -nologo -platform:x64 -codepage:65001 $define "-out:$exe" $sources 2>&1 | Out-String
             if ($LASTEXITCODE) { Write-Output "::error title=csc ($core)::$($out -replace "`r?`n", '%0A')"; $failed = $true; continue }
             $out = & $exe 2>&1 | Out-String
             $code = $LASTEXITCODE
