@@ -37,6 +37,12 @@ Portability notes for this code:
 - `long` is 32 bits on Windows. The C code uses it for pixel coordinates and in-window offsets; with
   `DocumentLimits.maxSide` at 30,000 the largest product (30,000²) still fits.
 - `M_PI` needs `_USE_MATH_DEFINES` under MSVC; `CMakeLists.txt` defines it.
+- `SmearPixels.c` (since 1.4.2) counts dabs with C11 `<stdatomic.h>`. MSVC compiles that only with
+  `/experimental:c11atomics` (VS 2022 17.5+), which `CMakeLists.txt` sets. Microsoft still labels it experimental;
+  if that becomes a problem, the alternative is an atomic helper next to `PixelParallel` (Interlocked on Windows) —
+  a small change to macOS code, so not done yet.
+- The sources contain UTF-8 comments; MSVC needs `/utf-8` or it reads them in the system code page (949 on Korean
+  Windows).
 
 ## Swift files with no Apple-only framework
 
