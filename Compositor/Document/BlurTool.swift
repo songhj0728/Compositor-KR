@@ -3,9 +3,8 @@ import CoreImage
 
 extension EditorSession {
     /// What a Blur or Sharpen stroke paints: the layer's own pixels (or, painting the mask, its mask), softened or
-    /// crisped a little by an amount that follows the brush size on the canvas, at the layer's own resolution. It is
-    /// taken when the stroke starts, so going over an area again in a new stroke works it further, as in Photoshop.
-    /// The amount stays small: a strong blur painted at full strength would lay the area's average color down like paint.
+    /// crisped by the Radius set in the options bar, measured on the canvas, at the layer's own resolution. It is taken
+    /// when the stroke starts, so going over an area again in a new stroke works it further, as in Photoshop.
     func blurSample(for stroke: BrushStroke, sharpen: Bool = false) -> (image: CGImage, placed: CGRect, inGrid: Bool)? {
         let layer = stroke.layer
         guard let image = stroke.isMask ? layer.mask?.asset.image : layer.asset?.image else { return nil }
@@ -13,8 +12,7 @@ extension EditorSession {
         let map = stroke.pixelToDocument
         let perPixel = max(1e-6, abs(map.a * map.d - map.b * map.c).squareRoot())
         let sidePixels = max(stroke.sourceRect.width, stroke.sourceRect.height)
-        let diameter = Double(brushSettings.diameter)
-        let sigma = min((sharpen ? min(3, max(1, diameter / 50)) : min(4, max(1, diameter / 40))) / perPixel, sidePixels / 2)
+        let sigma = min(Double(min(50, max(0.5, brushSettings.blurRadius))) / perPixel, sidePixels / 2)
         // Room for the blur to spread past the pixels' edges, as it does on the canvas.
         let margin = ceil(3 * sigma)
         let region = stroke.sourceRect.insetBy(dx: -margin, dy: -margin)
