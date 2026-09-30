@@ -1,5 +1,10 @@
 # Repository and verification evidence — 2026-09-30
 
+Second S1 follow-up 2026-10-01 (KST): TextAlignment is dependency-clean in `78cf0e9`;
+see [migration record](text-alignment-migration.md). Main still points to `0be4fe6`,
+not merged; its text-related delta was reviewed before this split. Mac tests/CI
+remain pending verification, while local boundary/source-parity/shared-C checks pass.
+
 Follow-up 2026-10-01 (KST): the first S1 FilterKind seam is implemented in
 `9bac5cf`, with a separate [migration record](filter-kind-migration.md). The ledger
 below describes the preceding sync; its no-migration statement is historical.

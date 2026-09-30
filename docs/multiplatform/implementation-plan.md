@@ -1,6 +1,6 @@
 # Implementation status and future review units
 
-**Current task: first S1 FilterKind split only; stop before the next type.** No Core language or
+**Current task: second S1 TextAlignment split only; stop before the next type.** No Core language or
 GPU backend is selected. The C++/D3D/WiX Wave 1 plan in `841d09c` is superseded as
 an execution plan and retained in Git history. Semantic constraints and future
 language-neutral order are in [Core contract](../core-api.md),
@@ -19,6 +19,9 @@ and [open questions](architecture-questions.md).
 - FilterKind's data declaration is dependency-clean in Document/FilterKind.swift;
   displayName is a Mac UI extension. Tests/boundary guards are added; full Mac
   verification is pending. See [S1 record](filter-kind-migration.md).
+- TextAlignment now follows the same split, retaining Codable alignment strings
+  and native text consumers. Its regression tests and standalone compilation are
+  also pending Mac CI evidence. See [second S1 record](text-alignment-migration.md).
 - Both model/WinUI experiments remain on spike/core-model. Do not merge or delete
   them as part of an inventory/contract task.
 
@@ -30,7 +33,7 @@ and [open questions](architecture-questions.md).
    fixtures: parsed `.comp` records/decoded images, history/save races, grouping,
    identity remaps, masks, text spans and color, plus stored-default/disabled styles
    and Layer Style preview/save/Cancel. Do not pretend all golden tests exist.
-3. Verify the first FilterKind seam's Mac CI before widening scope. Choose any next
+3. Verify both small seams' Mac CI before widening scope. Choose any next
    declaration/helper split separately; do not automatically advance S1.
 4. Prove image/path lifetime and equivalent bulk read semantics using actual model
    data before comparing implementation languages or publishing an ABI.
@@ -42,5 +45,5 @@ language-neutral enum split into a whole-app migration.
 
 Earlier local tests/CI additions were archived outside the repository and excluded
 from the earlier sync. They are not completed baseline stages. The subsequent
-FilterKind implementation and its documentation are separate commits; no other
-model is migrated. See [evidence ledger](repository-evidence.md).
+FilterKind and TextAlignment implementations each have separate documentation
+commits; no other model is migrated. See [evidence ledger](repository-evidence.md).

@@ -1,8 +1,9 @@
 # Migration dependency map — semantic boundaries first
 
-Stages below are future review units except the first FilterKind S1 slice,
-implemented 2026-10-01 (KST). It is dependency-clean; Mac build/test validation is
-pending. See [migration record](filter-kind-migration.md). No later slice is started.
+Stages below are future review units except the FilterKind and TextAlignment S1
+slices, implemented 2026-10-01 (KST). Both are dependency-clean; Mac build/test
+validation is pending. See the [first](filter-kind-migration.md) and
+[second](text-alignment-migration.md) records. No other slice is started.
 Based on main-sync merge `db268a2b`, containing main `ccf062ed` and its v12 data in
 [repository-evidence.md](repository-evidence.md). Neither language nor GPU is
 selected. Follow [core-api.md](../core-api.md) and the corrected
@@ -70,7 +71,7 @@ of this documentation task.
 | Stage | Files/types involved | Prerequisite | Expected Mac impact | Windows benefit | Required evidence/tests | Rollback point |
 |---|---|---|---|---|---|---|
 | S0 | ProjectStore, HistoryTests, GroupingSelectionTests, LayerStyleTests, existing C references; sync ledger | Pin synchronized db268a2b/main ccf062ed | No migration; characterize imported reference results | Comparable semantics, no toy-model assumptions | `.comp` v1–12 records/pixels, save11/12 presence gate, no-op/undo/save-preview races, style duplicate/paste/group coverage | Fixtures only; production untouched |
-| S1 | FilterKind data in Document/FilterKind.swift and display extension in UI: dependency-clean; other enums planned | S0 tests for each chosen slice; FilterKind Mac evidence still pending | Same module/raw values/callers; no renderer edit | Data declaration has no Apple dependencies | FilterKindTests, standalone typecheck and lexical guard in verify.yml; existing filter/adjustment + full Mac suite | Rejoin one enum and helper in Filters.swift |
+| S1 | FilterKind/TextAlignment data in Document and display extensions in UI: dependency-clean; other enums planned | S0 tests for each chosen slice; Mac evidence still pending for both | Same module/raw values/callers; native alignment mapping unchanged | Two data declarations without Apple dependencies | FilterKindTests/TextAlignmentTests, separate standalone typechecks and lexical guard; existing filter/text/PSD + full Mac suite | Rejoin each enum/helper in Filters.swift or TypeTool.swift |
 | S2 | CoreScalar/Point/Size/Rect/Transform candidates; LayerTransform numerical functions; UUID adapter | Geometry/ID contract and S0 | Conversions at existing call sites, preserve degree/rounding/flip semantics | No CoreGraphics coordinates or spike UInt64 assumption | Transform/MaskTransform/Distort/Crop tests; UUID/filename and typed-number fixtures | Keep old stored fields until each adapter proves parity |
 | S3 | A/B settings; nine effects, Contour/Pattern/Bevel enums and Fill Opacity; shape/text styles; Levels/Curves | S1; S2 where geometry required; style enum dependencies before records | Split rendering methods without changing values/defaults/optional presence | Portable complete v12 settings | Existing adjustment/text/shape tests + LayerStyleTests/PSDExportTests; nil/explicit-default and disabled effects | One type family's facade routes back to original implementation |
 | S4 | ImageRef/CorePath adapters; ImportedImage/RasterSnapshot/BrushPatch remain Mac; LayerMask and selection coverage | Ownership/thread rules; S2 geometry | Adapter adds lifetime boundary; pixel/raster algorithms stay | Images/paths can cross platform without Apple objects | TiledLayer/RasterSnapshot/History, mask/feather/selection/holes tests; retained resource counts and close-with-snapshot | Existing asset/path fields retained behind facade; no storage replacement required |
@@ -98,5 +99,13 @@ and full Mac tests are delegated to verify.yml, whose result is not yet verified
 Main advanced to `0be4fe6` after the last sync: text family helpers, keyboard input,
 tests and packaging. The inspected delta does not change FilterKind or its callers'
 filter behavior; no merge was performed. Review it before a later text-related
-slice. TextAlignment, ColorRange and LayerEffectKind are candidate next small seams,
-each requiring its own persistence/ordering/helper audit. Stop after FilterKind.
+slice. The TextAlignment delta was reviewed again before the second split; its
+declaration, alignment persistence and mappings are unaffected by those main changes.
+No main merge occurred.
+
+**TextAlignment split is implemented** in `78cf0e9`, preserving Codable wire strings
+Left/Center/Right and existing paragraph/PSD consumers. Added enum/style JSON and
+native paragraph mapping tests; runtime Mac results are pending. ColorRange and
+LayerEffectKind remain unstarted. Stop after TextAlignment. A product API skeleton
+needs separate scope and ownership/snapshot/threading/error evidence; these two
+small declaration splits alone do not validate those contracts.
