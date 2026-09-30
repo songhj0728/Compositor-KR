@@ -14,7 +14,6 @@ struct ContentView: View {
     @State private var colorRangePanel = FloatingPanelController(name: "colorRangePanel")
     @State private var filterPanel = FloatingPanelController(name: "filterPanel")
     @State private var liquifyPanel = FloatingPanelController(name: "liquifyPanel")
-    @State private var effectsPanel = FloatingPanelController(name: "effectsPanel")
     @State private var isDropTargeted = false
     /// The window's width, so the tab strip can use the toolbar's free space.
     @State private var windowWidth: CGFloat = 1180
@@ -224,20 +223,6 @@ struct ContentView: View {
             else {
                 adjustmentPanel.onClose = { session.cancelHueSaturation() }
                 adjustmentPanel.show(title: "Hue/Saturation", content: HueSaturationSheet(session: session))
-            }
-        }
-        .onChange(of: session.effectsEditing) { _, selection in
-            if let selection {
-                effectsPanel.onClose = { session.finishEffectsEditing(commit: false) }
-                effectsPanel.show(title: selection.kind.rawValue, content: EffectsSheet(session: session, kind: selection.kind))
-            } else { effectsPanel.close() }
-        }
-        .onChange(of: session.document?.layers) { _, layers in
-            if let editing = session.effectsEditing,
-               layers?.first(where: { $0.id == editing.layerID })?.effects?.contains(editing.kind) != true {
-                if let picker = session.colorPicker, case .effect = picker.target { session.closeColorPicker(commit: false) }
-                session.effectsEditing = nil
-                session.effectsEditingOriginal = nil
             }
         }
         .modifier(ToolPanels(session: session))
@@ -478,8 +463,22 @@ extension View {
 private struct ToolPanels: ViewModifier {
     @Bindable var session: EditorSession
     @State private var shapeSizePanel = FloatingPanelController(name: "shapeSizePanel")
+    @State private var layerStylePanel = FloatingPanelController(name: "layerStylePanel")
     func body(content: Content) -> some View {
         content
+            .onChange(of: session.layerStyle?.layerID) { _, id in
+                if id != nil {
+                    layerStylePanel.onClose = { session.finishLayerStyle(commit: false) }
+                    layerStylePanel.show(title: "Layer Style", content: LayerStyleSheet(session: session))
+                } else { layerStylePanel.close() }
+            }
+            .onChange(of: session.document?.layers.contains { $0.id == session.layerStyle?.layerID } == true) { _, present in
+                // The layer went (deleted, or undone away): there's nothing left to style.
+                if !present, session.layerStyle != nil {
+                    if let picker = session.colorPicker, case .effect = picker.target { session.closeColorPicker(commit: false) }
+                    session.layerStyle = nil
+                }
+            }
             .onChange(of: session.shapeSizeRequest) { _, request in
                 if let request {
                     shapeSizePanel.onClose = { session.cancelShapeSize() }

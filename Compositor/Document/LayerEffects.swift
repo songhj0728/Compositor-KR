@@ -3,7 +3,80 @@ import CoreGraphics
 import CoreImage
 import SwiftUI
 
-/// A line drawn around what the layer shows, outside its edge or inside it.
+/// Photoshop's contours: the curve an effect's falloff (a glow, a shadow, a satin, a bevel's slope) is bent through,
+/// from 0 (far edge) to 1 (full).
+nonisolated enum EffectContour: String, Codable, CaseIterable, Sendable {
+    case linear = "Linear", cone = "Cone", coneInverted = "Cone - Inverted", gaussian = "Gaussian"
+    case halfRound = "Half Round", ring = "Ring", ringDouble = "Ring - Double", rollingSlope = "Rolling Slope"
+    case roundedSteps = "Rounded Steps", sawtooth = "Sawtooth", cove = "Cove - Deep"
+    var displayName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+    func value(_ x: Float) -> Float {
+        let x = min(1, max(0, x))
+        switch self {
+        case .linear: return x
+        case .cone: return 1 - abs(2 * x - 1)
+        case .coneInverted: return abs(2 * x - 1)
+        case .gaussian: return x * x * (3 - 2 * x)
+        case .halfRound: return (1 - (1 - x) * (1 - x)).squareRoot()
+        case .ring: return 0.5 - 0.5 * cos(2 * .pi * x)
+        case .ringDouble: return 0.5 - 0.5 * cos(4 * .pi * x)
+        case .rollingSlope: return min(1, max(0, x + 0.12 * sin(4 * .pi * x)))
+        case .roundedSteps:
+            let steps: Float = 4, scaled = x * steps, step = min(steps - 1, scaled.rounded(.down)), t = scaled - step
+            return min(1, (step + t * t * (3 - 2 * t)) / (steps - 1 + 1))
+        case .sawtooth: return x >= 1 ? 1 : (x * 2).truncatingRemainder(dividingBy: 1)
+        case .cove: return x * x * x
+        }
+    }
+}
+
+/// The tiles a Pattern Overlay or a bevel's Texture repeats: drawn in the effect's two colors (or as heights), at any
+/// scale, so they stay sharp.
+nonisolated enum EffectPattern: String, Codable, CaseIterable, Sendable {
+    case checker = "Checkerboard", stripes = "Stripes", diagonal = "Diagonal Stripes", dots = "Dots", grid = "Grid"
+    case bricks = "Bricks", noise = "Noise", waves = "Waves"
+    var displayName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+    /// 0 (paper) to 1 (ink) at layer pixel (`x`, `y`); `scale` is 1 at 100%.
+    func value(x: Float, y: Float, scale: Float) -> Float {
+        let cell = 8 * max(0.01, scale)
+        let u = x / cell, v = y / cell
+        func fraction(_ value: Float) -> Float { value - value.rounded(.down) }
+        switch self {
+        case .checker:
+            return (Int(u.rounded(.down)) + Int(v.rounded(.down))) & 1 == 0 ? 1 : 0
+        case .stripes:
+            return fraction(v / 2) < 0.5 ? 1 : 0
+        case .diagonal:
+            return fraction((u + v) / 2) < 0.5 ? 1 : 0
+        case .dots:
+            let dx = fraction(u / 2) - 0.5, dy = fraction(v / 2) - 0.5
+            let distance = (dx * dx + dy * dy).squareRoot() * 2 * cell
+            return min(1, max(0, 0.35 * 2 * cell - distance + 0.5))
+        case .grid:
+            let line = max(1, cell / 8)
+            let px = fraction(u / 2) * 2 * cell, py = fraction(v / 2) * 2 * cell
+            return px < line || py < line ? 1 : 0
+        case .bricks:
+            let row = (v / 1).rounded(.down)
+            let shifted = u / 2 + (Int(row) & 1 == 0 ? 0 : 0.5)
+            let px = fraction(shifted) * 2 * cell, py = fraction(v) * cell
+            let line = max(1, cell / 8)
+            return px < line || py < line ? 0 : 1
+        case .noise:
+            // Value noise on a cell grid, the same wherever it's drawn.
+            let cellX = Int32(truncatingIfNeeded: Int((x / max(0.25, scale)).rounded(.down)))
+            let cellY = Int32(truncatingIfNeeded: Int((y / max(0.25, scale)).rounded(.down)))
+            var hash = UInt32(bitPattern: cellX) &* 374_761_393 &+ UInt32(bitPattern: cellY) &* 668_265_263
+            hash = (hash ^ (hash >> 13)) &* 1_274_126_177
+            hash ^= hash >> 16
+            return Float(hash & 0xFFFF) / 65535
+        case .waves:
+            return 0.5 + 0.5 * sin(2 * .pi * (v / 2 + 0.25 * sin(2 * .pi * u / 4)))
+        }
+    }
+}
+
+/// A line drawn around what the layer shows, outside its edge, inside it or centered on it.
 nonisolated struct StrokeEffect: Codable, Equatable, Sendable {
     /// Supported document-pixel width; preview work is bounded independently of this value.
     static let maxSize: CGFloat = 500
@@ -15,6 +88,9 @@ nonisolated struct StrokeEffect: Codable, Equatable, Sendable {
     var blue: CGFloat = 0
     var opacity: Double = 1
     var inside = false
+    /// Straddling the edge, half in and half out. Missing means as `inside` says.
+    var centered: Bool? = nil
+    var blendMode: LayerBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         size.isFinite && (0...StrokeEffect.maxSize).contains(size) && opacity.isFinite && (0...1).contains(opacity)
@@ -35,6 +111,10 @@ nonisolated struct ShadowEffect: Codable, Equatable, Sendable {
     var green: CGFloat = 0
     var blue: CGFloat = 0
     var opacity: Double = 0.5
+    /// How much of the size is solid before it softens, 0–100 (Photoshop's Spread).
+    var spread: CGFloat? = nil
+    var contour: EffectContour? = nil
+    var blendMode: LayerBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     /// Where the shadow sits, in layer pixels (y grows downward, as the layer's own pixels do).
     var offset: CGSize {
@@ -47,6 +127,7 @@ nonisolated struct ShadowEffect: Codable, Equatable, Sendable {
             && (0...5000).contains(distance) && (0...500).contains(blur)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
+            && spread.map { $0.isFinite && (0...100).contains($0) } ?? true
     }
 }
 
@@ -58,6 +139,7 @@ nonisolated struct ColorOverlayEffect: Codable, Equatable, Sendable {
     var green: CGFloat = 0
     var blue: CGFloat = 0
     var opacity: Double = 1
+    var blendMode: LayerBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         opacity.isFinite && (0...1).contains(opacity) && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
@@ -75,6 +157,10 @@ nonisolated struct InnerShadowEffect: Codable, Equatable, Sendable {
     var green: CGFloat = 0
     var blue: CGFloat = 0
     var opacity: Double = 0.5
+    /// How much of the size is solid before it softens, 0–100 (Photoshop's Choke).
+    var choke: CGFloat? = nil
+    var contour: EffectContour? = nil
+    var blendMode: LayerBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     /// Where the shadow falls, in layer pixels (y grows downward).
     var offset: CGSize {
@@ -86,6 +172,7 @@ nonisolated struct InnerShadowEffect: Codable, Equatable, Sendable {
             && (0...5000).contains(distance) && (0...500).contains(blur)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
+            && choke.map { $0.isFinite && (0...100).contains($0) } ?? true
     }
 }
 
@@ -98,15 +185,19 @@ nonisolated struct OuterGlowEffect: Codable, Equatable, Sendable {
     var green: CGFloat = 1
     var blue: CGFloat = 1
     var opacity: Double = 0.75
+    var spread: CGFloat? = nil
+    var contour: EffectContour? = nil
+    var blendMode: LayerBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         size.isFinite && (0...500).contains(size)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
+            && spread.map { $0.isFinite && (0...100).contains($0) } ?? true
     }
 }
 
-/// A glow cast inside the layer's own edges, emanating inward from its boundary.
+/// A glow cast inside the layer's own edges, emanating inward from its boundary (or outward from its middle).
 nonisolated struct InnerGlowEffect: Codable, Equatable, Sendable {
     var enabled: Bool? = nil
     var isEnabled: Bool { enabled ?? true }
@@ -115,11 +206,131 @@ nonisolated struct InnerGlowEffect: Codable, Equatable, Sendable {
     var green: CGFloat = 1
     var blue: CGFloat = 1
     var opacity: Double = 0.75
+    var choke: CGFloat? = nil
+    var contour: EffectContour? = nil
+    /// Photoshop's Source: the glow comes from the middle rather than the edge.
+    var fromCenter: Bool? = nil
+    var blendMode: LayerBlendMode? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
     var isValid: Bool {
         size.isFinite && (0...500).contains(size)
             && opacity.isFinite && (0...1).contains(opacity)
             && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
+            && choke.map { $0.isFinite && (0...100).contains($0) } ?? true
+    }
+}
+
+/// Light and shade that make the layer look raised (or pressed in): Photoshop's Bevel & Emboss, with its Contour and
+/// Texture.
+nonisolated struct BevelEffect: Codable, Equatable, Sendable {
+    nonisolated enum Style: String, Codable, CaseIterable, Sendable {
+        case outerBevel = "Outer Bevel", innerBevel = "Inner Bevel", emboss = "Emboss", pillowEmboss = "Pillow Emboss"
+        var displayName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+    }
+    nonisolated enum Technique: String, Codable, CaseIterable, Sendable {
+        case smooth = "Smooth", chiselHard = "Chisel Hard", chiselSoft = "Chisel Soft"
+        var displayName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+    }
+    var enabled: Bool? = nil
+    var isEnabled: Bool { enabled ?? true }
+    var style: Style = .innerBevel
+    var technique: Technique = .smooth
+    /// 1–1000 percent.
+    var depth: CGFloat = 100
+    /// Raised (true) or pressed in.
+    var up = true
+    /// 0–250 layer pixels.
+    var size: CGFloat = 5
+    /// 0–16 layer pixels.
+    var soften: CGFloat = 0
+    var angle: CGFloat = 120
+    /// 0–90 degrees above the horizon.
+    var altitude: CGFloat = 30
+    var gloss: EffectContour = .linear
+    var highlightMode: LayerBlendMode = .screen
+    var highlightRed: CGFloat = 1
+    var highlightGreen: CGFloat = 1
+    var highlightBlue: CGFloat = 1
+    var highlightOpacity: Double = 0.75
+    var shadowMode: LayerBlendMode = .multiply
+    var shadowRed: CGFloat = 0
+    var shadowGreen: CGFloat = 0
+    var shadowBlue: CGFloat = 0
+    var shadowOpacity: Double = 0.75
+    /// The Contour sub-effect: the slope bent through a curve, over `contourRange` percent (1–100) of it.
+    var usesContour: Bool? = nil
+    var contour: EffectContour = .halfRound
+    var contourRange: CGFloat = 50
+    /// The Texture sub-effect: a pattern pressed into the surface, at `textureScale` (1–1000%) and `textureDepth`
+    /// (−1000–1000%).
+    var usesTexture: Bool? = nil
+    var texture: EffectPattern = .noise
+    var textureScale: CGFloat = 100
+    var textureDepth: CGFloat = 100
+    var textureInvert = false
+    var highlightColor: PaletteColor { PaletteColor(red: highlightRed, green: highlightGreen, blue: highlightBlue) }
+    var shadowColor: PaletteColor { PaletteColor(red: shadowRed, green: shadowGreen, blue: shadowBlue) }
+    var hasContour: Bool { usesContour ?? false }
+    var hasTexture: Bool { usesTexture ?? false }
+    /// How far outside the layer's edge the bevel reaches.
+    var outerReach: CGFloat { style == .innerBevel ? 0 : size + soften * 2 + 2 }
+    var isValid: Bool {
+        [depth, size, soften, angle, altitude, contourRange, textureScale, textureDepth].allSatisfy(\.isFinite)
+            && (1...1000).contains(depth) && (0...250).contains(size) && (0...16).contains(soften)
+            && (-360...360).contains(angle) && (0...90).contains(altitude) && (1...100).contains(contourRange)
+            && (1...1000).contains(textureScale) && (-1000...1000).contains(textureDepth)
+            && [highlightOpacity, shadowOpacity].allSatisfy { $0.isFinite && (0...1).contains($0) }
+            && [highlightRed, highlightGreen, highlightBlue, shadowRed, shadowGreen, shadowBlue].allSatisfy { $0.isFinite && (0...1).contains($0) }
+    }
+}
+
+/// Soft, silky shading inside the layer: its shape offset both ways along an angle and compared (Photoshop's Satin).
+nonisolated struct SatinEffect: Codable, Equatable, Sendable {
+    var enabled: Bool? = nil
+    var isEnabled: Bool { enabled ?? true }
+    var red: CGFloat = 0
+    var green: CGFloat = 0
+    var blue: CGFloat = 0
+    var opacity: Double = 0.5
+    var blendMode: LayerBlendMode? = .multiply
+    var angle: CGFloat = 19
+    var distance: CGFloat = 11
+    var size: CGFloat = 14
+    var contour: EffectContour = .gaussian
+    var invert = true
+    var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
+    var offset: CGSize {
+        let radians = angle * .pi / 180
+        return CGSize(width: cos(radians) * distance, height: -sin(radians) * distance)
+    }
+    var isValid: Bool {
+        [angle, distance, size].allSatisfy(\.isFinite) && (-360...360).contains(angle)
+            && (1...250).contains(distance) && (0...250).contains(size)
+            && opacity.isFinite && (0...1).contains(opacity)
+            && [red, green, blue].allSatisfy { $0.isFinite && (0...1).contains($0) }
+    }
+}
+
+/// A repeating pattern over everything the layer shows, in two colors: ink where the pattern is, paper between.
+nonisolated struct PatternOverlayEffect: Codable, Equatable, Sendable {
+    var enabled: Bool? = nil
+    var isEnabled: Bool { enabled ?? true }
+    var pattern: EffectPattern = .checker
+    /// 1–1000 percent.
+    var scale: CGFloat = 100
+    var red: CGFloat = 0
+    var green: CGFloat = 0
+    var blue: CGFloat = 0
+    var paperRed: CGFloat = 1
+    var paperGreen: CGFloat = 1
+    var paperBlue: CGFloat = 1
+    var opacity: Double = 1
+    var blendMode: LayerBlendMode? = nil
+    var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
+    var paperColor: PaletteColor { PaletteColor(red: paperRed, green: paperGreen, blue: paperBlue) }
+    var isValid: Bool {
+        scale.isFinite && (1...1000).contains(scale) && opacity.isFinite && (0...1).contains(opacity)
+            && [red, green, blue, paperRed, paperGreen, paperBlue].allSatisfy { $0.isFinite && (0...1).contains($0) }
     }
 }
 
@@ -132,11 +343,20 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
     var innerShadow: InnerShadowEffect? = nil
     var outerGlow: OuterGlowEffect? = nil
     var innerGlow: InnerGlowEffect? = nil
-    var isEmpty: Bool { stroke == nil && shadow == nil && colorOverlay == nil && innerShadow == nil && outerGlow == nil && innerGlow == nil }
+    var bevel: BevelEffect? = nil
+    var satin: SatinEffect? = nil
+    var patternOverlay: PatternOverlayEffect? = nil
+    /// Blending Options' Fill Opacity (0–1): the layer's own pixels fade, while its effects keep their strength.
+    /// Missing means 1.
+    var fillOpacity: Double? = nil
+    var fill: Double { fillOpacity ?? 1 }
+    var isEmpty: Bool { LayerEffectKind.allCases.allSatisfy { !contains($0) } && fill >= 1 }
     var isValid: Bool {
         (stroke?.isValid ?? true) && (shadow?.isValid ?? true)
             && (colorOverlay?.isValid ?? true) && (innerShadow?.isValid ?? true)
             && (outerGlow?.isValid ?? true) && (innerGlow?.isValid ?? true)
+            && (bevel?.isValid ?? true) && (satin?.isValid ?? true) && (patternOverlay?.isValid ?? true)
+            && fillOpacity.map { $0.isFinite && (0...1).contains($0) } ?? true
     }
     var kinds: [LayerEffectKind] { LayerEffectKind.allCases.filter { contains($0) } }
     func contains(_ kind: LayerEffectKind) -> Bool {
@@ -147,6 +367,9 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .innerShadow: return innerShadow != nil
         case .outerGlow: return outerGlow != nil
         case .innerGlow: return innerGlow != nil
+        case .bevel: return bevel != nil
+        case .satin: return satin != nil
+        case .patternOverlay: return patternOverlay != nil
         }
     }
     func isEnabled(_ kind: LayerEffectKind) -> Bool {
@@ -157,10 +380,14 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .innerShadow: return innerShadow?.isEnabled == true
         case .outerGlow: return outerGlow?.isEnabled == true
         case .innerGlow: return innerGlow?.isEnabled == true
+        case .bevel: return bevel?.isEnabled == true
+        case .satin: return satin?.isEnabled == true
+        case .patternOverlay: return patternOverlay?.isEnabled == true
         }
     }
-    /// The effect's own color, and a way to put a new one back.
-    func color(_ kind: LayerEffectKind) -> PaletteColor? {
+    /// The effect's own color, and a way to put a new one back. A bevel's is its highlight; `secondary` asks for the
+    /// other one an effect has (a bevel's shadow, a pattern's paper).
+    func color(_ kind: LayerEffectKind, secondary: Bool = false) -> PaletteColor? {
         switch kind {
         case .stroke: return stroke?.color
         case .shadow: return shadow?.color
@@ -168,9 +395,12 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .innerShadow: return innerShadow?.color
         case .outerGlow: return outerGlow?.color
         case .innerGlow: return innerGlow?.color
+        case .bevel: return secondary ? bevel?.shadowColor : bevel?.highlightColor
+        case .satin: return satin?.color
+        case .patternOverlay: return secondary ? patternOverlay?.paperColor : patternOverlay?.color
         }
     }
-    mutating func setColor(_ color: PaletteColor, for kind: LayerEffectKind) {
+    mutating func setColor(_ color: PaletteColor, for kind: LayerEffectKind, secondary: Bool = false) {
         switch kind {
         case .stroke: stroke?.red = color.red; stroke?.green = color.green; stroke?.blue = color.blue
         case .shadow: shadow?.red = color.red; shadow?.green = color.green; shadow?.blue = color.blue
@@ -178,16 +408,32 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .innerShadow: innerShadow?.red = color.red; innerShadow?.green = color.green; innerShadow?.blue = color.blue
         case .outerGlow: outerGlow?.red = color.red; outerGlow?.green = color.green; outerGlow?.blue = color.blue
         case .innerGlow: innerGlow?.red = color.red; innerGlow?.green = color.green; innerGlow?.blue = color.blue
+        case .bevel:
+            if secondary { bevel?.shadowRed = color.red; bevel?.shadowGreen = color.green; bevel?.shadowBlue = color.blue }
+            else { bevel?.highlightRed = color.red; bevel?.highlightGreen = color.green; bevel?.highlightBlue = color.blue }
+        case .satin: satin?.red = color.red; satin?.green = color.green; satin?.blue = color.blue
+        case .patternOverlay:
+            if secondary { patternOverlay?.paperRed = color.red; patternOverlay?.paperGreen = color.green; patternOverlay?.paperBlue = color.blue }
+            else { patternOverlay?.red = color.red; patternOverlay?.green = color.green; patternOverlay?.blue = color.blue }
         }
     }
     mutating func remove(_ kind: LayerEffectKind) {
+        var none = LayerEffects()
+        none.fillOpacity = fillOpacity
+        take(kind, from: none)
+    }
+    /// Puts `other`'s effect of this kind (or its absence) in place of this one's.
+    mutating func take(_ kind: LayerEffectKind, from other: LayerEffects) {
         switch kind {
-        case .stroke: stroke = nil
-        case .shadow: shadow = nil
-        case .colorOverlay: colorOverlay = nil
-        case .innerShadow: innerShadow = nil
-        case .outerGlow: outerGlow = nil
-        case .innerGlow: innerGlow = nil
+        case .stroke: stroke = other.stroke
+        case .shadow: shadow = other.shadow
+        case .colorOverlay: colorOverlay = other.colorOverlay
+        case .innerShadow: innerShadow = other.innerShadow
+        case .outerGlow: outerGlow = other.outerGlow
+        case .innerGlow: innerGlow = other.innerGlow
+        case .bevel: bevel = other.bevel
+        case .satin: satin = other.satin
+        case .patternOverlay: patternOverlay = other.patternOverlay
         }
     }
     mutating func setEnabled(_ enabled: Bool, for kind: LayerEffectKind) {
@@ -198,7 +444,73 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
         case .innerShadow: innerShadow?.enabled = enabled
         case .outerGlow: outerGlow?.enabled = enabled
         case .innerGlow: innerGlow?.enabled = enabled
+        case .bevel: bevel?.enabled = enabled
+        case .satin: satin?.enabled = enabled
+        case .patternOverlay: patternOverlay?.enabled = enabled
         }
+    }
+    /// The blend mode an effect draws in (a bevel's highlight for a bevel). Missing means Normal.
+    func blendMode(_ kind: LayerEffectKind, secondary: Bool = false) -> LayerBlendMode {
+        switch kind {
+        case .stroke: return stroke?.blendMode ?? .normal
+        case .shadow: return shadow?.blendMode ?? .normal
+        case .colorOverlay: return colorOverlay?.blendMode ?? .normal
+        case .innerShadow: return innerShadow?.blendMode ?? .normal
+        case .outerGlow: return outerGlow?.blendMode ?? .normal
+        case .innerGlow: return innerGlow?.blendMode ?? .normal
+        case .bevel: return (secondary ? bevel?.shadowMode : bevel?.highlightMode) ?? .normal
+        case .satin: return satin?.blendMode ?? .normal
+        case .patternOverlay: return patternOverlay?.blendMode ?? .normal
+        }
+    }
+    mutating func setBlendMode(_ mode: LayerBlendMode, for kind: LayerEffectKind, secondary: Bool = false) {
+        switch kind {
+        case .stroke: stroke?.blendMode = mode
+        case .shadow: shadow?.blendMode = mode
+        case .colorOverlay: colorOverlay?.blendMode = mode
+        case .innerShadow: innerShadow?.blendMode = mode
+        case .outerGlow: outerGlow?.blendMode = mode
+        case .innerGlow: innerGlow?.blendMode = mode
+        case .bevel: if secondary { bevel?.shadowMode = mode } else { bevel?.highlightMode = mode }
+        case .satin: satin?.blendMode = mode
+        case .patternOverlay: patternOverlay?.blendMode = mode
+        }
+    }
+    /// Leaves an effect's blend mode unset (Normal).
+    mutating func clearBlendMode(_ kind: LayerEffectKind) {
+        switch kind {
+        case .stroke: stroke?.blendMode = nil
+        case .shadow: shadow?.blendMode = nil
+        case .colorOverlay: colorOverlay?.blendMode = nil
+        case .innerShadow: innerShadow?.blendMode = nil
+        case .outerGlow: outerGlow?.blendMode = nil
+        case .innerGlow: innerGlow?.blendMode = nil
+        case .bevel: break
+        case .satin: satin?.blendMode = nil
+        case .patternOverlay: patternOverlay?.blendMode = nil
+        }
+    }
+    /// A new effect of this kind with Photoshop's defaults, in `color` where the effect takes the one being painted with.
+    static func standard(_ kind: LayerEffectKind, color: PaletteColor) -> LayerEffects {
+        var effects = LayerEffects()
+        switch kind {
+        case .stroke:
+            var new = StrokeEffect()
+            new.red = color.red; new.green = color.green; new.blue = color.blue
+            effects.stroke = new
+        case .shadow: effects.shadow = ShadowEffect()
+        case .colorOverlay:
+            var new = ColorOverlayEffect()
+            new.red = color.red; new.green = color.green; new.blue = color.blue
+            effects.colorOverlay = new
+        case .innerShadow: effects.innerShadow = InnerShadowEffect()
+        case .outerGlow: effects.outerGlow = OuterGlowEffect()
+        case .innerGlow: effects.innerGlow = InnerGlowEffect()
+        case .bevel: effects.bevel = BevelEffect()
+        case .satin: effects.satin = SatinEffect()
+        case .patternOverlay: effects.patternOverlay = PatternOverlayEffect()
+        }
+        return effects
     }
     var visible: LayerEffects {
         LayerEffects(stroke: stroke?.isEnabled == true ? stroke : nil,
@@ -206,12 +518,71 @@ nonisolated struct LayerEffects: Codable, Equatable, Sendable {
                      colorOverlay: colorOverlay?.isEnabled == true ? colorOverlay : nil,
                      innerShadow: innerShadow?.isEnabled == true ? innerShadow : nil,
                      outerGlow: outerGlow?.isEnabled == true ? outerGlow : nil,
-                     innerGlow: innerGlow?.isEnabled == true ? innerGlow : nil)
+                     innerGlow: innerGlow?.isEnabled == true ? innerGlow : nil,
+                     bevel: bevel?.isEnabled == true ? bevel : nil,
+                     satin: satin?.isEnabled == true ? satin : nil,
+                     patternOverlay: patternOverlay?.isEnabled == true ? patternOverlay : nil,
+                     fillOpacity: fill < 1 ? fillOpacity : nil)
+    }
+    /// The same effects for the layer drawn `factor` times its size, as the canvas previews it.
+    func scaled(by factor: CGFloat) -> LayerEffects {
+        guard factor != 1 else { return self }
+        var effects = self
+        effects.stroke?.size *= factor
+        effects.shadow?.distance *= factor
+        effects.shadow?.blur *= factor
+        effects.innerShadow?.distance *= factor
+        effects.innerShadow?.blur *= factor
+        effects.outerGlow?.size *= factor
+        effects.innerGlow?.size *= factor
+        if var bevel = effects.bevel {
+            bevel.size *= factor
+            bevel.soften *= factor
+            bevel.textureScale = min(1000, max(1, bevel.textureScale * factor))
+            effects.bevel = bevel
+        }
+        if var satin = effects.satin {
+            satin.distance = max(1, satin.distance * factor)
+            satin.size *= factor
+            effects.satin = satin
+        }
+        if let scale = effects.patternOverlay?.scale { effects.patternOverlay?.scale = min(1000, max(1, scale * factor)) }
+        return effects
+    }
+    /// Whether anything here needs format version 12: the effects and settings Photoshop's Layer Style dialog added.
+    var usesLayerStyle: Bool {
+        if bevel != nil || satin != nil || patternOverlay != nil || fillOpacity != nil { return true }
+        if stroke?.blendMode != nil || stroke?.centered != nil { return true }
+        if shadow?.blendMode != nil || shadow?.spread != nil || shadow?.contour != nil { return true }
+        if colorOverlay?.blendMode != nil { return true }
+        if innerShadow?.blendMode != nil || innerShadow?.choke != nil || innerShadow?.contour != nil { return true }
+        if outerGlow?.blendMode != nil || outerGlow?.spread != nil || outerGlow?.contour != nil { return true }
+        return innerGlow?.blendMode != nil || innerGlow?.choke != nil || innerGlow?.contour != nil || innerGlow?.fromCenter != nil
+    }
+    /// Whether these effects need `LayerStyleRenderer`: anything past what the GPU's single pass draws — the effects
+    /// Photoshop's Layer Style adds, blend modes, spread and choke, contours, a fading fill.
+    var needsStyleRenderer: Bool {
+        let effects = visible
+        if effects.bevel != nil || effects.satin != nil || effects.patternOverlay != nil || effects.fill < 1 { return true }
+        func special(_ mode: LayerBlendMode?) -> Bool { mode.map { $0 != .normal } ?? false }
+        func curved(_ contour: EffectContour?) -> Bool { contour.map { $0 != .linear } ?? false }
+        func spreads(_ amount: CGFloat?) -> Bool { (amount ?? 0) > 0 }
+        if let stroke = effects.stroke, special(stroke.blendMode) || stroke.centered == true { return true }
+        if let shadow = effects.shadow, special(shadow.blendMode) || spreads(shadow.spread) || curved(shadow.contour) { return true }
+        if let overlay = effects.colorOverlay, special(overlay.blendMode) { return true }
+        if let inner = effects.innerShadow, special(inner.blendMode) || spreads(inner.choke) || curved(inner.contour) { return true }
+        if let glow = effects.outerGlow, special(glow.blendMode) || spreads(glow.spread) || curved(glow.contour) { return true }
+        if let glow = effects.innerGlow, special(glow.blendMode) || spreads(glow.choke) || curved(glow.contour) || glow.fromCenter == true { return true }
+        return false
     }
 }
 
+/// Every layer style, in the order Photoshop's Layer Style dialog lists them (and the Layers panel shows them): the
+/// top of the list draws on top.
 nonisolated enum LayerEffectKind: String, CaseIterable, Sendable {
-    case stroke = "Stroke", shadow = "Drop Shadow", colorOverlay = "Color Overlay", innerShadow = "Inner Shadow", outerGlow = "Outer Glow", innerGlow = "Inner Glow"
+    case bevel = "Bevel & Emboss", stroke = "Stroke", innerShadow = "Inner Shadow", innerGlow = "Inner Glow"
+    case satin = "Satin", colorOverlay = "Color Overlay", patternOverlay = "Pattern Overlay"
+    case outerGlow = "Outer Glow", shadow = "Drop Shadow"
     /// `rawValue` as a localizable display name; `rawValue` itself stays the stable, unlocalized identifier.
     var displayName: LocalizedStringKey {
         switch self {
@@ -221,11 +592,22 @@ nonisolated enum LayerEffectKind: String, CaseIterable, Sendable {
         case .innerShadow: return "Inner Shadow"
         case .outerGlow: return "Outer Glow"
         case .innerGlow: return "Inner Glow"
+        case .bevel: return "Bevel & Emboss"
+        case .satin: return "Satin"
+        case .patternOverlay: return "Pattern Overlay"
         }
     }
     /// `displayName`, resolved to a plain `String` for AppKit APIs (labels, tooltips, accessibility)
     /// that don't consult String Catalogs on their own the way SwiftUI's `Text` does.
     var localizedText: String { String(localized: String.LocalizationValue(rawValue)) }
+    /// The blend mode a new effect of this kind takes in the Layer Style dialog, as Photoshop's does.
+    var standardBlendMode: LayerBlendMode {
+        switch self {
+        case .shadow, .innerShadow, .satin: return .multiply
+        case .outerGlow, .innerGlow: return .screen
+        default: return .normal
+        }
+    }
 }
 
 struct LayerEffectSelection: Equatable {
@@ -233,83 +615,130 @@ struct LayerEffectSelection: Equatable {
     let kind: LayerEffectKind
 }
 
+/// Which page of the Layer Style dialog is showing: Blending Options, or one effect.
+nonisolated enum LayerStylePage: Hashable, Sendable {
+    case blending
+    case effect(LayerEffectKind)
+    /// Bevel & Emboss's own Contour and Texture, listed under it as in Photoshop.
+    case bevelContour, bevelTexture
+}
+
+/// The Layer Style dialog, open on one layer. Its changes show on the canvas as they're made and become one undo
+/// step on OK; Cancel puts back what the layer had when the dialog opened.
+struct LayerStyleEdit: Equatable {
+    let layerID: UUID
+    let originalEffects: LayerEffects?
+    let originalOpacity: Double
+    let originalBlendMode: LayerBlendMode
+    var page: LayerStylePage
+}
+
 extension EditorSession {
     var canEditEffects: Bool { canEditLayers && activeLayer?.isGroup == false && activeLayer?.asset != nil }
     var activeEffects: LayerEffects { activeLayer?.effects ?? LayerEffects() }
+    /// The effects of the layer the Layer Style dialog is open on.
     var editingEffects: LayerEffects {
-        document?.layers.first(where: { $0.id == effectsEditing?.layerID })?.effects ?? LayerEffects()
+        document?.layers.first(where: { $0.id == layerStyle?.layerID })?.effects ?? LayerEffects()
     }
+    var layerStyleLayer: ImageLayer? { document?.layers.first(where: { $0.id == layerStyle?.layerID }) }
     var selectedEffect: LayerEffectSelection? {
         guard let effectSelection, effectSelection.layerID == activeLayerID,
               activeEffects.contains(effectSelection.kind) else { return nil }
         return effectSelection
     }
 
+    /// Adds an effect from the Layers panel's menu: the Layer Style dialog opens on it, as Photoshop's does, and
+    /// Cancel takes it away again.
     func addEffect(_ kind: LayerEffectKind) {
         guard canEditEffects, let id = activeLayerID else { return }
-        if effectsEditing == LayerEffectSelection(layerID: id, kind: kind) { return }
-        finishEffectsEditing(commit: false)
-        let original = activeEffects
-        var effects = original
-        // A new stroke or overlay takes the background color: the foreground is usually what the layer is painted in.
-        switch kind {
-        case .stroke where effects.stroke == nil:
-            var new = StrokeEffect()
-            new.red = backgroundColor.red; new.green = backgroundColor.green; new.blue = backgroundColor.blue
-            effects.stroke = new
-        case .shadow where effects.shadow == nil:
-            effects.shadow = ShadowEffect()
-        case .colorOverlay where effects.colorOverlay == nil:
-            var new = ColorOverlayEffect()
-            new.red = backgroundColor.red; new.green = backgroundColor.green; new.blue = backgroundColor.blue
-            effects.colorOverlay = new
-        case .innerShadow where effects.innerShadow == nil:
-            effects.innerShadow = InnerShadowEffect()
-        case .outerGlow where effects.outerGlow == nil:
-            effects.outerGlow = OuterGlowEffect()
-        case .innerGlow where effects.innerGlow == nil:
-            effects.innerGlow = InnerGlowEffect()
-        default: break
+        openLayerStyle(on: id, page: .effect(kind))
+        setLayerStyleEffect(kind, on: true)
+    }
+
+    /// Opens the Layer Style dialog on `id` (the active layer when nil), at `page`.
+    func openLayerStyle(on id: UUID? = nil, page: LayerStylePage = .blending) {
+        guard let id = id ?? activeLayerID else { return }
+        if let open = layerStyle {
+            if open.layerID == id { layerStyle?.page = page; return }
+            finishLayerStyle(commit: true)
         }
-        setEffects(effects, on: id, name: "Add " + kind.rawValue)
-        selectEffect(kind, on: id, editing: true)
-        effectsEditingOriginal = original
+        guard canEditLayers, let layer = document?.layers.first(where: { $0.id == id }), !layer.isGroup, layer.asset != nil else { return }
+        finishOpacityEdit()
+        if id != activeLayerID { selectLayer(id); selectedLayerIDs = [id] }
+        layerStyle = LayerStyleEdit(layerID: id, originalEffects: layer.effects, originalOpacity: layer.opacity,
+                                    originalBlendMode: layer.blendMode, page: page)
     }
 
     func selectEffect(_ kind: LayerEffectKind, on id: UUID, editing: Bool = false) {
-        guard canEditLayers, document?.layers.first(where: { $0.id == id })?.effects?.contains(kind) == true else { return }
+        guard canEditLayers || layerStyle != nil, document?.layers.first(where: { $0.id == id })?.effects?.contains(kind) == true else { return }
         let selection = LayerEffectSelection(layerID: id, kind: kind)
-        if editing, effectsEditing != selection { finishEffectsEditing(commit: false) }
-        selectLayer(id)
+        if layerStyle == nil || layerStyle?.layerID != id { selectLayer(id) }
         selectedLayerIDs = [id]
         isMaskSelected = false
         effectSelection = selection
-        if editing, effectsEditing != selection {
-            if let picker = colorPicker, case .effect = picker.target { closeColorPicker(commit: false) }
-            effectsEditingOriginal = document?.layers.first(where: { $0.id == id })?.effects ?? LayerEffects()
-            effectsEditing = selection
+        if editing { openLayerStyle(on: id, page: .effect(kind)) }
+    }
+
+    /// Puts the layer's style straight into the document while the dialog is open: the canvas follows, and OK makes
+    /// the whole visit one undo step.
+    private func applyLayerStyle(effects: LayerEffects? = nil, opacity: Double? = nil, blendMode: LayerBlendMode? = nil) {
+        guard let edit = layerStyle, let index = document?.layers.firstIndex(where: { $0.id == edit.layerID }) else { return }
+        if let effects {
+            guard effects.isValid else { return }
+            let stored = effects.isEmpty ? nil : effects
+            if document?.layers[index].effects != stored { document?.layers[index].effects = stored }
+        }
+        if let opacity, opacity.isFinite, document?.layers[index].opacity != opacity {
+            document?.layers[index].opacity = min(1, max(0, opacity))
+        }
+        if let blendMode, document?.layers[index].blendMode != blendMode { document?.layers[index].blendMode = blendMode }
+    }
+
+    /// Changes the effects of the layer the Layer Style dialog is open on.
+    func changeLayerStyle(_ change: (inout LayerEffects) -> Void) {
+        guard layerStyle != nil else { return }
+        var effects = editingEffects
+        change(&effects)
+        applyLayerStyle(effects: effects)
+    }
+    /// Kept for the effect color picker: the dialog's effects.
+    func changeEffects(_ change: (inout LayerEffects) -> Void) { changeLayerStyle(change) }
+
+    func setLayerStyleOpacity(_ opacity: Double) { applyLayerStyle(opacity: opacity) }
+    func setLayerStyleBlendMode(_ mode: LayerBlendMode) { applyLayerStyle(blendMode: mode) }
+
+    /// The dialog's checkbox for an effect: on adds it with Photoshop's defaults (or shows it again), off hides it.
+    func setLayerStyleEffect(_ kind: LayerEffectKind, on: Bool) {
+        changeLayerStyle { effects in
+            if on, !effects.contains(kind) {
+                var added = LayerEffects.standard(kind, color: backgroundColor)
+                if kind != .bevel { added.setBlendMode(kind.standardBlendMode, for: kind) }
+                effects.take(kind, from: added)
+            } else {
+                effects.setEnabled(on, for: kind)
+            }
         }
     }
 
-    /// Cancel restores only this panel's effect, preserving edits to other effects or layers.
-    /// For a newly added effect the original value is absent, so Cancel removes it again.
-    func finishEffectsEditing(commit: Bool) {
-        guard let editing = effectsEditing else { return }
+    /// OK keeps what the dialog made, as one undo step; Cancel puts the layer back as it was.
+    func finishLayerStyle(commit: Bool) {
+        guard let edit = layerStyle else { return }
         if let picker = colorPicker, case .effect = picker.target { closeColorPicker(commit: commit) }
-        if !commit, let original = effectsEditingOriginal,
-           var effects = document?.layers.first(where: { $0.id == editing.layerID })?.effects {
-            switch editing.kind {
-            case .stroke: effects.stroke = original.stroke
-            case .shadow: effects.shadow = original.shadow
-            case .colorOverlay: effects.colorOverlay = original.colorOverlay
-            case .innerShadow: effects.innerShadow = original.innerShadow
-            case .outerGlow: effects.outerGlow = original.outerGlow
-            case .innerGlow: effects.innerGlow = original.innerGlow
-            }
-            setEffects(effects, on: editing.layerID, name: "Cancel " + editing.kind.rawValue)
+        layerStyle = nil
+        guard let index = document?.layers.firstIndex(where: { $0.id == edit.layerID }), let layer = document?.layers[index] else { return }
+        let made = (layer.effects, layer.opacity, layer.blendMode)
+        document?.layers[index].effects = edit.originalEffects
+        document?.layers[index].opacity = edit.originalOpacity
+        document?.layers[index].blendMode = edit.originalBlendMode
+        guard commit, made.0 != edit.originalEffects || made.1 != edit.originalOpacity || made.2 != edit.originalBlendMode else {
+            if selectedEffect == nil { effectSelection = nil }
+            return
         }
-        effectsEditing = nil
-        effectsEditingOriginal = nil
+        beginEdit("Layer Style")
+        document?.layers[index].effects = made.0
+        document?.layers[index].opacity = made.1
+        document?.layers[index].blendMode = made.2
+        endEdit()
         if selectedEffect == nil { effectSelection = nil }
     }
 
@@ -324,18 +753,8 @@ extension EditorSession {
         endEdit()
     }
 
-    /// Panel edits stay bound to the layer that opened the panel, even if selection changes.
-    func changeEffects(_ change: (inout LayerEffects) -> Void) {
-        guard let editing = effectsEditing,
-              let layer = document?.layers.first(where: { $0.id == editing.layerID }),
-              layer.effects?.contains(editing.kind) == true else { return }
-        var effects = layer.effects ?? LayerEffects()
-        change(&effects)
-        setEffects(effects, on: layer.id, name: "Edit " + editing.kind.rawValue)
-    }
-
     func canCopyEffect(_ kind: LayerEffectKind, from source: UUID, to target: UUID) -> Bool {
-        guard canEditLayers, source != target,
+        guard canEditLayers, layerStyle == nil, source != target,
               document?.layers.first(where: { $0.id == source })?.effects?.contains(kind) == true,
               let layer = document?.layers.first(where: { $0.id == target }),
               !layer.isGroup, layer.asset != nil else { return false }
@@ -345,24 +764,17 @@ extension EditorSession {
     func copyEffect(_ kind: LayerEffectKind, from source: UUID, to target: UUID) {
         guard canCopyEffect(kind, from: source, to: target),
               let original = document?.layers.first(where: { $0.id == source })?.effects else { return }
-        // Close the destination's editor before replacing its effect so a later Cancel cannot undo the copy.
-        if effectsEditing == LayerEffectSelection(layerID: target, kind: kind) {
-            finishEffectsEditing(commit: true)
-        }
         var effects = document?.layers.first(where: { $0.id == target })?.effects ?? LayerEffects()
-        switch kind {
-        case .stroke: effects.stroke = original.stroke
-        case .shadow: effects.shadow = original.shadow
-        case .colorOverlay: effects.colorOverlay = original.colorOverlay
-        case .innerShadow: effects.innerShadow = original.innerShadow
-        case .outerGlow: effects.outerGlow = original.outerGlow
-        case .innerGlow: effects.innerGlow = original.innerGlow
-        }
+        effects.take(kind, from: original)
         setEffects(effects, on: target, name: "Copy " + kind.rawValue)
         selectEffect(kind, on: target)
     }
 
     func toggleEffect(_ kind: LayerEffectKind, on id: UUID) {
+        if layerStyle?.layerID == id {
+            setLayerStyleEffect(kind, on: !editingEffects.isEnabled(kind))
+            return
+        }
         guard var effects = document?.layers.first(where: { $0.id == id })?.effects else { return }
         let enabled = effects.isEnabled(kind)
         effects.setEnabled(!enabled, for: kind)
@@ -370,13 +782,13 @@ extension EditorSession {
     }
 
     func removeSelectedEffect() {
-        guard let selectedEffect, canEditLayers,
-              var effects = document?.layers.first(where: { $0.id == selectedEffect.layerID })?.effects else { return }
-        if effectsEditing == selectedEffect {
-            if let picker = colorPicker, case .effect = picker.target { closeColorPicker(commit: false) }
-            effectsEditing = nil
-            effectsEditingOriginal = nil
+        guard let selectedEffect else { return }
+        if layerStyle?.layerID == selectedEffect.layerID {
+            changeLayerStyle { $0.remove(selectedEffect.kind) }
+            effectSelection = nil
+            return
         }
+        guard canEditLayers, var effects = document?.layers.first(where: { $0.id == selectedEffect.layerID })?.effects else { return }
         effects.remove(selectedEffect.kind)
         setEffects(effects, on: selectedEffect.layerID, name: "Remove " + selectedEffect.kind.rawValue)
         effectSelection = nil
@@ -436,13 +848,14 @@ nonisolated enum LayerEffectsRenderer {
     static func margin(for effects: LayerEffects) -> CGFloat {
         let effects = effects.visible
         var margin: CGFloat = 0
-        if let stroke = effects.stroke, !stroke.inside { margin = max(margin, stroke.size) }
+        if let stroke = effects.stroke, !stroke.inside || stroke.centered == true { margin = max(margin, stroke.size) }
         if let shadow = effects.shadow {
             margin = max(margin, shadow.distance + shadow.blur * 3)
         }
         if let glow = effects.outerGlow {
             margin = max(margin, glow.size * 3)
         }
+        if let bevel = effects.bevel { margin = max(margin, bevel.outerReach) }
         return ceil(margin) + 2
     }
 
@@ -458,6 +871,13 @@ nonisolated enum LayerEffectsRenderer {
         let full = CGRect(x: 0, y: 0, width: CGFloat(width), height: CGFloat(height))
         // The layer as it is shown: its pixels through its mask.
         let shown = try masked(image, mask: mask)
+        // Photoshop's Layer Style past the GPU pass's reach: drawn whole in floating point.
+        if effects.needsStyleRenderer {
+            let padded = try BrushRaster.context(width: width, height: height, mask: false)
+            BrushRaster.draw(shown, in: placed, mask: false, context: padded)
+            guard let room = padded.makeImage() else { throw ExportError.render }
+            return (try LayerStyleRenderer.render(room, effects: effects, origin: CGPoint(x: -inset, y: -inset)), inset)
+        }
         if let metal = MetalLayerEffects.shared {
             // The pixels with room around them, then the stroke and shadow drawn on the GPU.
             let padded = try BrushRaster.context(width: width, height: height, mask: false)

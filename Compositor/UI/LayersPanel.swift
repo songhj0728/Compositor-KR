@@ -38,13 +38,18 @@ struct LayersPanel: View {
                 Button { session.groupSelectedLayers() } label: { Image(systemName: "folder.badge.plus").footerHitArea() }
                     .help("Group selected layers (⌘G)").accessibilityLabel("New folder").disabled(!session.canEditLayers)
                 LayerMaskMenu(session: session)
+                // The icon opens the Layer Style dialog; its arrow lists the styles to add one straight away.
                 Menu {
+                    Button("Blending Options…") { session.openLayerStyle(page: .blending) }
+                    Divider()
                     ForEach(LayerEffectKind.allCases, id: \.self) { kind in
                         Button { session.addEffect(kind) } label: { Text("\(Text(kind.displayName))…") }
                     }
-                } label: { Image(systemName: "sparkles").footerHitArea() }
+                } label: { Image(systemName: "sparkles").footerHitArea() } primaryAction: {
+                    session.openLayerStyle(page: .blending)
+                }
                     .menuStyle(.borderlessButton).fixedSize()
-                    .help("Layer effects: stroke and drop shadow").accessibilityLabel("Layer effects")
+                    .help("Layer Style: click for the dialog, or pick a style from the arrow").accessibilityLabel("Layer effects")
                     .accessibilityIdentifier("layerEffects").disabled(!session.canEditEffects)
                 Menu {
                     ForEach(AdjustmentKind.allCases, id: \.self) { kind in

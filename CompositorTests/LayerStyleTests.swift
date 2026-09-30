@@ -1,0 +1,162 @@
+import AppKit
+import Testing
+@testable import Compositor
+
+/// Photoshop's Layer Style: the effects it adds (Bevel & Emboss, Satin, Pattern Overlay), blend modes, Fill Opacity,
+/// and the dialog that edits them as one undo step.
+@MainActor
+struct LayerStyleTests {
+    /// A white square of `inner` pixels in the middle of a transparent `size` square.
+    private func square(size: Int = 60, inner: Int = 30, color: PaletteColor = .white) throws -> CGImage {
+        let context = try BrushRaster.context(width: size, height: size, mask: false)
+        context.setFillColor(CGColor(srgbRed: color.red, green: color.green, blue: color.blue, alpha: 1))
+        let offset = (size - inner) / 2
+        context.fill(CGRect(x: offset, y: offset, width: inner, height: inner))
+        return try #require(context.makeImage())
+    }
+
+    /// The pixel's straight (not premultiplied) RGBA, 0–255.
+    private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> (red: Int, green: Int, blue: Int, alpha: Int) {
+        let context = try BrushRaster.copy(image)
+        let data = try #require(context.data).assumingMemoryBound(to: UInt8.self)
+        let at = y * context.bytesPerRow + x * 4
+        let alpha = Int(data[at + 3])
+        func straight(_ value: UInt8) -> Int { alpha == 0 ? 0 : min(255, Int((Double(value) * 255 / Double(alpha)).rounded())) }
+        return (straight(data[at]), straight(data[at + 1]), straight(data[at + 2]), alpha)
+    }
+
+    @Test func legacyEffectsStayOnTheGPUPassAndNewOnesDoNot() {
+        var effects = LayerEffects(stroke: StrokeEffect(), shadow: ShadowEffect(), colorOverlay: ColorOverlayEffect())
+        #expect(!effects.needsStyleRenderer)
+        effects.shadow?.blendMode = .normal
+        #expect(!effects.needsStyleRenderer, "an explicit Normal is what the GPU pass draws")
+        effects.shadow?.blendMode = .multiply
+        #expect(effects.needsStyleRenderer)
+        #expect(LayerEffects(bevel: BevelEffect()).needsStyleRenderer)
+        #expect(LayerEffects(satin: SatinEffect()).needsStyleRenderer)
+        #expect(LayerEffects(patternOverlay: PatternOverlayEffect()).needsStyleRenderer)
+        #expect(LayerEffects(fillOpacity: 0.5).needsStyleRenderer)
+        #expect(!LayerEffects(fillOpacity: 0.5).isEmpty && LayerEffects(fillOpacity: 1).isEmpty)
+    }
+
+    @Test func newFieldsRoundTripAndOlderRecordsStillRead() throws {
+        var effects = LayerEffects()
+        var bevel = BevelEffect()
+        bevel.style = .pillowEmboss
+        bevel.technique = .chiselHard
+        bevel.usesContour = true
+        bevel.contour = .ring
+        bevel.usesTexture = true
+        bevel.texture = .dots
+        effects.bevel = bevel
+        effects.satin = SatinEffect()
+        effects.patternOverlay = PatternOverlayEffect(pattern: .grid, scale: 250)
+        effects.fillOpacity = 0.25
+        effects.shadow = ShadowEffect(spread: 30, contour: .cone, blendMode: .multiply)
+        let decoded = try JSONDecoder().decode(LayerEffects.self, from: JSONEncoder().encode(effects))
+        #expect(decoded == effects && decoded.isValid)
+        let older = "{\"stroke\":{\"size\":4,\"red\":0,\"green\":0,\"blue\":0,\"opacity\":1,\"inside\":false}}"
+        let read = try JSONDecoder().decode(LayerEffects.self, from: Data(older.utf8))
+        #expect(read.stroke?.blendMode == nil && read.stroke?.centered == nil && read.bevel == nil && read.fill == 1)
+    }
+
+    @Test func fillOpacityFadesThePixelsButNotTheOverlay() throws {
+        let image = try square()
+        var effects = LayerEffects(fillOpacity: 0)
+        var result = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        let inset = Int(result.inset)
+        #expect(try pixel(result.image, inset + 30, inset + 30).alpha == 0, "no fill leaves nothing of the pixels")
+        effects.colorOverlay = ColorOverlayEffect(red: 1, green: 0, blue: 0, opacity: 1)
+        result = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        let middle = try pixel(result.image, inset + 30, inset + 30)
+        #expect(middle.alpha == 255 && middle.red == 255 && middle.green == 0, "the overlay keeps its strength")
+    }
+
+    @Test func blendModesMixWithThePixelsUnderneath() throws {
+        let image = try square(color: PaletteColor(red: 1, green: 0.5, blue: 0))
+        let effects = LayerEffects(colorOverlay: ColorOverlayEffect(red: 0.5, green: 0.5, blue: 1, opacity: 1, blendMode: .multiply))
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        let middle = try pixel(result.image, Int(result.inset) + 30, Int(result.inset) + 30)
+        #expect(abs(middle.red - 128) <= 2 && abs(middle.green - 64) <= 2 && middle.blue == 0)
+        #expect(LayerStyleBlend.apply(.screen, backdrop: SIMD3(0.5, 0.5, 0.5), source: SIMD3(0.5, 0.5, 0.5)).x == 0.75)
+        #expect(LayerStyleBlend.apply(.difference, backdrop: SIMD3(1, 0, 0.5), source: SIMD3(0.25, 0.25, 0.5)) == SIMD3(0.75, 0.25, 0))
+    }
+
+    /// Light from the top left brightens the top and left edges of a raised bevel and darkens the bottom and right.
+    @Test func innerBevelLightsOneSideAndShadesTheOther() throws {
+        let image = try square(color: PaletteColor(red: 0.5, green: 0.5, blue: 0.5))
+        var bevel = BevelEffect()
+        bevel.size = 8
+        bevel.angle = 135
+        bevel.highlightOpacity = 1
+        bevel.shadowOpacity = 1
+        bevel.highlightMode = .normal
+        bevel.shadowMode = .normal
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
+        let inset = Int(result.inset)
+        let topLeft = try pixel(result.image, inset + 17, inset + 17)
+        let bottomRight = try pixel(result.image, inset + 42, inset + 42)
+        let middle = try pixel(result.image, inset + 30, inset + 30)
+        #expect(topLeft.red > middle.red + 20, "top-left edge is lit: \(topLeft) vs \(middle)")
+        #expect(bottomRight.red + 20 < middle.red, "bottom-right edge is shaded: \(bottomRight) vs \(middle)")
+        #expect(abs(middle.red - 128) <= 3, "the flat top keeps its color")
+        #expect(try pixel(result.image, 2, 2).alpha == 0, "an inner bevel stays inside")
+
+        bevel.style = .outerBevel
+        let outer = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
+        let outside = Int(outer.inset) + 13
+        #expect(try pixel(outer.image, outside, Int(outer.inset) + 30).alpha > 0, "an outer bevel reaches outside")
+    }
+
+    @Test func satinAndPatternDrawOnlyInsideTheShape() throws {
+        let image = try square()
+        var effects = LayerEffects(satin: SatinEffect())
+        effects.satin?.opacity = 1
+        effects.satin?.blendMode = .normal
+        var result = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        #expect(try pixel(result.image, 0, 0).alpha == 0)
+        var pattern = PatternOverlayEffect(pattern: .checker, scale: 100)
+        pattern.red = 1; pattern.green = 0; pattern.blue = 0
+        pattern.paperRed = 0; pattern.paperGreen = 0; pattern.paperBlue = 1
+        result = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(patternOverlay: pattern))
+        let inset = Int(result.inset)
+        // Layer pixel (16, 16) is in the checkerboard's first ink cell; (24, 16) is paper.
+        let ink = try pixel(result.image, inset + 16, inset + 16), paper = try pixel(result.image, inset + 24, inset + 16)
+        #expect(ink.red == 255 && ink.blue == 0 && paper.blue == 255 && paper.red == 0)
+        #expect(try pixel(result.image, 1, 1).alpha == 0)
+    }
+
+    @Test func layerStyleDialogIsOneUndoStepAndCancelPutsItBack() throws {
+        let session = EditorSession()
+        session.createDocument(width: 100, height: 80, emptyLayer: true)
+        session.selectTool(.shape)
+        session.beginShape(at: CGPoint(x: 10, y: 10))
+        session.dragShape(to: CGPoint(x: 60, y: 60), square: false, fromCenter: false)
+        session.finishShape()
+        let id = try #require(session.activeLayerID)
+        let count = session.history.undoCount
+
+        session.openLayerStyle()
+        #expect(session.layerStyle?.layerID == id && !session.canEditLayers)
+        session.setLayerStyleEffect(.bevel, on: true)
+        session.setLayerStyleEffect(.shadow, on: true)
+        session.changeLayerStyle { $0.fillOpacity = 0.5 }
+        session.setLayerStyleOpacity(0.4)
+        #expect(session.activeLayer?.effects?.bevel != nil && session.activeLayer?.opacity == 0.4)
+        #expect(session.activeLayer?.effects?.shadow?.blendMode == .multiply, "new effects take Photoshop's modes")
+        #expect(session.history.undoCount == count, "nothing is recorded while the dialog is open")
+        session.finishLayerStyle(commit: false)
+        #expect(session.activeLayer?.effects == nil && session.activeLayer?.opacity == 1 && session.history.undoCount == count)
+
+        session.addEffect(.satin)
+        #expect(session.layerStyle?.page == .effect(.satin) && session.activeLayer?.effects?.satin != nil)
+        session.setLayerStyleEffect(.patternOverlay, on: true)
+        session.finishLayerStyle(commit: true)
+        #expect(session.history.undoCount == count + 1 && session.layerStyle == nil)
+        #expect(session.activeLayer?.effects?.kinds == [.satin, .patternOverlay])
+        session.undo()
+        #expect(session.activeLayer?.effects == nil)
+        session.redo()
+        #expect(session.activeLayer?.effects?.satin != nil)
+    }
+}

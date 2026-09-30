@@ -346,8 +346,11 @@ nonisolated enum PSDReader {
             record.kind = kind(layer, isGroup: isGroup)
             record.croppedToCanvas = layer.cropped
             let hasEffects = record.kind == .effects || layer.extra.keys.contains(where: { ["lfx2", "lrFX", "lmfx"].contains($0) })
+            if !isGroup { record.effects = layer.extra["lfx2"].flatMap(PSDText.layerStyle) }
             if hasEffects, layer.fill != 255 {
                 record.opacity = Double(layer.opacity) / 255
+                // Fill fades the pixels but not the effects, which Compositor's Fill Opacity does too.
+                if record.effects != nil { record.effects?.fillOpacity = Double(layer.fill) / 255 }
             } else {
                 record.opacity = (Double(layer.opacity) / 255) * (Double(layer.fill) / 255)
             }

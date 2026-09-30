@@ -97,10 +97,12 @@ extension EditorSession {
         }
         refreshCanvasPreview?()
     }
-    /// Opens the app's picker on a layer effect's color.
-    func openEffectColorPicker(_ kind: LayerEffectKind) {
-        guard canEditPalette, colorPicker == nil, effectsEditing != nil else { return }
-        colorPicker = ColorPickerState(target: .effect(kind: kind), original: editingEffects.color(kind) ?? .black)
+    /// Opens the app's picker on a layer effect's color in the Layer Style dialog; `secondary` is an effect's other
+    /// color (a bevel's shadow, a pattern's paper).
+    func openEffectColorPicker(_ kind: LayerEffectKind, secondary: Bool = false) {
+        guard canEditPalette, colorPicker == nil, layerStyle != nil else { return }
+        colorPicker = ColorPickerState(target: .effect(kind: kind, secondary: secondary),
+                                       original: editingEffects.color(kind, secondary: secondary) ?? .black)
     }
     func closeColorPicker(commit: Bool) {
         if let colorPicker {
@@ -124,9 +126,9 @@ extension EditorSession {
                     // The text color is the foreground color: picking one in the Type bar moves the swatch too.
                     if commit, !isMaskSelected { foregroundColor = color }
                 }
-            case .effect(let kind):
+            case .effect(let kind, let secondary):
                 let color = commit ? colorPicker.color : colorPicker.original
-                changeEffects { $0.setColor(color, for: kind) }
+                changeLayerStyle { $0.setColor(color, for: kind, secondary: secondary) }
             case .gradientMap(let highlights):
                 // The end has been previewing the working color; Cancel puts the original back.
                 setGradientMapColor(commit ? colorPicker.color : colorPicker.original, highlights: highlights)
@@ -138,7 +140,7 @@ extension EditorSession {
                 dialogColorChange?(commit ? colorPicker.color : colorPicker.original)
                 dialogColorChange = nil
             case .shape(let stroke):
-                if commit { stroke ? setShapeStroke(colorPicker.color) : setShapeFill(colorPicker.color) }
+                if commit, stroke { setShapeStroke(colorPicker.color) } else if commit { setShapeFill(colorPicker.color) }
             }
         }
         colorPicker = nil
@@ -160,8 +162,8 @@ extension EditorSession {
     }
     /// While the picker is open on an effect's color, the canvas follows its working color.
     func previewEffectColor() {
-        guard let colorPicker, case .effect(let kind) = colorPicker.target else { return }
-        changeEffects { $0.setColor(colorPicker.color, for: kind) }
+        guard let colorPicker, case .effect(let kind, let secondary) = colorPicker.target else { return }
+        changeLayerStyle { $0.setColor(colorPicker.color, for: kind, secondary: secondary) }
     }
     /// Preview the picker's working color in the active on-canvas text draft.
     func previewTextColor() {
@@ -265,8 +267,8 @@ extension EditorSession {
 /// What the open color picker edits: a palette swatch, or one end of the Gradient Map being edited.
 enum ColorPickerTarget: Equatable {
     case palette(background: Bool)
-    /// A layer effect's own color.
-    case effect(kind: LayerEffectKind)
+    /// A layer effect's own color, or its other one (a bevel's shadow, a pattern's paper).
+    case effect(kind: LayerEffectKind, secondary: Bool)
     case gradientMap(highlights: Bool)
     case vignette
     /// Dither's Two Colors: the dark one or the light one.
@@ -279,7 +281,7 @@ enum ColorPickerTarget: Equatable {
     var title: String {
         switch self {
         case .text: return "Color Picker (Text Color)"
-        case .effect(let kind): return "Color Picker (\(kind.rawValue) Color)"
+        case .effect(let kind, _): return "Color Picker (\(kind.rawValue) Color)"
         case .palette(let background): return background ? "Color Picker (Background Color)" : "Color Picker (Foreground Color)"
         case .gradientMap(let highlights): return highlights ? "Color Picker (Gradient Map Highlights)" : "Color Picker (Gradient Map Shadows)"
         case .vignette: return "Color Picker (Vignette Color)"

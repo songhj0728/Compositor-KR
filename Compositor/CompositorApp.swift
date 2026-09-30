@@ -335,6 +335,8 @@ struct CompositorApp: App {
                     }
                     .configuredKeyboardShortcut("g", modifiers: [.command, .option])
                     .disabled(session.activeLayerID.map { !session.canToggleClippingMask($0) } ?? true)
+                    Button("Layer Style…") { session.openLayerStyle(page: .blending) }
+                        .disabled(!session.canEditEffects)
                     Divider()
                     Button("Group Selected Layers") { session.groupSelectedLayers() }
                         .configuredKeyboardShortcut("g").disabled(!session.canEditLayers)

@@ -12,7 +12,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The format version new saves write.
-    static let current = 11
+    static let current = 12
     /// Every version `load` accepts. The package-header check, the manifest check and the error
     /// message all read this, so they cannot drift apart when `current` is bumped.
     static let supported = 1...ProjectManifest.current
@@ -211,6 +211,10 @@ actor ProjectStore {
                       text.colorRuns == nil || manifest.version >= 10,
                       text.fontRuns == nil || manifest.version >= 11,
                       layer.imageFile != nil, layer.isGroup != true, layer.adjustment == nil else { throw ProjectError.invalid }
+            }
+            // Photoshop's full Layer Style (new effects, blend modes, contours, Fill Opacity) arrived in version 12.
+            if let effects = layer.effects, effects.usesLayerStyle {
+                guard manifest.version >= 12, effects.isValid else { throw ProjectError.invalid }
             }
             if let adjustment = layer.adjustment {
                 guard manifest.version >= 7, layer.isGroup != true, layer.imageFile == nil, adjustment.isValid else { throw ProjectError.invalid }

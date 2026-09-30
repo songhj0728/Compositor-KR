@@ -241,7 +241,10 @@ extension EditorSession {
               let thumbnail = try? PixelInvert.thumbnail(of: image) else { return }
         finishOpacityEdit()
         beginEdit(name)
-        if let mask = layer.mask, mask.placement == nil { document?.layers[index].mask?.placement = layer.maskTransform }
+        // A mask that follows the layer's pixel grid stays exactly where it is if that grid changes size.
+        if let mask = layer.mask, mask.placement == nil, asset.image.width != width || asset.image.height != height {
+            document?.layers[index].mask?.placement = layer.maskTransform
+        }
         document?.layers[index].asset = ImportedImage(image: image, thumbnail: thumbnail, name: asset.name)
         document?.layers[index].shape = LayerShape(style: style, image: image)
         endEdit()
@@ -252,7 +255,7 @@ extension EditorSession {
     var shapeBarFills: Bool { activeShape.map { $0.style.kind == .line || $0.style.fills } ?? shapeFills }
     var shapeBarStroke: PaletteColor { activeShape.map { $0.style.strokeSize > 0 ? $0.style.strokeColor : shapeStrokeColor } ?? shapeStrokeColor }
     var shapeBarStrokeWidth: Double { activeShape.map { Double($0.style.strokeSize) } ?? shapeStrokeWidth }
-    var shapeBarLineWidth: Double { activeShape?.style.lineWidth.map(Double.init) ?? shapeLineWidth }
+    var shapeBarLineWidth: Double { activeShape?.style.lineWidth.map { Double($0) } ?? shapeLineWidth }
 
     func setShapeFill(_ color: PaletteColor) {
         shapeFillColor = color

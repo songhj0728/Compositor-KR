@@ -35,6 +35,13 @@ nonisolated struct PSDWriteBuffer: Sendable {
 /// Descriptor items (Photoshop's "Action descriptor" structure), for the adjustment blocks that use one.
 nonisolated enum PSDDescriptorItem {
     case long(Int32), double(Double), bool(Bool), text(String), object(classID: String, items: [(String, PSDDescriptorItem)])
+    /// An enumerated value: its type and the value, both descriptor keys.
+    case enumeration(type: String, value: String)
+    /// A number with its unit: `#Pxl`, `#Prc`, `#Ang`, `#Pnt`.
+    case unit(String, Double)
+    /// Raw bytes (`tdta`), such as a type layer's engine data.
+    case raw(Data)
+    case list([PSDDescriptorItem])
 
     func write(_ buffer: inout PSDWriteBuffer) {
         switch self {
@@ -43,6 +50,13 @@ nonisolated enum PSDDescriptorItem {
         case .bool(let value): buffer.ascii("bool"); buffer.u8(value ? 1 : 0)
         case .text(let value): buffer.ascii("TEXT"); buffer.unicode(value + "\0")
         case .object(let classID, let items): buffer.ascii("Objc"); Self.body(&buffer, classID: classID, items: items)
+        case .enumeration(let type, let value): buffer.ascii("enum"); buffer.key(type); buffer.key(value)
+        case .unit(let unit, let value): buffer.ascii("UntF"); buffer.ascii(unit); buffer.f64(value)
+        case .raw(let data): buffer.ascii("tdta"); buffer.u32(UInt32(data.count)); buffer.bytes(data)
+        case .list(let items):
+            buffer.ascii("VlLs")
+            buffer.u32(UInt32(items.count))
+            for item in items { item.write(&buffer) }
         }
     }
     /// A descriptor's name (empty), class and items.

@@ -43,7 +43,9 @@ nonisolated enum PSDDocumentBuilder {
                 notes.append("The smart object was rasterized. Linked contents can’t be edited.")
             }
             if record.kind == .effects {
-                notes.append("Layer effects were discarded, so the appearance may differ.")
+                notes.append(record.effects == nil || record.isGroup
+                    ? "Layer effects were discarded, so the appearance may differ."
+                    : "Layer effects were kept as editable effects; they may not match Photoshop exactly.")
             }
             if record.kind == .vector {
                 if record.shape != nil {
@@ -109,6 +111,8 @@ nonisolated enum PSDDocumentBuilder {
                                    opacity: min(1, max(0, record.opacity)),
                                    blendMode: record.blendMode ?? .normal)
             }
+            // Photoshop's Layer Style, on a layer with pixels of its own.
+            if let effects = record.effects, !layer.isGroup, layer.asset != nil, layer.adjustment == nil { layer.effects = effects }
             if let maskImage = record.mask.flatMap({ Self.maskOnLayerGrid($0, record: record, layer: layer, canvas: canvas) }),
                let maskAsset = try? LayerMask.asset(from: maskImage) {
                 layer.mask = LayerMask(asset: maskAsset, isEnabled: record.maskEnabled, isLinked: record.maskLinked)

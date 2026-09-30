@@ -7796,6 +7796,1006 @@
           }
         }
       }
+    },
+    "A Pattern Overlay or bevel Texture has no Photoshop form here, so the layer's effects were merged into its pixels." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패턴 오버레이나 경사 텍스처는 Photoshop 형식으로 저장할 수 없어 레이어 효과를 픽셀로 병합했습니다."
+          }
+        }
+      }
+    },
+    "Advanced Blending" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고급 혼합"
+          }
+        }
+      }
+    },
+    "Altitude" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고도"
+          }
+        }
+      }
+    },
+    "Angle" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각도"
+          }
+        }
+      }
+    },
+    "Bevel & Emboss" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "경사와 엠보스"
+          }
+        }
+      }
+    },
+    "Blend Mode" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "혼합 모드"
+          }
+        }
+      }
+    },
+    "Blending Options" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "혼합 옵션"
+          }
+        }
+      }
+    },
+    "Blending Options…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "혼합 옵션…"
+          }
+        }
+      }
+    },
+    "Bricks" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "벽돌"
+          }
+        }
+      }
+    },
+    "Checked, the shape is centered on the canvas wherever you clicked; unchecked, it is centered on the click" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "체크하면 클릭한 위치와 관계없이 캔버스 중앙에 도형을 만들고, 체크하지 않으면 클릭한 지점을 중심으로 만듭니다"
+          }
+        }
+      }
+    },
+    "Checkerboard" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "체커보드"
+          }
+        }
+      }
+    },
+    "Chisel Hard" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "강하게 깎기"
+          }
+        }
+      }
+    },
+    "Chisel Soft" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "부드럽게 깎기"
+          }
+        }
+      }
+    },
+    "Choke" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "경계 감소"
+          }
+        }
+      }
+    },
+    "Color Burn" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "색상 번"
+          }
+        }
+      }
+    },
+    "Color Dodge" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "색상 닷지"
+          }
+        }
+      }
+    },
+    "Cone" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원뿔"
+          }
+        }
+      }
+    },
+    "Cone - Inverted" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원뿔 - 반전"
+          }
+        }
+      }
+    },
+    "Contour" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "윤곽선"
+          }
+        }
+      }
+    },
+    "Cove - Deep" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "깊은 만"
+          }
+        }
+      }
+    },
+    "Create %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 만들기"
+          }
+        }
+      }
+    },
+    "Darken" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "어둡게 하기"
+          }
+        }
+      }
+    },
+    "Depth" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "깊이"
+          }
+        }
+      }
+    },
+    "Diagonal Stripes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사선 줄무늬"
+          }
+        }
+      }
+    },
+    "Difference" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "차이"
+          }
+        }
+      }
+    },
+    "Direction" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "방향"
+          }
+        }
+      }
+    },
+    "Distance" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "거리"
+          }
+        }
+      }
+    },
+    "Divide" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나누기"
+          }
+        }
+      }
+    },
+    "Dots" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "점"
+          }
+        }
+      }
+    },
+    "Down" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아래로"
+          }
+        }
+      }
+    },
+    "Elements" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "요소"
+          }
+        }
+      }
+    },
+    "Emboss" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "엠보스"
+          }
+        }
+      }
+    },
+    "Exclusion" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "제외"
+          }
+        }
+      }
+    },
+    "Fades the layer's own pixels while its effects keep their strength" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 효과는 그대로 두고 레이어 자체 픽셀만 흐리게 합니다"
+          }
+        }
+      }
+    },
+    "Fill Opacity" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "칠 불투명도"
+          }
+        }
+      }
+    },
+    "Fill color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채우기 색상"
+          }
+        }
+      }
+    },
+    "Fill the inside of the shape" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도형 안쪽을 채웁니다"
+          }
+        }
+      }
+    },
+    "Flip Horizontal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Flip Vertical" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세로로 뒤집기"
+          }
+        }
+      }
+    },
+    "From Center" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "중앙에서"
+          }
+        }
+      }
+    },
+    "General Blending" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일반 혼합"
+          }
+        }
+      }
+    },
+    "Gloss Contour" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "광택 윤곽선"
+          }
+        }
+      }
+    },
+    "Half Round" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "반원"
+          }
+        }
+      }
+    },
+    "Hard Light" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하드 라이트"
+          }
+        }
+      }
+    },
+    "Hard Mix" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하드 혼합"
+          }
+        }
+      }
+    },
+    "Highlight Mode" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "밝은 영역 모드"
+          }
+        }
+      }
+    },
+    "Inner Bevel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내부 경사"
+          }
+        }
+      }
+    },
+    "Keep text and layer styles editable" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "텍스트와 레이어 스타일을 편집 가능하게 유지"
+          }
+        }
+      }
+    },
+    "Layer Style" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 스타일"
+          }
+        }
+      }
+    },
+    "Layer Style: click for the dialog, or pick a style from the arrow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 스타일: 아이콘을 클릭하면 대화상자가 열리고, 화살표에서 스타일을 고를 수 있습니다"
+          }
+        }
+      }
+    },
+    "Layer Style…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 스타일…"
+          }
+        }
+      }
+    },
+    "Lighten" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "밝게 하기"
+          }
+        }
+      }
+    },
+    "Line color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선 색상"
+          }
+        }
+      }
+    },
+    "Linear Burn" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선형 번"
+          }
+        }
+      }
+    },
+    "Linear Dodge (Add)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선형 닷지(추가)"
+          }
+        }
+      }
+    },
+    "Linear Light" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선형 라이트"
+          }
+        }
+      }
+    },
+    "Luminosity" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "광도"
+          }
+        }
+      }
+    },
+    "Move" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이동"
+          }
+        }
+      }
+    },
+    "Move Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 이동"
+          }
+        }
+      }
+    },
+    "Multiply" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "곱하기"
+          }
+        }
+      }
+    },
+    "Noise" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노이즈"
+          }
+        }
+      }
+    },
+    "Normal" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표준"
+          }
+        }
+      }
+    },
+    "Off saves text and layer effects as the pixels they make" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끄면 텍스트와 레이어 효과를 픽셀로 저장합니다"
+          }
+        }
+      }
+    },
+    "Outer Bevel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "외부 경사"
+          }
+        }
+      }
+    },
+    "Overlay" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오버레이"
+          }
+        }
+      }
+    },
+    "Pattern" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패턴"
+          }
+        }
+      }
+    },
+    "Pattern Overlay" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패턴 오버레이"
+          }
+        }
+      }
+    },
+    "Pillow Emboss" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "쿠션 엠보스"
+          }
+        }
+      }
+    },
+    "Pin Light" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "핀 라이트"
+          }
+        }
+      }
+    },
+    "Ring" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "링"
+          }
+        }
+      }
+    },
+    "Ring - Double" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이중 링"
+          }
+        }
+      }
+    },
+    "Rolling Slope" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "구르는 경사"
+          }
+        }
+      }
+    },
+    "Rounded Steps" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "둥근 계단"
+          }
+        }
+      }
+    },
+    "Satin" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새틴"
+          }
+        }
+      }
+    },
+    "Sawtooth" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "톱니"
+          }
+        }
+      }
+    },
+    "Scale" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비율"
+          }
+        }
+      }
+    },
+    "Screen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린"
+          }
+        }
+      }
+    },
+    "Shading" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음영"
+          }
+        }
+      }
+    },
+    "Shadow Mode" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그림자 모드"
+          }
+        }
+      }
+    },
+    "Shape Size" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도형 크기"
+          }
+        }
+      }
+    },
+    "Soft Light" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소프트 라이트"
+          }
+        }
+      }
+    },
+    "Soften" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "부드럽게 하기"
+          }
+        }
+      }
+    },
+    "Source" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소스"
+          }
+        }
+      }
+    },
+    "Spread" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스프레드"
+          }
+        }
+      }
+    },
+    "Stripes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "줄무늬"
+          }
+        }
+      }
+    },
+    "Stroke color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선 색상"
+          }
+        }
+      }
+    },
+    "Structure" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "구조"
+          }
+        }
+      }
+    },
+    "Styles" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스타일"
+          }
+        }
+      }
+    },
+    "Technique" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기법"
+          }
+        }
+      }
+    },
+    "Texture" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "텍스처"
+          }
+        }
+      }
+    },
+    "The color between the pattern" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패턴 사이의 색상"
+          }
+        }
+      }
+    },
+    "The line's color. With a line selected, it changes that line too." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선 색상입니다. 선이 선택되어 있으면 그 선도 바뀝니다."
+          }
+        }
+      }
+    },
+    "The line's thickness" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선 굵기"
+          }
+        }
+      }
+    },
+    "The outline's color. With a shape selected, it changes that shape too." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "외곽선 색상입니다. 도형이 선택되어 있으면 그 도형도 바뀝니다."
+          }
+        }
+      }
+    },
+    "The outline's thickness, drawn just inside the edge; 0 draws none" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "외곽선 두께로, 가장자리 안쪽에 그려집니다. 0이면 그리지 않습니다"
+          }
+        }
+      }
+    },
+    "The pattern's own color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패턴 색상"
+          }
+        }
+      }
+    },
+    "The shape's fill. With a shape selected, it changes that shape too." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도형의 채우기 색상입니다. 도형이 선택되어 있으면 그 도형도 바뀝니다."
+          }
+        }
+      }
+    },
+    "Up" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "위로"
+          }
+        }
+      }
+    },
+    "Vivid Light" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선명한 라이트"
+          }
+        }
+      }
+    },
+    "Waves" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "물결"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

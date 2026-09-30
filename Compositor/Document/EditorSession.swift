@@ -117,9 +117,8 @@ final class EditorSession {
     var showsSampleRing = true
     var adjustmentOriginal: LayerAdjustment?
     var adjustmentEditingID: UUID? { didSet { resumeFileRequests() } }
-    /// The layer whose effects panel is open.
-    var effectsEditing: LayerEffectSelection?
-    var effectsEditingOriginal: LayerEffects?
+    /// The Layer Style dialog, open on one layer.
+    var layerStyle: LayerStyleEdit?
     var effectSelection: LayerEffectSelection?
     @ObservationIgnored var effectsPreviews = EffectsPreviewCache()
     var projectURL: URL?
@@ -627,7 +626,7 @@ final class EditorSession {
     var isModified: Bool { history.isModified }
     var canUseHistory: Bool {
         _ = showsBusy
-        return selectionAmountOperation == nil && colorRange == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && liquify == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && transformEdit == nil && !showsConversionSheet
+        return selectionAmountOperation == nil && colorRange == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && liquify == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && transformEdit == nil && !showsConversionSheet && layerStyle == nil
     }
     var canUndo: Bool { canUseHistory && (history.canUndo || gradientEdit != nil) }
     var canRedo: Bool { canUseHistory && history.canRedo }
@@ -665,6 +664,8 @@ final class EditorSession {
     var canEditLayers: Bool {
         _ = showsBusy
         return selectionAmountOperation == nil && colorRange == nil && textDraft == nil && document != nil && brushStroke == nil && warpStroke == nil && liquify == nil && !isProjectBusy && !isImporting && !showsNewDocument && !showsImporter && renamingLayerID == nil && transformEdit == nil && cropRect == nil && gradientEdit == nil && pixelMove == nil && hueSaturation == nil && levels == nil && filterEdit == nil && adjustmentEditingID == nil
+            // The Layer Style dialog works on its layer alone until OK or Cancel, as Photoshop's does.
+            && layerStyle == nil
     }
 
     func addBlankLayer() {

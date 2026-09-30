@@ -40,7 +40,9 @@ nonisolated enum PSDText {
               [xx, xy, yx, yy, tx, ty].allSatisfy(\.isFinite) else { return nil }
         guard reader.u16() == 50, let text = reader.descriptor(versioned: true) else { return nil }
         if let orientation = text.enumeration("Ornt"), orientation == "Vrtc" { return nil }
-        guard let placed = placement(xx: xx, xy: xy, yx: yx, yy: yy, tx: tx, ty: ty) else { return nil }
+        // Adobe's matrix is row-vector style — x' = xx·x + yx·y + tx, y' = xy·x + yy·y + ty — where `placement` takes
+        // (xx, xy) as its first row, so the two off-diagonal terms trade places.
+        guard let placed = placement(xx: xx, xy: yx, yx: xy, yy: yy, tx: tx, ty: ty) else { return nil }
 
         var notes: [String] = []
         if reader.remaining >= 2, reader.u16() == 1, let warp = reader.descriptor(versioned: true),
@@ -163,8 +165,33 @@ nonisolated enum PSDText {
         if bool(walk(data, "FauxBold")) == true || bool(walk(data, "FauxItalic")) == true {
             notes.append(fauxNote)
         }
-        if runs.count > 1, runs.dropFirst().contains(where: { signature($0) != signature(first) }) {
-            notes.append(firstStyleNote)
+        // Letters in other faces and colors keep them; a run that differs in anything else (size, leading, scale)
+        // takes the first run's, and says so.
+        if runs.count > 1 {
+            let lengths = array(walk(engine, "EngineDict", "StyleRun", "RunLengthArray")).compactMap { number($0) }
+            if lengths.count == runs.count {
+                var location = 0
+                for (run, length) in zip(runs, lengths) {
+                    let count = max(0, Int(length.rounded()))
+                    let range = NSRange(location: location, length: min(count, max(0, style.content.utf16.count - location)))
+                    location += count
+                    guard range.length > 0 else { continue }
+                    let runData = walk(run, "StyleSheet", "StyleSheetData") ?? run
+                    let face = Int((number(walk(runData, "Font")) ?? 0).rounded())
+                    if fonts.indices.contains(face), let name = string(walk(fonts[face], "Name")), !name.isEmpty, name != style.fontName(at: range.location) {
+                        style.setFont(name, in: range)
+                    }
+                    let channels = array(walk(runData, "FillColor", "Values")).compactMap { number($0) }
+                    if !channels.isEmpty {
+                        let rgb = color(channels)
+                        let runColor = PaletteColor(red: rgb.0, green: rgb.1, blue: rgb.2)
+                        if runColor != style.color(at: range.location) { style.setColor(runColor, in: range) }
+                    }
+                }
+            }
+            if runs.dropFirst().contains(where: { signature($0) != signature(first) }) {
+                notes.append(firstStyleNote)
+            }
         }
         let paragraphs = array(walk(engine, "EngineDict", "ParagraphRun", "RunArray"))
         let justification = number(walk(paragraphs.first ?? engine, "ParagraphSheet", "Properties", "Justification"))
@@ -205,11 +232,8 @@ nonisolated enum PSDText {
         sign.verticalScale = number(walk(data, "VerticalScale")) ?? 1
         sign.bold = bool(walk(data, "FauxBold")) ?? false
         sign.italic = bool(walk(data, "FauxItalic")) ?? false
-        let channels = array(walk(data, "FillColor", "Values")).compactMap { number($0) }
-        let rgb = color(channels)
-        sign.red = Double(rgb.0)
-        sign.green = Double(rgb.1)
-        sign.blue = Double(rgb.2)
+        // Face and color are kept letter by letter, so they don't count as a difference.
+        sign.font = 0
         return sign
     }
 
@@ -223,7 +247,7 @@ nonisolated enum PSDText {
         return (0, 0, 0)
     }
 
-    private static func horizontalAnchor(_ style: LayerTextStyle, width: CGFloat) -> CGFloat {
+    static func horizontalAnchor(_ style: LayerTextStyle, width: CGFloat) -> CGFloat {
         switch style.alignment {
         case .left: LayerTextStyle.padding
         case .center: width / 2
@@ -231,7 +255,7 @@ nonisolated enum PSDText {
         }
     }
 
-    private static func baseline(_ style: LayerTextStyle, image: CGSize) -> CGFloat {
+    static func baseline(_ style: LayerTextStyle, image: CGSize) -> CGFloat {
         let padding = LayerTextStyle.padding
         let sample = style.content.isEmpty ? " " : style.content
         let storage = NSTextStorage(attributedString: NSAttributedString(string: sample, attributes: EditorSession.textAttributes(style)))
@@ -568,8 +592,8 @@ private nonisolated struct Reader {
             let bits = raw.reduce(UInt64(0)) { ($0 << 8) | UInt64($1) }
             return .number(Double(Int64(bitPattern: bits)))
         case "bool":
-            guard u8() != nil else { return nil }
-            return .number(0)
+            guard let flag = u8() else { return nil }
+            return .number(flag == 0 ? 0 : 1)
         case "TEXT":
             guard let text = unicode() else { return nil }
             return .text(text)
@@ -678,5 +702,176 @@ private nonisolated struct Reader {
     mutating func f64() -> Double? {
         guard let raw = bytes(8) else { return nil }
         return Double(bitPattern: raw.reduce(UInt64(0)) { ($0 << 8) | UInt64($1) })
+    }
+}
+
+/// Photoshop's Layer Style (`lfx2`) read back into Compositor's effects, from the same descriptors `PSDLayerStyle`
+/// writes. Styles it has no form for (a Gradient Overlay, a Pattern Overlay from Photoshop's library) are left out.
+nonisolated extension PSDText {
+    static func layerStyle(_ data: Data) -> LayerEffects? {
+        guard data.count <= 8_000_000 else { return nil }
+        var reader = Reader(data: data)
+        guard reader.u32() == 0, let root = reader.descriptor(versioned: true) else { return nil }
+        if case .number(let on) = root["masterFXSwitch"], on == 0 { return nil }
+        /// The first of a kind: newer Photoshop lists several of one style under a `…Multi` key.
+        func style(_ key: String, _ multi: String) -> [String: DescriptorValue]? {
+            if case .descriptor(let items) = root[key] { return items }
+            if case .list(let list) = root[multi], case .descriptor(let items)? = list.first { return items }
+            return nil
+        }
+        func number(_ items: [String: DescriptorValue], _ key: String) -> Double? {
+            if case .number(let value) = items[key], value.isFinite { return value }
+            return nil
+        }
+        func pixels(_ items: [String: DescriptorValue], _ key: String, _ range: ClosedRange<Double>, _ fallback: Double) -> CGFloat {
+            CGFloat(min(range.upperBound, max(range.lowerBound, number(items, key) ?? fallback)))
+        }
+        func opacity(_ items: [String: DescriptorValue], _ key: String = "Opct") -> Double {
+            min(1, max(0, (number(items, key) ?? 100) / 100))
+        }
+        func color(_ items: [String: DescriptorValue], _ key: String = "Clr ") -> PaletteColor? {
+            guard case .descriptor(let rgb) = items[key], let red = number(rgb, "Rd  "), let green = number(rgb, "Grn "),
+                  let blue = number(rgb, "Bl  ") else { return nil }
+            func unit(_ value: Double) -> CGFloat { CGFloat(min(255, max(0, value)) / 255) }
+            return PaletteColor(red: unit(red), green: unit(green), blue: unit(blue))
+        }
+        func mode(_ items: [String: DescriptorValue], _ key: String = "Md  ") -> LayerBlendMode? {
+            guard case .enumeration(let value) = items[key] else { return nil }
+            return LayerBlendMode.allCases.first { PSDLayerStyle.descriptorKey($0) == value }
+        }
+        func enabled(_ items: [String: DescriptorValue]) -> Bool? { number(items, "enab").map { $0 == 0 ? false : nil } ?? nil }
+        func contour(_ items: [String: DescriptorValue], _ key: String) -> EffectContour? {
+            guard case .descriptor(let shape) = items[key], case .text(let name)? = shape["Nm  "] else { return nil }
+            let cleaned = name.trimmingCharacters(in: CharacterSet(charactersIn: "\0"))
+            return EffectContour.allCases.first { $0.rawValue == cleaned }
+        }
+        func enumeration(_ items: [String: DescriptorValue], _ key: String) -> String? {
+            if case .enumeration(let value) = items[key] { return value }
+            return nil
+        }
+        var effects = LayerEffects()
+        if let items = style("DrSh", "dropShadowMulti") {
+            var effect = ShadowEffect()
+            effect.enabled = enabled(items)
+            effect.angle = pixels(items, "lagl", -360...360, 120)
+            effect.distance = pixels(items, "Dstn", 0...5000, 5)
+            effect.blur = pixels(items, "blur", 0...500, 5)
+            effect.opacity = opacity(items)
+            if let spread = number(items, "Ckmt"), spread > 0 { effect.spread = CGFloat(min(100, spread)) }
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items)
+            effect.contour = contour(items, "TrnS").flatMap { $0 == .linear ? nil : $0 }
+            effects.shadow = effect
+        }
+        if let items = style("IrSh", "innerShadowMulti") {
+            var effect = InnerShadowEffect()
+            effect.enabled = enabled(items)
+            effect.angle = pixels(items, "lagl", -360...360, 120)
+            effect.distance = pixels(items, "Dstn", 0...5000, 5)
+            effect.blur = pixels(items, "blur", 0...500, 5)
+            effect.opacity = opacity(items)
+            if let choke = number(items, "Ckmt"), choke > 0 { effect.choke = CGFloat(min(100, choke)) }
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items)
+            effect.contour = contour(items, "TrnS").flatMap { $0 == .linear ? nil : $0 }
+            effects.innerShadow = effect
+        }
+        if let items = style("OrGl", "outerGlowMulti") {
+            var effect = OuterGlowEffect()
+            effect.enabled = enabled(items)
+            effect.size = pixels(items, "blur", 0...500, 5)
+            effect.opacity = opacity(items)
+            if let spread = number(items, "Ckmt"), spread > 0 { effect.spread = CGFloat(min(100, spread)) }
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items)
+            effect.contour = contour(items, "TrnS").flatMap { $0 == .linear ? nil : $0 }
+            effects.outerGlow = effect
+        }
+        if let items = style("IrGl", "innerGlowMulti") {
+            var effect = InnerGlowEffect()
+            effect.enabled = enabled(items)
+            effect.size = pixels(items, "blur", 0...500, 5)
+            effect.opacity = opacity(items)
+            if let choke = number(items, "Ckmt"), choke > 0 { effect.choke = CGFloat(min(100, choke)) }
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items)
+            effect.contour = contour(items, "TrnS").flatMap { $0 == .linear ? nil : $0 }
+            if enumeration(items, "glwS") == "SrcC" { effect.fromCenter = true }
+            effects.innerGlow = effect
+        }
+        if let items = style("ebbl", "bevelEmbossMulti") {
+            var effect = BevelEffect()
+            effect.enabled = enabled(items)
+            switch enumeration(items, "bvlS") {
+            case "OtrB": effect.style = .outerBevel
+            case "Embs": effect.style = .emboss
+            case "PlEb": effect.style = .pillowEmboss
+            default: effect.style = .innerBevel
+            }
+            switch enumeration(items, "bvlT") {
+            case "PrBL": effect.technique = .chiselHard
+            case "Slmt": effect.technique = .chiselSoft
+            default: effect.technique = .smooth
+            }
+            effect.depth = pixels(items, "srgR", 1...1000, 100)
+            effect.up = enumeration(items, "bvlD") != "Out "
+            effect.size = pixels(items, "blur", 0...250, 5)
+            effect.soften = pixels(items, "Sftn", 0...16, 0)
+            effect.angle = pixels(items, "lagl", -360...360, 120)
+            effect.altitude = pixels(items, "Lald", 0...90, 30)
+            effect.gloss = contour(items, "TrnS") ?? .linear
+            effect.highlightMode = mode(items, "hglM") ?? .screen
+            effect.shadowMode = mode(items, "sdwM") ?? .multiply
+            effect.highlightOpacity = opacity(items, "hglO")
+            effect.shadowOpacity = opacity(items, "sdwO")
+            if let value = color(items, "hglC") { effect.highlightRed = value.red; effect.highlightGreen = value.green; effect.highlightBlue = value.blue }
+            if let value = color(items, "sdwC") { effect.shadowRed = value.red; effect.shadowGreen = value.green; effect.shadowBlue = value.blue }
+            if number(items, "useShape") == 1 {
+                effect.usesContour = true
+                effect.contour = contour(items, "MpgS") ?? .halfRound
+                effect.contourRange = pixels(items, "Inpr", 1...100, 50)
+            }
+            effects.bevel = effect
+        }
+        if let items = style("ChFX", "satinMulti") {
+            var effect = SatinEffect()
+            effect.enabled = enabled(items)
+            effect.opacity = opacity(items)
+            effect.angle = pixels(items, "lagl", -360...360, 19)
+            effect.distance = pixels(items, "Dstn", 1...250, 11)
+            effect.size = pixels(items, "blur", 0...250, 14)
+            effect.invert = number(items, "Invr").map { $0 != 0 } ?? true
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items) ?? .multiply
+            effect.contour = contour(items, "MpgS") ?? .gaussian
+            effects.satin = effect
+        }
+        if let items = style("SoFi", "solidFillMulti") {
+            var effect = ColorOverlayEffect()
+            effect.enabled = enabled(items)
+            effect.opacity = opacity(items)
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items)
+            effects.colorOverlay = effect
+        }
+        if let items = style("FrFX", "frameFXMulti") {
+            var effect = StrokeEffect()
+            effect.enabled = enabled(items)
+            effect.size = pixels(items, "Sz  ", 0...Double(StrokeEffect.maxSize), 3)
+            effect.opacity = opacity(items)
+            switch enumeration(items, "Styl") {
+            case "InsF": effect.inside = true
+            case "CtrF": effect.centered = true
+            default: break
+            }
+            if let value = color(items) { effect.red = value.red; effect.green = value.green; effect.blue = value.blue }
+            effect.blendMode = mode(items)
+            effects.stroke = effect
+        }
+        // Normal is what a missing mode draws, so it isn't kept (which keeps plain effects on the GPU pass).
+        for kind in LayerEffectKind.allCases where kind != .bevel && effects.blendMode(kind) == .normal {
+            effects.clearBlendMode(kind)
+        }
+        return effects.kinds.isEmpty || !effects.isValid ? nil : effects
     }
 }

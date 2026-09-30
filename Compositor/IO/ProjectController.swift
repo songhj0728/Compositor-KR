@@ -205,16 +205,24 @@ final class ProjectController {
         let editable = NSButton(checkboxWithTitle: String(localized: "Keep adjustment layers editable"), target: nil, action: nil)
         editable.state = .on
         editable.toolTip = String(localized: "Off saves each adjustment as the pixels it makes, for apps that can't read adjustment layers")
-        let accessory = NSView(frame: NSRect(x: 0, y: 0, width: 360, height: 36))
-        editable.frame.origin = NSPoint(x: 16, y: 9)
+        // Text as Photoshop type and effects as its Layer Style; unticked, both are saved as their pixels.
+        let editableText = NSButton(checkboxWithTitle: String(localized: "Keep text and layer styles editable"), target: nil, action: nil)
+        editableText.state = .on
+        editableText.toolTip = String(localized: "Off saves text and layer effects as the pixels they make")
+        let accessory = NSView(frame: NSRect(x: 0, y: 0, width: 360, height: 62))
+        editable.frame.origin = NSPoint(x: 16, y: 35)
         editable.sizeToFit()
+        editableText.frame.origin = NSPoint(x: 16, y: 9)
+        editableText.sizeToFit()
         accessory.addSubview(editable)
+        accessory.addSubview(editableText)
         panel.accessoryView = accessory
         let response: NSApplication.ModalResponse
         if let window { response = await panel.beginSheetModal(for: window) }
         else { response = await panel.begin() }
         guard response == .OK, let url = panel.url else { return }
-        let options = PSDExportOptions(editableAdjustments: editable.state == .on, collapsedGroups: session.collapsedGroupIDs)
+        let options = PSDExportOptions(editableAdjustments: editable.state == .on, editableTextAndStyles: editableText.state == .on,
+                                       collapsedGroups: session.collapsedGroupIDs)
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         do {
