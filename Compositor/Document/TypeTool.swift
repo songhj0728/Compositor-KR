@@ -1,18 +1,6 @@
 import AppKit
 import SwiftUI
 
-nonisolated enum TextAlignment: String, Codable, CaseIterable, Sendable {
-    case left = "Left", center = "Center", right = "Right"
-    /// `rawValue` as a localizable display name; `rawValue` itself stays the stable, unlocalized identifier.
-    var displayName: LocalizedStringKey {
-        switch self {
-        case .left: return "Left"
-        case .center: return "Center"
-        case .right: return "Right"
-        }
-    }
-}
-
 nonisolated struct LayerTextStyle: Codable, Equatable, Sendable {
     var content = "Text"
     var fontName = "Helvetica"
