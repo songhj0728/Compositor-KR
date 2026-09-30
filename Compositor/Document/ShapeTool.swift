@@ -39,9 +39,12 @@ nonisolated struct LayerShapeStyle: Codable, Equatable, Sendable {
     var end: CGPoint? = nil
     /// Whether the inside is filled; missing means filled, as every shape was before strokes.
     var filled: Bool? = nil
-    /// An outline drawn just inside the edge of a rectangle or ellipse, in document pixels, and its color. Missing (or
-    /// a width of 0) means no outline.
+    /// An outline around a rectangle or ellipse, in document pixels, and its color. Missing (or a width of 0) means no
+    /// outline.
     var strokeWidth: CGFloat? = nil
+    /// The outline sits outside the shape, which the layer's box grows to hold, as a Photoshop shape's Outside stroke.
+    /// Missing means just inside the edge, as the first outlined shapes were drawn, so those keep their look.
+    var strokeOutside: Bool? = nil
     var strokeRed: CGFloat? = nil
     var strokeGreen: CGFloat? = nil
     var strokeBlue: CGFloat? = nil
@@ -49,6 +52,8 @@ nonisolated struct LayerShapeStyle: Codable, Equatable, Sendable {
     var fills: Bool { filled ?? true }
     var strokeColor: PaletteColor { PaletteColor(red: strokeRed ?? 0, green: strokeGreen ?? 0, blue: strokeBlue ?? 0) }
     var strokeSize: CGFloat { kind == .line ? 0 : max(0, strokeWidth ?? 0) }
+    /// How far the layer's box reaches past the shape on each side: the width of an outline drawn outside it.
+    var outsideMargin: CGFloat { strokeOutside == true ? strokeSize : 0 }
     mutating func setColor(_ color: PaletteColor) { red = color.red; green = color.green; blue = color.blue }
     mutating func setStrokeColor(_ color: PaletteColor) { strokeRed = color.red; strokeGreen = color.green; strokeBlue = color.blue }
 }
@@ -188,6 +193,7 @@ extension EditorSession {
             style.filled = shapeFills ? nil : false
             if shapeStrokeWidth > 0 {
                 style.strokeWidth = CGFloat(shapeStrokeWidth)
+                style.strokeOutside = true
                 style.setStrokeColor(shapeStrokeColor)
             }
         }
@@ -217,6 +223,12 @@ extension EditorSession {
             var style = shapeToolStyle(kind, cornerRadius: cornerRadius)
             style.start = ends.map { unit($0.start) }
             style.end = ends.map { unit($0.end) }
+            // The size asked for is the shape's; an outline outside it widens the layer on every side.
+            rect = rect.insetBy(dx: -style.outsideMargin, dy: -style.outsideMargin)
+            guard Int(rect.width) * Int(rect.height) <= Self.maxShapePixels else {
+                brushError = "That shape is too large. A shape can cover up to \(DocumentLimits.maxSurfaceMegapixels) megapixels."
+                return
+            }
             let image = try Self.shapeImage(style, size: rect.size)
             addPixelLayer(image, at: rect.origin, name: nextShapeName(kind), editName: kind.rawValue,
                           dropsSelection: false, shape: LayerShape(style: style, image: image))
@@ -235,7 +247,17 @@ extension EditorSession {
         var style = shape.style
         change(&style)
         guard style != shape.style else { return }
-        let width = max(1, Int(layer.transform.size.width.rounded())), height = max(1, Int(layer.transform.size.height.rounded()))
+        // An outline outside the shape grows (or shrinks) the layer's box around the shape's own center, whichever way
+        // the layer is turned, so the shape itself stays exactly where it was.
+        var transform = layer.transform
+        let grow = style.outsideMargin - shape.style.outsideMargin
+        if grow != 0 {
+            // Outline widths are document pixels, as the layer's box is.
+            transform.origin.x -= grow; transform.origin.y -= grow
+            transform.size.width += 2 * grow; transform.size.height += 2 * grow
+            guard transform.isValid else { return }
+        }
+        let width = max(1, Int(transform.size.width.rounded())), height = max(1, Int(transform.size.height.rounded()))
         guard width * height <= Self.maxShapePixels,
               let image = try? Self.shapeImage(style, size: CGSize(width: width, height: height)),
               let thumbnail = try? PixelInvert.thumbnail(of: image) else { return }
@@ -245,6 +267,7 @@ extension EditorSession {
         if let mask = layer.mask, mask.placement == nil, asset.image.width != width || asset.image.height != height {
             document?.layers[index].mask?.placement = layer.maskTransform
         }
+        document?.layers[index].transform = transform
         document?.layers[index].asset = ImportedImage(image: image, thumbnail: thumbnail, name: asset.name)
         document?.layers[index].shape = LayerShape(style: style, image: image)
         endEdit()
@@ -270,7 +293,10 @@ extension EditorSession {
         changeShapeStyle(name: "Shape Stroke") { style in
             guard style.kind != .line else { return }
             style.setStrokeColor(color)
-            if style.strokeSize == 0, self.shapeStrokeWidth > 0 { style.strokeWidth = CGFloat(self.shapeStrokeWidth) }
+            if style.strokeSize == 0, self.shapeStrokeWidth > 0 {
+                style.strokeWidth = CGFloat(self.shapeStrokeWidth)
+                style.strokeOutside = true
+            }
         }
     }
     func setShapeStrokeWidth(_ width: Double) {
@@ -279,6 +305,8 @@ extension EditorSession {
         changeShapeStyle(name: "Shape Stroke") { style in
             guard style.kind != .line else { return }
             style.strokeWidth = width > 0 ? CGFloat(width) : nil
+            // Any outline set from here on sits outside the shape, an older inside one included.
+            style.strokeOutside = width > 0 ? true : nil
             if width > 0, style.strokeRed == nil { style.setStrokeColor(self.shapeStrokeColor) }
         }
     }
@@ -338,17 +366,18 @@ extension EditorSession {
         return image
     }
 
-    /// A shape layer's pixels at `size`: its fill, then its outline just inside the edge.
+    /// A shape layer's pixels at `size`: its fill, then its outline, outside the shape or just inside its edge.
     nonisolated static func shapeImage(_ style: LayerShapeStyle, size: CGSize) throws -> CGImage {
         try shapeImage(style.kind, size: size, color: style.color, cornerRadius: style.cornerRadius,
                        lineWidth: style.lineWidth ?? 0, start: style.start, end: style.end, fills: style.fills,
-                       stroke: style.strokeSize > 0 ? style.strokeColor : nil, strokeWidth: style.strokeSize)
+                       stroke: style.strokeSize > 0 ? style.strokeColor : nil, strokeWidth: style.strokeSize,
+                       strokeOutside: style.strokeOutside == true)
     }
 
     /// The shape filling its box, anti-aliased where it curves.
     nonisolated static func shapeImage(_ kind: ShapeKind, size: CGSize, color: PaletteColor, cornerRadius: CGFloat = 0,
                            lineWidth: CGFloat = 0, start: CGPoint? = nil, end: CGPoint? = nil, fills: Bool = true,
-                           stroke: PaletteColor? = nil, strokeWidth: CGFloat = 0) throws -> CGImage {
+                           stroke: PaletteColor? = nil, strokeWidth: CGFloat = 0, strokeOutside: Bool = false) throws -> CGImage {
         let context = try BrushRaster.context(width: Int(size.width), height: Int(size.height), mask: false)
         let bounds = CGRect(origin: .zero, size: size)
         if kind == .line {
@@ -368,13 +397,23 @@ extension EditorSession {
             guard let image = context.makeImage() else { throw ExportError.render }
             return image
         }
+        // Outside: the shape is the box less the outline's width all round, and the outline runs around it, its outer
+        // edge on the box's, its corners rounded out by the shape's radius plus half its width.
+        let outside = strokeOutside && stroke != nil ? min(strokeWidth, max(0, (min(size.width, size.height) - 1) / 2)) : 0
+        let body = bounds.insetBy(dx: outside, dy: outside)
         if fills {
             context.setFillColor(CGColor(srgbRed: color.red, green: color.green, blue: color.blue, alpha: 1))
-            context.addPath(kind.path(in: bounds, cornerRadius: cornerRadius))
+            context.addPath(kind.path(in: body, cornerRadius: cornerRadius))
             context.fillPath()
         }
-        // Inside the edge, so the outline never grows the layer, as a Photoshop shape's Inside stroke.
-        if let stroke, strokeWidth > 0 {
+        if let stroke, outside > 0 {
+            context.setStrokeColor(CGColor(srgbRed: stroke.red, green: stroke.green, blue: stroke.blue, alpha: 1))
+            context.setLineWidth(outside)
+            context.addPath(kind.path(in: body.insetBy(dx: -outside / 2, dy: -outside / 2),
+                                      cornerRadius: cornerRadius > 0 ? cornerRadius + outside / 2 : 0))
+            context.strokePath()
+        } else if let stroke, strokeWidth > 0 {
+            // Inside the edge, so the outline never grows the layer, as a Photoshop shape's Inside stroke.
             let width = min(strokeWidth, min(size.width, size.height) / 2)
             context.setStrokeColor(CGColor(srgbRed: stroke.red, green: stroke.green, blue: stroke.blue, alpha: 1))
             context.setLineWidth(width)

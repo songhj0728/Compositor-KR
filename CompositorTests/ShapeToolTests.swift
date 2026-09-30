@@ -139,18 +139,43 @@ struct ShapeToolTests {
         session.setShapeStroke(PaletteColor(red: 1, green: 0, blue: 0))
         session.setShapeStrokeWidth(4)
         #expect(session.activeShape?.style.strokeSize == 4)
+        // The outline goes outside the shape: the layer grows 4 pixels on every side and the shape stays where it was.
+        #expect(session.activeLayer?.transform.origin == CGPoint(x: 6, y: 6))
+        #expect(session.activeLayer?.transform.size == CGSize(width: 38, height: 38))
         var pixel = try await pixels(session)
-        #expect(pixel(11, 11) == (255, 255), "the outline, just inside the edge")
-        #expect(pixel(25, 25) == (0, 255), "the new fill")
+        #expect(pixel(8, 8) == (255, 255), "the outline, just outside the edge")
+        #expect(pixel(11, 11) == (0, 255) && pixel(25, 25) == (0, 255), "the new fill, out to the shape's edge")
         session.setShapeFills(false)
         pixel = try await pixels(session)
-        #expect(pixel(25, 25).alpha == 0 && pixel(11, 25) == (255, 255))
+        #expect(pixel(25, 25).alpha == 0 && pixel(8, 25) == (255, 255))
+        // Thinner again, the layer shrinks back around the same shape.
+        session.setShapeStrokeWidth(2)
+        #expect(session.activeLayer?.transform.origin == CGPoint(x: 8, y: 8))
+        #expect(session.activeLayer?.transform.size == CGSize(width: 34, height: 34))
+        session.setShapeStrokeWidth(4)
 
-        // The next shape is made the same way.
+        // The next shape is made the same way, its outline outside the size it was drawn at.
         drag(session, from: CGPoint(x: 50, y: 10), to: CGPoint(x: 80, y: 40))
         #expect(session.activeShape?.style.fills == false && session.activeShape?.style.strokeSize == 4)
+        #expect(session.activeLayer?.transform.origin == CGPoint(x: 46, y: 6))
+        #expect(session.activeLayer?.transform.size == CGSize(width: 38, height: 38))
+        session.undo()
+        session.undo()
         session.undo()
         session.undo()
         #expect(session.activeShape?.style.fills == true)
+    }
+
+    /// An outline saved before outlines went outside (no `strokeOutside`) still draws just inside the edge, so those
+    /// shapes keep their look.
+    @Test func olderInsideOutlinesKeepTheirLook() throws {
+        var style = LayerShapeStyle(kind: .rectangle, red: 0, green: 0, blue: 1, cornerRadius: 0)
+        style.strokeWidth = 4
+        style.setStrokeColor(PaletteColor(red: 1, green: 0, blue: 0))
+        #expect(style.outsideMargin == 0)
+        let inside = try BrushRaster.copy(try EditorSession.shapeImage(style, size: CGSize(width: 30, height: 30)))
+        let data = try #require(inside.data).assumingMemoryBound(to: UInt8.self)
+        #expect(data[1 * inside.bytesPerRow + 1 * 4] == 255, "red just inside the edge")
+        #expect(data[15 * inside.bytesPerRow + 15 * 4 + 2] == 255, "blue in the middle")
     }
 }
