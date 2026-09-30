@@ -13,7 +13,11 @@ This repository uses vendor-neutral AI development instructions:
 - [CLAUDE.md](CLAUDE.md) and [CODEX.md](CODEX.md) — compatibility entry points for specific agents
 - [docs/multiplatform/inventory.md](docs/multiplatform/inventory.md) — what the code depends on today and what is shared
 - [docs/multiplatform/windows-decisions.md](docs/multiplatform/windows-decisions.md) — Windows choices still to be made
+- [docs/core-api.md](docs/core-api.md) — the Core API contract: what macOS and Windows would share, language-neutral
 - [docs/multiplatform/document-model-inventory.md](docs/multiplatform/document-model-inventory.md) — the document model's types, dependencies and file-by-file migration plan
+- [docs/multiplatform/migration-dependency-map.md](docs/multiplatform/migration-dependency-map.md) — what must move before what
+- [docs/multiplatform/architecture-questions.md](docs/multiplatform/architecture-questions.md) — decisions still open
+- [docs/multiplatform/spike-findings.md](docs/multiplatform/spike-findings.md) — findings from the Core-language spike and WinUI 3 test
 
 The documents describe the target architecture; they do not imply that every target directory or Windows implementation already exists.
 

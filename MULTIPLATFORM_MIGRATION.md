@@ -11,7 +11,7 @@ Evolve the existing macOS application into a macOS + Windows product without thr
 - Phase 2: first boundary — the C pixel code no longer depends on Grand Central Dispatch (`PixelParallel`).
 - Phase 4: first foundation — `CMakeLists.txt` builds and tests the C pixel code on Windows and macOS
   (`shared.yml`). The Windows app itself waits on [docs/multiplatform/windows-decisions.md](docs/multiplatform/windows-decisions.md).
-- Phase 2, document model: inventory and file-by-file plan in [docs/multiplatform/document-model-inventory.md](docs/multiplatform/document-model-inventory.md); nothing moved yet.
+- Phase 2, document model: Core API contract in [docs/core-api.md](docs/core-api.md); inventory, A–E classification and file-by-file plan in [docs/multiplatform/document-model-inventory.md](docs/multiplatform/document-model-inventory.md), order in [migration-dependency-map.md](docs/multiplatform/migration-dependency-map.md), open decisions in [architecture-questions.md](docs/multiplatform/architecture-questions.md). Nothing moved yet.
 - Phase 6: golden tests exist for Liquify and Smear (`Tests/Pixels`); the other algorithms still need them.
 
 ## Phase 0 — Baseline

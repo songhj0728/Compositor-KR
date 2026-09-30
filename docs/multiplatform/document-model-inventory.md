@@ -1,154 +1,188 @@
 # Document model inventory and migration plan
 
-What the document model is made of today, what each part depends on, and the order in which it can be separated
-from macOS — file by file. **Nothing here has been moved yet.** The plan is written so its first steps pay off
-whichever Core language is chosen (see [windows-decisions.md](windows-decisions.md) and `Spikes/CoreModel` on the
-`spike/core-model` branch).
+What the document model is made of today, what each part depends on, where it should end up under the Core
+contract ([core-api.md](../core-api.md)), and the order in which it can be separated from macOS — file by file.
+**Nothing here has been moved yet**, and no Core language is chosen; the first steps pay off either way. The order of
+work is drawn in [migration-dependency-map.md](migration-dependency-map.md); open questions are in
+[architecture-questions.md](architecture-questions.md).
 
-Taken from Compositor-KR 1.4.2 on the `Compositor-Multiplatform` branch.
+Taken from Compositor-KR 1.4.2 on the `Compositor-Multiplatform` branch. (main's 1.4.3 changes the brush engine
+only — `BrushStroke`, `BlurTool`, `SmudgeLiquify` internals — and no type in this list.)
 
 ## How the list was made
 
 Starting from the document's roots — `CanvasDocument`, `ImageLayer`, `ProjectManifest`, `ProjectSnapshot`,
 `DocumentHistory` — every type reachable through stored properties or enum payloads: 47 types in 21 files
-(8,180 lines). For each, the frameworks it touches were found by name (`CGImage`, `NSColor`, `CIImage`, `Color`, …)
-and split into **stored** (the type's data depends on it) and **methods** (only behavior does, which can move to an
-extension). Tool state, the editor session and view models are out of scope; they are UI.
+(8,180 lines). For each, the frameworks it touches were found by name and split into **stored** (the type's data
+depends on it) and **methods** (only behavior does, which can move to an extension). Existing tests were found by the
+type's name in `CompositorTests`; "indirect" means tests exercise it through the editor session without naming it.
+Tool state, the editor session and view models are out of scope; they are UI.
 
 Two facts decide most of the classification (both checked with Swift 6.4 on Windows):
 
-- **`CGFloat`, `CGPoint`, `CGSize`, `CGRect` exist on Windows only in full Foundation**, which ships ICU (~63 MB of
-  runtime). They are not in `FoundationEssentials`. **`CGAffineTransform`, `CGPath`, `CGImage` and `CGColorSpace` do
-  not exist on Windows at all.** A type that *stores* CoreGraphics geometry needs its own geometry types (plain
-  `Double`s) to be shared cheaply.
-- **`UUID` and `Codable`/JSON work with `FoundationEssentials`** (13.5 MB runtime, no ICU), and `Observation` is in
-  the Windows toolchain.
+- **`CGFloat`, `CGPoint`, `CGSize`, `CGRect` exist on Windows only in full Foundation** (ICU, ~63 MB of runtime), not
+  in `FoundationEssentials`. **`CGAffineTransform`, `CGPath`, `CGImage`, `CGColorSpace` don't exist on Windows.**
+- **`UUID` and `Codable`/JSON work with `FoundationEssentials`** (13.5 MB, no ICU), and `Observation` is in the
+  Windows toolchain.
 
-`CGFloat` is encoded in `.comp` manifests as a JSON number, the same as `Double`, so replacing it with `Double` does not
-change the file format. (To be confirmed by a golden-file test before the change — step 2 below.)
+`CGFloat` is written to `.comp` as a JSON number, the same as `Double`, so replacing it with the Core's `Scalar`
+doesn't change the file format — to be proven by golden-file tests first (step 0).
 
 ## Categories
 
-- **A — Shared Core candidate:** plain values; can move as is (at most a file move).
-- **B — Refactor first:** belongs in the Core, but stores or requires something Apple-only.
-- **C — Stays macOS platform:** the macOS implementation behind a Core boundary.
-- **D — Replace / retire:** a macOS-specific shortcut inside the model that the Core should not carry.
+| | Meaning | Count |
+|---|---|---|
+| **A** | Move to the shared Core as is (at most a file move) | 12 |
+| **B** | Move after removing platform types (CoreGraphics geometry, UI helpers, `NSLock`) | 24 |
+| **C** | Needs an adapter first: the `ImageRef` handle, `CorePath`, or operations taken out of the editor session | 8 |
+| **D** | Stays in the renderer / platform layer, behind a Core boundary | 3 |
+| **E** | Pieces *inside* the types above to remove or replace (listed separately) | 7 items |
+
+Difficulty: **S** — mechanical, few call sites; **M** — many call sites or format-sensitive; **L** — needs a new
+abstraction and touches the renderer and tools.
+
+Target locations follow ARCHITECTURE.md's target structure (`Core/`, `Formats/`, `Rendering/`, `Platform/macOS/`).
+They are destinations, not folders to create now.
 
 ## The 47 types
 
-| Type | File | Depends on | Stored? | Category | What's needed |
+### A — move as is
+
+| Type | Current file | Framework dependency | Target | Diff. | Existing tests |
 |---|---|---|---|---|---|
-| `CanvasDocument` | Document/EditorSession.swift | UUID; file imports SwiftUI | UUID | **B** | Move out of the SwiftUI file; `selection` needs step 5. |
-| `ImageLayer` | Document/EditorSession.swift | UUID, `ImportedImage`, CG geometry | yes | **B** | The hub: pixel asset → image handle (step 4); `==` compares `CGImage` identity. Extensions in LayerGroups, LayerMask, ShapeTool, TypeTool, **UI/NativeLayerList** (UI; stays). |
-| `ProjectManifest` | IO/ProjectStore.swift | UUID, Codable | UUID | **B** | The `.comp` manifest. Only UUID; carries `LayerTransform` etc. through records. |
-| `ProjectLayerRecord` | IO/ProjectStore.swift | UUID, Codable | UUID | **B** | Follows its members. |
-| `ProjectSnapshot` | IO/ProjectStore.swift | `ImportedImage` | yes | **B** | Images → image handles. |
-| `DocumentHistory` | Document/DocumentHistory.swift | Observation, UUID; counts `CGImage` bytes | yes | **B** | Byte accounting through the image handle. `@Observable` works on Windows. |
-| `LayerOrder` | Document/LayerGroups.swift | `NSLock` | static | **B** | `NSLock` → `Synchronization.Mutex` (or drop the cache). Pure logic otherwise. |
-| `CanvasGuide` | Document/Guides.swift | UUID | UUID | **A** | (Guide *drawing* uses `CGColor`; that's a separate, UI part of the file.) |
-| `LayerTransform` | Document/LayerTransform.swift | `CGPoint`, `CGSize`, `CGFloat` | yes | **B** | Core geometry types. Most-used type; biggest ripple. `LayerFlip.swift` extends it. |
-| `LayerSampling` | Document/LayerTransform.swift | — | — | **A** | |
-| `LayerBlendMode` | Document/LayerAppearance.swift | — | — | **A** | PSD blend-key mapping (IO/PSD) is format code; shareable. |
-| `DocumentColorProfile` | Document/ColorProfile.swift | `CGColorSpace` | methods | **B** | Enum to Core; the color-space lookup to a macOS extension. Windows needs its own color management. |
-| `DocumentSelection` | Document/Selection.swift | `CGPath`; `CIImage` in methods | **yes** | **B** | Needs a Core representation (path data or a mask raster). Hardest value type. |
-| `ImportedImage` | IO/ImageImporter.swift | `CGImage` ×2, `RasterSnapshot` | yes | **C** | The macOS image representation. The Core gets an image-handle abstraction instead (step 4). |
-| `RasterSnapshot` | Rendering/RasterSnapshot.swift | `CGImage`, `CGContext` | yes | **C** | macOS undo-memory optimization behind the handle. |
-| `BrushPatch` | Document/BrushStroke.swift | `CGImage`, `CGRect` | yes | **C** | Part of `RasterSnapshot`. |
-| `LayerMask` | Document/LayerMask.swift | `ImportedImage`; CG in methods | yes | **B** | Asset → image handle; mask *logic* is Core. |
-| `LayerAdjustment` | Document/LayerAdjustment.swift | `apply(CGImage)` | methods | **B** | Settings are plain values; `apply` moves to the renderer/platform. |
-| `AdjustmentKind` | Document/LayerAdjustment.swift | SF Symbol name (`symbol`) | methods | **B** | Move `symbol` (UI) to a macOS extension. |
-| `HueSaturationSettings` | Document/HueSaturation.swift | — | — | **A** | |
-| `ColorRange`, `HueBand`, `RangeAdjustment` | Document/HueSaturation.swift | — | — | **A** | |
-| `ExposureSettings` | Document/ImageAdjustments.swift | `apply(CGImage)` → C pixel code | methods | **B** | Settings to Core; `apply` over an image buffer calls the already-shared C code. |
-| `GradientMapSettings` | Document/ImageAdjustments.swift | same | methods | **B** | same |
-| `GrainSettings` | Document/ImageAdjustments.swift | same | methods | **B** | same |
-| `BlackWhiteSettings` | Document/ImageAdjustments.swift | same | methods | **B** | same |
-| `ColorBalanceSettings` | Document/ImageAdjustments.swift | same | methods | **B** | same |
-| `AdjustmentColor` | Document/ImageAdjustments.swift | — | — | **A** | |
-| `LayerEffects` | Document/LayerEffects.swift | (members) | — | **B** | Follows its members. |
-| `StrokeEffect`, `ShadowEffect`, `ColorOverlayEffect`, `InnerShadowEffect`, `OuterGlowEffect`, `InnerGlowEffect` | Document/LayerEffects.swift | `CGFloat` | yes | **B** | `CGFloat` → `Double` (format unchanged). Rendering stays in Core Image/Metal. |
-| `LayerEffectKind` | Document/LayerEffects.swift | — | — | **A** | |
-| `FilterKind` | Document/Filters.swift | — (file imports CoreImage) | — | **A** | Move out of the Core Image file. |
-| `LayerShape` | Document/ShapeTool.swift | `CGImage` (rendered pixels) | yes | **B** + **D** | Style is Core; the stored rendered `image` is a cache → **D**, re-rendered per platform. |
-| `LayerShapeStyle` | Document/ShapeTool.swift | `CGFloat`, `CGPoint` | yes | **B** | Geometry types. |
-| `ShapeKind` | Document/ShapeTool.swift | `CGPath` in `path(in:)` | methods | **B** | Enum to Core; path building to the renderer. |
-| `LayerText` | Document/TypeTool.swift | `CGImage` (rendered pixels) | yes | **B** + **D** | As `LayerShape`. Text layout and fonts differ per OS — a product risk (same text may wrap differently on Windows). |
-| `LayerTextStyle` | Document/TypeTool.swift | `CGFloat`, `CGSize` | yes | **B** | Geometry types. |
-| `LayerTextColorRun` | Document/TypeTool.swift | `CGFloat` | yes | **B** | `CGFloat` → `Double`. |
-| `LayerTextFontRun` | Document/TypeTool.swift | — | — | **A** | Font *names* may not exist on Windows; mapping is a platform concern. |
-| `TextAlignment` | Document/TypeTool.swift | — | — | **A** | |
-| `PaletteColor` | Document/ColorPalette.swift | `CGFloat`; `NSColor` in methods | yes | **B** | Editor color (foreground/background), not document data; move with tools later. `nsColor` to a macOS extension. |
+| `CanvasGuide` | Document/Guides.swift | `UUID` only (guide *drawing* in the same file uses `CGColor`) | Core/Model | S¹ | GuideTests, PSDExportTests |
+| `LayerSampling` | Document/LayerTransform.swift | — | Core/Model | S | indirect (TransformTests, CropTests) |
+| `LayerBlendMode` | Document/LayerAppearance.swift | — (PSD key mapping is in IO/PSD) | Core/Model | S | LayerAppearanceTests, BlendShortcutTests, GPUCanvasTests |
+| `LayerEffectKind` | Document/LayerEffects.swift | — | Core/Effects | S | indirect (OuterGlowTests, InnerGlowTests) |
+| `FilterKind` | Document/Filters.swift | — (the file imports Core Image, AppKit, SwiftUI) | Core/Adjustments | S | CameraRawTests, FinishingFilterTests, ImageAdjustmentTests |
+| `HueSaturationSettings` | Document/HueSaturation.swift | — | Core/Adjustments | S | HueSaturationTests, AdjustmentLayerTests, PSDExportTests |
+| `ColorRange` | Document/HueSaturation.swift | — | Core/Adjustments | S | HueSaturationTests, PSDExportTests |
+| `HueBand` | Document/HueSaturation.swift | — | Core/Adjustments | S | PSDAdjustmentTests |
+| `RangeAdjustment` | Document/HueSaturation.swift | — | Core/Adjustments | S | HueSaturationTests, PSDAdjustmentTests |
+| `AdjustmentColor` | Document/ImageAdjustments.swift | — | Core/Adjustments | S | ImageAdjustmentTests, FinishingFilterTests |
+| `LayerTextFontRun` | Document/TypeTool.swift | — | Core/Text | S | TypeToolTests |
+| `TextAlignment` | Document/TypeTool.swift | — | Core/Text | S | indirect (TypeToolTests) |
 
-Totals: **A 12 · B 32 · C 3** (47), plus **3 D items** inside B/C types: the rendered-pixel caches in `LayerShape` and `LayerText`, and the
-`thumbnail` stored in `ImportedImage`, which the handle design should drop from the model.
+¹ Depends on the ID decision (architecture-questions.md Q1): with a stdlib-only Core, `UUID` becomes the Core's ID type.
 
-Nothing in the list depends on SwiftUI or AppKit *in its data*; the SwiftUI/AppKit exposure is files importing them
-and a few UI helpers (`symbol`, `nsColor`) living on model types. The real dependencies are CoreGraphics geometry
-(everywhere), `CGImage` (layers, masks, history), `CGPath` (selection) and `CGColorSpace` (profiles).
+### B — remove platform types, then move
+
+| Type | Current file | Framework dependency | Target | Diff. | Existing tests |
+|---|---|---|---|---|---|
+| `LayerTransform` | Document/LayerTransform.swift | **stored** `CGPoint`, `CGSize`, `CGFloat` | Core/Geometry (as `LayerPlacement`) | M — most-used model type | 23 files: TransformTests, CropTests, DistortTests, BrushTests, … |
+| `StrokeEffect` | Document/LayerEffects.swift | **stored** `CGFloat` (size, color) | Core/Effects | S | FinishingFilterTests, OuterGlowTests, PSDExportTests |
+| `ShadowEffect` | Document/LayerEffects.swift | **stored** `CGFloat` | Core/Effects | S | OuterGlowTests, ProjectTests, GPUCanvasTests |
+| `ColorOverlayEffect` | Document/LayerEffects.swift | **stored** `CGFloat` | Core/Effects | S | ProjectTests |
+| `InnerShadowEffect` | Document/LayerEffects.swift | **stored** `CGFloat` | Core/Effects | S | ProjectTests |
+| `OuterGlowEffect` | Document/LayerEffects.swift | **stored** `CGFloat` | Core/Effects | S | OuterGlowTests |
+| `InnerGlowEffect` | Document/LayerEffects.swift | **stored** `CGFloat` | Core/Effects | S | InnerGlowTests |
+| `LayerEffects` | Document/LayerEffects.swift | via its members | Core/Effects | S | InnerGlowTests, OuterGlowTests, FinishingFilterTests |
+| `LayerShapeStyle` | Document/ShapeTool.swift | **stored** `CGFloat`, `CGPoint` | Core/Model (styles) | S | indirect (ShapeToolTests) |
+| `ShapeKind` | Document/ShapeTool.swift | `CGPath` in `path(in:)` | Core/Model; path building → Rendering | S | indirect (ShapeToolTests) |
+| `LayerTextStyle` | Document/TypeTool.swift | **stored** `CGFloat`, `CGSize` | Core/Text | S | TypeToolTests, InnerGlowTests |
+| `LayerTextColorRun` | Document/TypeTool.swift | **stored** `CGFloat` | Core/Text | S | TypeToolTests |
+| `PaletteColor` | Document/ColorPalette.swift | **stored** `CGFloat`; `NSColor` in methods | Core/Geometry as `CoreColor` (editor-color use stays UI) | M — 14 test files, color accessors of effects/styles | ColorPickerTests, ColorProfileTests, AdjustmentLayerTests, … |
+| `AdjustmentKind` | Document/LayerAdjustment.swift | SF Symbol name (`symbol`, UI) | Core/Adjustments | S | AdjustmentLayerTests, ImageAdjustmentTests |
+| `ExposureSettings` | Document/ImageAdjustments.swift | `apply(CGImage)` → shared C code | settings → Core/Adjustments; `apply` → Rendering | S | ImageAdjustmentTests, PSDExportTests |
+| `GradientMapSettings` | Document/ImageAdjustments.swift | same | same | S | ImageAdjustmentTests, PSDExportTests |
+| `GrainSettings` | Document/ImageAdjustments.swift | same | same | S | ImageAdjustmentTests |
+| `BlackWhiteSettings` | Document/ImageAdjustments.swift | same | same | S | ImageAdjustmentTests |
+| `ColorBalanceSettings` | Document/ImageAdjustments.swift | same | same | S | ImageAdjustmentTests, PSDExportTests |
+| `LayerAdjustment` | Document/LayerAdjustment.swift | `apply(CGImage)`; file imports Core Image, AppKit, SwiftUI | Core/Adjustments; `apply` → Rendering | M | AdjustmentLayerTests, ImageAdjustmentTests, GPUCanvasTests, PSDExportTests |
+| `DocumentColorProfile` | Document/ColorProfile.swift | `CGColorSpace` lookup in methods | Core/Model as `ColorSpaceID`; lookup → Platform/macOS | S | ColorProfileTests |
+| `LayerOrder` | Document/LayerGroups.swift | `NSLock` around a static cache | Core/Model, derived per snapshot (core-api §8) | S | indirect (GroupTests, GroupingSelectionTests) |
+| `ProjectManifest` | IO/ProjectStore.swift | `UUID`; members' CG geometry | Formats/Comp | M — format-critical | ProjectTests, ExportTests, GroupTests, ExternalChangeTests, … (7) |
+| `ProjectLayerRecord` | IO/ProjectStore.swift | `UUID`; members' CG geometry | Formats/Comp | M — format-critical | ProjectTests, ImageSizeTests, GroupTests, … (8) |
+
+### C — adapter needed first
+
+| Type | Current file | Framework dependency | Adapter | Target | Diff. | Existing tests |
+|---|---|---|---|---|---|---|
+| `CanvasDocument` | Document/EditorSession.swift (imports SwiftUI) | `UUID`; `selection` holds a `CGPath` | `CorePath` (via `DocumentSelection`) | Core/Model | M | CompositorTests, HistoryTests, PSDExportTests; nearly every test indirectly |
+| `ImageLayer` | Document/EditorSession.swift | `ImportedImage` (`CGImage`), CG geometry; `==` compares `CGImage` identity; UI extension in UI/NativeLayerList | `ImageRef` | Core/Model | **L** | BrushTests, HistoryTests, GPUCanvasTests, MetalWarpTests, PSDAdjustmentTests, PSDExportTests; LayerTests indirectly |
+| `LayerMask` | Document/LayerMask.swift | **stored** `ImportedImage`; `CGContext`/`CGImage` in methods | `ImageRef`; pixel helpers → Platform/shared C | Core/Model | M | LayerMaskTests, MaskTransformTests, BrushTests, … (12) |
+| `ProjectSnapshot` | IO/ProjectStore.swift | **stored** `[UUID: ImportedImage]` | `ImageRef`; PNG codec → Platform | Formats/Comp | M | ProjectTests, ExportTests, ImageSizeTests, … (9) |
+| `DocumentHistory` | Document/DocumentHistory.swift | Observation; byte accounting reads `CGImage` | `ImageRef` byte counts and identity | Core/History | M | HistoryTests |
+| `DocumentSelection` | Document/Selection.swift | **stored** `CGPath`; Core Image/`CGContext` in `coverage` | `CorePath`; coverage → Rendering | Core/Model | **L** | SelectionFeatherTests, MagicWandTests, LevelsTests; SelectionTests indirectly |
+| `LayerShape` | Document/ShapeTool.swift | **stored** style + `CGImage` | style stays; pixels leave (E1) | Core/Model (style) | M | indirect (ShapeToolTests) |
+| `LayerText` | Document/TypeTool.swift | **stored** style + `CGImage` | style stays; pixels leave (E1); text layout per platform | Core/Text (style) | M–L | indirect (TypeToolTests) |
+
+Operations are also C-category work though they aren't types: duplicate, delete, group, move and the rest live today
+in `EditorSession` extensions (`SelectionClipboard`, `LayerGroups`, `LiveLayerMask`, …) mixed with selection and
+panel state. They move to Core operations (core-api §5) with the UI state left behind.
+
+### D — stays in the renderer / platform layer
+
+| Type | Current file | Framework dependency | Target | Existing tests |
+|---|---|---|---|---|
+| `ImportedImage` | IO/ImageImporter.swift | **stored** `CGImage` ×2, `RasterSnapshot` | Platform/macOS/Imaging — the macOS implementation behind `ImageRef` | 47 files (AdjustmentLayerTests, BlurBrushTests, BrushTests, …; ImageImportTests indirectly) |
+| `RasterSnapshot` | Rendering/RasterSnapshot.swift | `CGImage`, `CGContext` | Platform/macOS/Imaging | TiledLayerTests |
+| `BrushPatch` | Document/BrushStroke.swift | `CGImage`, `CGRect` | Platform/macOS/Imaging | TiledLayerTests |
+
+### E — remove or replace (pieces of the types above)
+
+| # | Today | Replacement |
+|---|---|---|
+| E1 | `LayerShape.image`, `LayerText.image`: rendered pixels stored in the style | The pixel layer's `content`; each platform re-renders from the style |
+| E2 | `ImportedImage.thumbnail`: a UI cache reachable from the model, counted in history bytes | Thumbnail cache in UI/renderer keyed by `ImageRef` identity |
+| E3 | `ImageLayer ==` comparing `CGImage` object identity | `ImageRef` identity |
+| E4 | `LayerOrder`'s process-wide static cache under `NSLock` | Hierarchy derived with each snapshot |
+| E5 | `NSAlert` asking *bake or unlink* inside `deleteWithLiveMaskChoice` (Document/LiveLayerMask.swift) | Delete takes a clip policy; the UI asks first |
+| E6 | UI helpers on model types: `AdjustmentKind.symbol`, `PaletteColor.nsColor` | UI extensions |
+| E7 | Model files importing SwiftUI/AppKit only for convenience (`EditorSession.swift`, `LayerAdjustment.swift`, `Filters.swift`, …) | Model files import nothing but the Core's own types |
 
 ## File-by-file migration plan
 
-Each step is one reviewable change that keeps the macOS app behaving exactly as before; `verify.yml` (build + all
-tests) must pass after each. Steps 1–5 are needed whichever Core language is chosen: they define the Core's boundary.
+Each step is one reviewable change that keeps the macOS app behaving exactly as before; `verify.yml` (build and all
+tests) must pass after each, and no step changes `.comp`. Steps 0–6 are needed whichever Core language is chosen;
+their order and dependencies are drawn in [migration-dependency-map.md](migration-dependency-map.md).
 
 ### Step 0 — Safety net (tests only)
-- Add golden `.comp` fixtures: write projects with every layer kind (image, group, mask, adjustment of each kind,
-  effects, shape, text, guides, selection-less) and compare the manifest JSON byte for byte on read → write.
+- Golden `.comp` fixtures covering every layer kind (image, folder, mask, each adjustment kind, effects, shape, text,
+  guides, clipping), compared byte for byte on read → write.
 - Files: `CompositorTests/ProjectFormatGoldenTests.swift` (new), fixtures under `CompositorTests/Fixtures/`.
 
-### Step 1 — Separate model from UI files (moves only)
-- `Document/EditorSession.swift` → move `ImageLayer`, `CanvasDocument` to `Document/CanvasDocument.swift`
-  (imports Foundation, CoreGraphics only).
-- `Document/LayerAdjustment.swift` → `AdjustmentKind.symbol` to `UI/AdjustmentKind+UI.swift`.
-- `Document/ColorPalette.swift` → `PaletteColor.nsColor` to `UI/PaletteColor+AppKit.swift`.
-- `Document/Filters.swift` → `FilterKind` to `Document/FilterKind.swift` (no Core Image import).
-- `Document/HueSaturation.swift`, `Document/ImageAdjustments.swift`, `Document/LayerEffects.swift`,
-  `Document/ShapeTool.swift`, `Document/TypeTool.swift`, `Document/LayerAdjustment.swift` → split each into the
-  settings/style types (no framework imports) and a `+Rendering.swift` extension holding `apply(CGImage)`,
-  `path(in:)` and drawing.
-- `Document/ColorProfile.swift` → `DocumentColorProfile` enum stays; `CGColorSpace` lookup to
-  `Rendering/DocumentColorProfile+CoreGraphics.swift`.
+### Step 1 — Separate model from UI files (moves only; A types, E6, E7)
+- `Document/EditorSession.swift` → `ImageLayer`, `CanvasDocument` to `Document/CanvasDocument.swift`.
+- `AdjustmentKind.symbol` → `UI/AdjustmentKind+UI.swift`; `PaletteColor.nsColor` → `UI/PaletteColor+AppKit.swift`.
+- `FilterKind` → `Document/FilterKind.swift`.
+- `HueSaturation.swift`, `ImageAdjustments.swift`, `LayerEffects.swift`, `ShapeTool.swift`, `TypeTool.swift`,
+  `LayerAdjustment.swift` → split into settings/style types (no framework imports) and a `+Rendering.swift` extension
+  holding `apply(CGImage)`, `path(in:)` and drawing.
+- `ColorProfile.swift` → the enum stays; the `CGColorSpace` lookup to `Rendering/DocumentColorProfile+CoreGraphics.swift`.
+- Add a boundary check for the model files (like `check-core-boundaries.sh` on the spike branch) to CI.
 
-Result: model files that import only Foundation/CoreGraphics — checkable with a script like
-`Spikes/CoreModel/check-core-boundaries.sh`.
-
-### Step 2 — Core geometry instead of CoreGraphics in stored data
-- New `Document/Geometry.swift`: `DocPoint`, `DocSize`, `DocRect` (Doubles) with `init(_ cg:)`/`.cg` conversions for
-  the macOS side.
-- Change stored `CGFloat`/`CGPoint`/`CGSize` in `LayerTransform`, the six effect structs, `LayerShapeStyle`,
+### Step 2 — Core geometry (B types)
+- New `Document/CoreGeometry.swift`: `Scalar`, `CorePoint`, `CoreSize`, `CoreRect`, `CoreTransform`, `CoreColor`
+  (core-api §2) with conversions to and from CoreGraphics for the macOS side.
+- Stored `CGFloat`/`CGPoint`/`CGSize` → Core types in `LayerTransform`, the six effects, `LayerShapeStyle`,
   `LayerTextStyle`, `LayerTextColorRun`, `PaletteColor`. Call sites convert at the edge (17 files outside
   Document/IO reference model types, ~94 lines).
-- Step 0's golden tests prove the `.comp` format is unchanged.
+- Step 0's golden tests prove `.comp` is unchanged.
 
-### Step 3 — Identity and Foundation policy
-- Decide: keep `UUID` (Core then needs `FoundationEssentials` on Windows, +7.7 MB) or a Core ID type that encodes
-  to the same UUID strings. Either way manifests stay identical.
-- `LayerOrder`: `NSLock` → `Synchronization.Mutex`.
+### Step 3 — Identity and small platform types
+- The ID decision (architecture-questions.md Q1); `.comp` keeps writing the same UUID strings either way.
+- `LayerOrder`: drop the static cache/`NSLock` (E4). `DocumentColorProfile` → `ColorSpaceID`.
 
-### Step 4 — Image handle (largest step)
-- New `Document/LayerImage.swift`: a protocol / opaque handle (size, byte count, identity) the Core stores instead of
-  `ImportedImage`. macOS implementation wraps `ImportedImage` + `RasterSnapshot` (category C, unchanged inside).
+### Step 4 — `ImageRef` (largest step; C types)
+- New `Document/ImageRef.swift`: the handle of core-api §7.4 (size, format, byte count, identity). macOS
+  implementation wraps `ImportedImage` + `RasterSnapshot` (D, unchanged inside).
 - Touches `ImageLayer`, `LayerMask`, `ProjectSnapshot`, `DocumentHistory` (byte accounting), `ProjectStore` (PNG
-  read/write moves behind a per-platform codec), `LayerShape`/`LayerText` (rendered caches leave the model — D).
-- Pixel operations on handles go through the shared C code where it exists (`Compositor/Rendering/*.c`).
+  read/write behind a per-platform codec), `LayerShape`/`LayerText` (E1), `ImportedImage.thumbnail` (E2), `==` (E3).
 
-### Step 5 — Selection
-- `DocumentSelection.path: CGPath` → a Core path representation (move/line/curve elements) with a `CGPath`
-  conversion on macOS; feathering stays in the renderer.
+### Step 5 — `CorePath` for selection and shapes
+- `DocumentSelection.path: CGPath` → `CorePath` with a `CGPath` conversion on macOS; coverage and feathering stay in
+  the renderer. `ShapeKind.path(in:)` builds a `CorePath`.
 
-### Step 6 — Extract the Core (decision point)
-- With steps 1–5 done, the files below have no Apple-only types in their data and form the Core:
-  `CanvasDocument.swift`, `Geometry.swift`, `LayerImage.swift`, `LayerTransform.swift`, `LayerAppearance.swift`,
-  `LayerGroups.swift` (logic), `LayerMask.swift` (logic), `LayerAdjustment.swift`, `HueSaturation.swift`,
-  `ImageAdjustments.swift`, `LayerEffects.swift`, `ShapeTool.swift` (style), `TypeTool.swift` (style),
-  `Guides.swift` (model part), `Selection.swift` (model part), `ColorProfile.swift` (enum),
-  `DocumentHistory.swift`, `ProjectStore.swift` (manifest and records), and the PSD reader/writer later.
-- **Swift Core:** move them into a local Swift package (`Core/`) the Xcode app depends on; Windows builds it with
-  SwiftPM. **C++ Core:** port these files; the macOS app calls them through C++ interop (see the spike for what that
-  costs).
-- The WinUI 3 window test does not wait for this plan: it runs against the spike's C boundary first. The final UI
-  choice waits for the Core boundary (steps 0–5).
+### Step 6 — Operations out of the editor session
+- One function per core-api §5 operation, taking IDs and returning a status, implemented on `CanvasDocument` +
+  `DocumentHistory`, called by today's `EditorSession` methods, which keep only UI state (selection in the panel,
+  collapsed folders, dialogs — E5).
+
+### Step 7 — Extract the Core (decision point)
+- The files from steps 1–6 form the Core. **Swift Core:** a local Swift package (`Core/`) the Xcode app depends on,
+  built by SwiftPM on Windows. **C++ Core:** port them; the macOS app calls them through C++ interop.
+- The snapshot/bulk API (core-api §8) and the C ABI (§12) are built here, whichever language.
 
 ### Not in this plan
-Tools and the editor session (`EditorSession`, brush/type/shape tools' interaction), the canvas and GPU rendering,
-Vision features, and all UI. They are platform code or come after the Core boundary exists.
+Tools and the editor session's interaction code, the canvas and GPU rendering, Vision features, and all UI.
