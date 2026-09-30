@@ -93,3 +93,14 @@ Any later decision must cite these measurements and preservation costs, without
 using the existing row-loop benchmark as a bulk-performance result. This task ends
 with the contract and questions; it does not commission the measurements or select
 a winner.
+
+## CoreBoundary follow-up: partial evidence, not closed questions
+
+The isolated [experiment](../../Spikes/CoreBoundary/README.md) partially validates
+Q6 (bulk metadata copy/scaling), Q12 (owned domain errors), Q15 (serialized mutation,
+concurrent readers, last snapshot release on a background thread), and Q16
+(StateID restore with a new Generation). These synthetic checks do not close them.
+Real resource lifetime/affinity, allocation instrumentation, host handles/ABI,
+wrong-owner enforcement, full undo/redo and preview/save/Cancel remain unvalidated.
+Q1 uses fixture integers only; Q5 image ownership and Q13 fatal fault handling are
+unvalidated. Mac CI is still inaccessible. No language recommendation follows.

@@ -176,7 +176,8 @@ exposed later, must describe format, row stride, dimensions and lifetime explici
 Observed: both `cc_outline_row` implementations reconstruct the whole outline,
 and C# loops over rows. That is O(n²) work; the saved 2,000-layer reports show
 334.7 ms (Swift) and 24.2 ms (C++), not a measurement of a bulk product API.
-Neither result chooses a Core language. No bulk API is implemented in this task.
+Neither result chooses a Core language. The later isolated CoreBoundary experiment
+implements only a synthetic bulk snapshot; no product bulk API is implemented.
 
 | Candidate | Benefits | Costs/open points |
 |---|---|---|
@@ -415,3 +416,24 @@ ownership and exception containment, test reuse and migration reversibility.
 Swift and C++ both remain candidates; see Q11 and the evidence matrix. No scores,
 winner, final recommendation, product ABI or migration implementation follows this
 documentation task.
+
+## 13. CoreBoundary experimental validation scope
+
+[CoreBoundary results](../Spikes/CoreBoundary/README.md) validate a small synthetic
+model only, on Linux/GCC. Product API/ABI and language choices remain open.
+
+| Contract | Evidence status |
+|---|---|
+| §3 failure atomicity, no-op token preservation | Validated for synthetic add/opacity/reorder only |
+| §4 duplicate rejection, open-instance qualification | Validated with fixture IDs; UUID generation, deletion/reuse/load unvalidated |
+| §5 owned immutable snapshot, copied inputs/strings/arrays, release after document destruction | Validated; image/path/GPU resources and native handles unvalidated |
+| §6 one bulk O(n) snapshot, 10/2,000/10,000 rows | Validated for flat metadata, approximate retained bytes; projections/deltas/product allocation costs unvalidated |
+| §8 serialized mutations, concurrent immutable readers, stale rejection | Validated using a mutex and instance+generation tokens; UI affinity, host notifications and renderer integration unvalidated |
+| §8 StateID restoration vs monotonic Generation | Validated by a minimal undo hook and A→B→A stale rejection; redo, save, previews/transactions unvalidated |
+| §9 recoverable structured domain errors | Validated for duplicate/missing ID, reorder, opacity, stale/foreign instance; OOM, fatal faults and foreign ABI containment unvalidated |
+
+No semantic contract change was required. The experiment exposes costs and gaps:
+metadata copying blocks writers during capture, retained versions multiply memory,
+and real resource destruction may have affinity requirements absent from strings.
+These are implementation questions, not a decision to use C++, mutexes or deep copies.
+Mac CI for the two preceding enum migrations remains unverified (Actions Forbidden).

@@ -109,3 +109,14 @@ native paragraph mapping tests; runtime Mac results are pending. ColorRange and
 LayerEffectKind remain unstarted. Stop after TextAlignment. A product API skeleton
 needs separate scope and ownership/snapshot/threading/error evidence; these two
 small declaration splits alone do not validate those contracts.
+
+## Isolated CoreBoundary evidence lane
+
+[CoreBoundary](../../Spikes/CoreBoundary/README.md) now validates synthetic bulk
+snapshots, ownership/release, StateID/Generation, serialized mutations and domain
+errors independently of product migration. It is outside all product targets.
+S0–S9 dependencies are unchanged: this is early evidence for S4/S6/S8/S9, not their
+completion. Mac CI for S1 remains unverified. Real resources, complete history,
+ABI/host handoff and renderer projections remain unvalidated. Rollback consists of
+removing the isolated experiment and its evidence notes; no Mac behavior is touched.
+Stop after this spike. Any API skeleton requires a separately scoped task.
