@@ -61,9 +61,22 @@ final class TransformOverlay: NSView {
     override var isFlipped: Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
+    /// The Move tool's box and handles, which it drags; nil for every other tool.
     var geometry: TransformOverlayGeometry? {
-        guard session.tool == .move, session.showsTransformControls || session.transformEdit?.persistent == true,
-              let document = session.document else { return nil }
+        guard session.tool == .move, session.showsTransformControls || session.transformEdit?.persistent == true else { return nil }
+        return selectedBox
+    }
+
+    /// With any other tool, the same box without its handles, so what's selected stays in sight without anything there
+    /// to drag. Not while Crop or a gradient draws its own marks, or while text is being typed.
+    var outlineGeometry: TransformOverlayGeometry? {
+        guard session.tool != .move, session.tool != .crop, session.gradientEdit == nil, session.textDraft == nil else { return nil }
+        return selectedBox
+    }
+
+    /// Around the active layer, or one box around several selected layers or a folder.
+    private var selectedBox: TransformOverlayGeometry? {
+        guard let document = session.document else { return nil }
         // Several layers selected, or a folder: one box around them all.
         if session.transformEdit?.group != nil || (session.transformEdit == nil && session.transformsAsGroup) {
             if let corners = session.transformEdit?.corners {
@@ -181,7 +194,8 @@ final class TransformOverlay: NSView {
         drawGuides()
         if session.tool == .crop { drawCrop() }
         else if let line = gradientLine { drawGradientLine(line) }
-        else { drawTransformHandles() }
+        else if session.tool == .move { drawTransformHandles() }
+        else { drawSelectedOutline() }
         drawSelection()
         drawLassoDraft()
         drawSnapGuides()
@@ -334,6 +348,17 @@ final class TransformOverlay: NSView {
             context.stroke(handle)
         }
         context.restoreGState()
+    }
+
+    /// The selected layer's edge, as the Move tool's box draws it, without handles or the rotation stalk.
+    private func drawSelectedOutline() {
+        guard let geometry = outlineGeometry, let context = NSGraphicsContext.current?.cgContext else { return }
+        context.move(to: geometry.handles[0])
+        for index in [2, 4, 6] { context.addLine(to: geometry.handles[index]) }
+        context.closePath()
+        context.setStrokeColor(NSColor.controlAccentColor.cgColor)
+        context.setLineWidth(1)
+        context.strokePath()
     }
 
     private func drawTransformHandles() {
