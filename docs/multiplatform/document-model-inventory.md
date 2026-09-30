@@ -5,7 +5,10 @@ Audited against main-sync merge **db268a2b** on `Compositor-Multiplatform`, cont
 is retained for traceability, with explicit v12 additions and changes below.
 All current paths below are relative to `Compositor/`
 and belong to the **Compositor macOS application module**; target paths are semantic
-responsibilities, not new modules created here. No type was moved or rewritten.
+responsibilities, not new modules created here. Updated 2026-10-01 (KST): FilterKind
+is dependency-clean in its own file, with its display helper in UI. Module membership
+is unchanged; all other type migrations remain planned. See the
+[first S1 record](filter-kind-migration.md) for validation and pending Mac checks.
 
 **No Core language is selected.** A shared candidate means reusable meaning/data;
 it does not authorize translating a Swift type to C++. Source methods using Apple
@@ -26,14 +29,15 @@ and [open questions](architecture-questions.md) together with this inventory.
 
 | Category | Rule | Baseline entries |
 |---|---|---|
-| A | No direct Apple value/helper dependency in the data declaration; candidate after its dependencies and file boundary are available | 6 |
-| B | Remove Apple values or convenience/rendering methods, or replace platform-dependent derived state first | 30 |
+| A | No direct Apple value/helper dependency in the data declaration; candidate after its dependencies and file boundary are available | 7 |
+| B | Remove Apple values or convenience/rendering methods, or replace platform-dependent derived state first | 29 |
 | C | Needs image/path/operation/lifetime adapter before integration | 8 |
 | D | Keep native storage/rendering/platform implementation behind a boundary | 3 |
 | E | Replace/separate responsibilities inside the above types; not additional model types | 8 items |
 
-Seven former A entries are now B: LayerSampling, LayerBlendMode, LayerEffectKind,
-FilterKind, ColorRange, AdjustmentColor and TextAlignment. Their data may be small,
+Six former A entries remain B: LayerSampling, LayerBlendMode, LayerEffectKind,
+ColorRange, AdjustmentColor and TextAlignment. FilterKind returns to A after its
+actual data/display split. The remaining entries' data may be small,
 but their actual declarations contain platform/helper dependencies. DocumentColorProfile's
 base declaration is A; its Apple extensions and WorkingColorSpace remain outside it.
 A does not mean all transitive dependencies are already portable.
@@ -49,6 +53,7 @@ not Mac tests rerun in this Linux synchronization task; indirect tests exercise 
 | Type | Current file | Framework/helper dependency | Semantic target | Difficulty | Existing tests |
 |---|---|---|---|---|---|
 | `CanvasGuide` | Document/Guides.swift | `UUID` only (guide *drawing* in the same file uses `CGColor`) | Core/Model | S | GuideTests, PSDExportTests |
+| `FilterKind` | Document/FilterKind.swift | Swift standard library only; displayName in UI/FilterKind+Display.swift | Dependency-clean data in current module; future Core/Adjustments | S, implemented S1 slice; Mac validation pending | FilterKindTests; CameraRawTests, FinishingFilterTests, ImageAdjustmentTests |
 | `HueSaturationSettings` | Document/HueSaturation.swift | — | Core/Adjustments | S | HueSaturationTests, AdjustmentLayerTests, PSDExportTests |
 | `HueBand` | Document/HueSaturation.swift | — | Core/Adjustments | S | PSDAdjustmentTests |
 | `RangeAdjustment` | Document/HueSaturation.swift | — | Core/Adjustments | S | HueSaturationTests, PSDAdjustmentTests |
@@ -62,7 +67,6 @@ not Mac tests rerun in this Linux synchronization task; indirect tests exercise 
 | `LayerSampling` | Document/LayerTransform.swift | methods: SwiftUI `LocalizedStringKey`, CoreGraphics `CGInterpolationQuality` | Core/Model | S | indirect (TransformTests, CropTests) |
 | `LayerBlendMode` | Document/LayerAppearance.swift | methods: `CGBlendMode`, Core Image filter-name mapping | Core/Model | S | LayerAppearanceTests, BlendShortcutTests, GPUCanvasTests |
 | `LayerEffectKind` | Document/LayerEffects.swift | nine cases; methods: SwiftUI localized names, creation-mode policy | Core/Effects with UI policy separate | S | LayerStyleTests; indirect OuterGlowTests, InnerGlowTests |
-| `FilterKind` | Document/Filters.swift | methods: SwiftUI localized display names | Core/Adjustments | S | CameraRawTests, FinishingFilterTests, ImageAdjustmentTests |
 | `ColorRange` | Document/HueSaturation.swift | methods: SwiftUI localized display names; data depends on HueBand | Core/Adjustments | S | HueSaturationTests, PSDExportTests |
 | `AdjustmentColor` | Document/ImageAdjustments.swift | method initializer uses PaletteColor; clamp helper lives in Apple-bound ImageAdjustmentPixels | Core/Adjustments | S | ImageAdjustmentTests, FinishingFilterTests |
 | `TextAlignment` | Document/TypeTool.swift | methods: SwiftUI localized display names | Core/Text | S | indirect (TypeToolTests) |
@@ -126,7 +130,7 @@ use the same helper. Method dependencies are distinguished from stored values.
 | `LayerSampling` | none (helper mappings separated) | Y/Y/Y | S1 |
 | `LayerBlendMode` | none (renderer mappings separated) | Y/Y/Y | S1 |
 | `LayerEffectKind` | effect-kind enum and display helpers | derived/indirect/Y | S1 |
-| `FilterKind` | none (command catalog, not saved layer state) | N/N/service | S1 |
+| `FilterKind` | none; UI helper depends on enum, not the reverse | N/history entry name/service | S1 dependency-clean; Mac CI pending |
 | `HueSaturationSettings` | ColorRange, HueBand, RangeAdjustment | Y/Y/Y | S3 |
 | `ColorRange` | HueBand through defaultBand, UI helper | Y/Y/Y | S1 |
 | `HueBand` | scalar range endpoints | Y/Y/Y | S3 |
@@ -256,5 +260,7 @@ replace the existing implementations during this sync.
 
 The dependency map owns stages, prerequisites, required tests and rollback points.
 No automatic step converts the model to C++, removes Swift types, or merges the
-spike. The smallest future code unit is FilterKind data/display-helper separation,
-after baseline tests. This documentation task stops before that change.
+spike. FilterKind's first S1 data/display seam is implemented without moving other
+types. Local boundary/source-parity/shared-C checks pass; Mac build and regression
+tests await accessible CI evidence. S1 as a whole is not complete. Candidate later
+seams are TextAlignment, ColorRange and LayerEffectKind; none is started here.

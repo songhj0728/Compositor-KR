@@ -1,6 +1,8 @@
 # Migration dependency map — semantic boundaries first
 
-Design only; stages below are future review units, not work performed in this task.
+Stages below are future review units except the first FilterKind S1 slice,
+implemented 2026-10-01 (KST). It is dependency-clean; Mac build/test validation is
+pending. See [migration record](filter-kind-migration.md). No later slice is started.
 Based on main-sync merge `db268a2b`, containing main `ccf062ed` and its v12 data in
 [repository-evidence.md](repository-evidence.md). Neither language nor GPU is
 selected. Follow [core-api.md](../core-api.md) and the corrected
@@ -68,7 +70,7 @@ of this documentation task.
 | Stage | Files/types involved | Prerequisite | Expected Mac impact | Windows benefit | Required evidence/tests | Rollback point |
 |---|---|---|---|---|---|---|
 | S0 | ProjectStore, HistoryTests, GroupingSelectionTests, LayerStyleTests, existing C references; sync ledger | Pin synchronized db268a2b/main ccf062ed | No migration; characterize imported reference results | Comparable semantics, no toy-model assumptions | `.comp` v1–12 records/pixels, save11/12 presence gate, no-op/undo/save-preview races, style duplicate/paste/group coverage | Fixtures only; production untouched |
-| S1 | FilterKind first; later LayerSampling/BlendMode/EffectKind/ColorRange/TextAlignment display/renderer helpers | S0 tests for each chosen slice | Mechanical declaration/extension separation, same module and raw values | Makes real data independently compilable | Existing filter/adjustment tests + full verify.yml; imports/type boundary review | Rejoin one enum and helpers in original file |
+| S1 | FilterKind data in Document/FilterKind.swift and display extension in UI: dependency-clean; other enums planned | S0 tests for each chosen slice; FilterKind Mac evidence still pending | Same module/raw values/callers; no renderer edit | Data declaration has no Apple dependencies | FilterKindTests, standalone typecheck and lexical guard in verify.yml; existing filter/adjustment + full Mac suite | Rejoin one enum and helper in Filters.swift |
 | S2 | CoreScalar/Point/Size/Rect/Transform candidates; LayerTransform numerical functions; UUID adapter | Geometry/ID contract and S0 | Conversions at existing call sites, preserve degree/rounding/flip semantics | No CoreGraphics coordinates or spike UInt64 assumption | Transform/MaskTransform/Distort/Crop tests; UUID/filename and typed-number fixtures | Keep old stored fields until each adapter proves parity |
 | S3 | A/B settings; nine effects, Contour/Pattern/Bevel enums and Fill Opacity; shape/text styles; Levels/Curves | S1; S2 where geometry required; style enum dependencies before records | Split rendering methods without changing values/defaults/optional presence | Portable complete v12 settings | Existing adjustment/text/shape tests + LayerStyleTests/PSDExportTests; nil/explicit-default and disabled effects | One type family's facade routes back to original implementation |
 | S4 | ImageRef/CorePath adapters; ImportedImage/RasterSnapshot/BrushPatch remain Mac; LayerMask and selection coverage | Ownership/thread rules; S2 geometry | Adapter adds lifetime boundary; pixel/raster algorithms stay | Images/paths can cross platform without Apple objects | TiledLayer/RasterSnapshot/History, mask/feather/selection/holes tests; retained resource counts and close-with-snapshot | Existing asset/path fields retained behind facade; no storage replacement required |
@@ -85,11 +87,16 @@ stages rather than adding an earlier rewrite. Main synchronization is a recurrin
 maintenance lane before each affected migration, not a one-time completed stage.
 Future syncs must preserve platform work and review incoming semantics separately.
 
-## Smallest first migration, if separately requested
+## First migration status and next review
 
-After reference checks, isolate **FilterKind's enum data** from `Filters.swift`,
-put its `LocalizedStringKey displayName` helper in a Mac UI extension, and keep
-raw values, call sites and module membership identical. This is smaller than moving
-`CanvasDocument`/`ImageLayer`, changes no format, and selects neither Core language.
-Run the existing affected filter/adjustment tests and full Mac workflow; roll back
-by rejoining that one declaration/helper. This task does not perform that move.
+**FilterKind data/display split is implemented** in `9bac5cf`. Cases, raw values,
+ordering, two classification properties and display literals are preserved. It
+remains in the Mac app module and selects neither Core language. Local source-parity,
+boundary and shared-C checks pass; standalone Swift typecheck, new FilterKindTests
+and full Mac tests are delegated to verify.yml, whose result is not yet verified.
+
+Main advanced to `0be4fe6` after the last sync: text family helpers, keyboard input,
+tests and packaging. The inspected delta does not change FilterKind or its callers'
+filter behavior; no merge was performed. Review it before a later text-related
+slice. TextAlignment, ColorRange and LayerEffectKind are candidate next small seams,
+each requiring its own persistence/ordering/helper audit. Stop after FilterKind.

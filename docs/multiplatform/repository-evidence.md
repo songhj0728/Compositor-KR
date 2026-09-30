@@ -1,5 +1,10 @@
 # Repository and verification evidence — 2026-09-30
 
+Follow-up 2026-10-01 (KST): the first S1 FilterKind seam is implemented in
+`9bac5cf`, with a separate [migration record](filter-kind-migration.md). The ledger
+below describes the preceding sync; its no-migration statement is historical.
+Main now has three additional inspected commits through `0be4fe6`, not merged.
+
 This audit uses repository contents, not prior Claude/ChatGPT conversations.
 Remote heads were rechecked with `git ls-remote --heads origin` and fetched before
 the requested synchronization. Main is now merged into the local named
