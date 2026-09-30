@@ -108,7 +108,14 @@ if command -v create-dmg >/dev/null; then
 else
   # The app and a link to Applications to drag it onto, without create-dmg's window layout.
   ln -s /Applications "$STAGE/Applications"
-  hdiutil create -quiet -volname "$APP" -srcfolder "$STAGE" -fs HFS+ -format UDZO "$DMG"
+  # `hdiutil create -srcfolder` lays out the filesystem by mounting a scratch image partway through,
+  # which some sandboxed environments refuse ("Operation not permitted") even though they allow every
+  # other disk-image operation. makehybrid builds the HFS+ image straight from the folder without
+  # mounting anything, and convert then compresses it the same way `-format UDZO` would have.
+  HYBRID="$WORK/hybrid.dmg"
+  hdiutil makehybrid -quiet -hfs -hfs-volume-name "$APP" -o "$HYBRID" "$STAGE"
+  hdiutil convert -quiet "$HYBRID" -format UDZO -o "$DMG"
+  rm -f "$HYBRID"
 fi
 
 if $DEVELOPER_ID; then
