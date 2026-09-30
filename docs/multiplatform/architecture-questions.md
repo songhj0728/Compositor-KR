@@ -104,3 +104,19 @@ Real resource lifetime/affinity, allocation instrumentation, host handles/ABI,
 wrong-owner enforcement, full undo/redo and preview/save/Cancel remain unvalidated.
 Q1 uses fixture integers only; Q5 image ownership and Q13 fatal fault handling are
 unvalidated. Mac CI is still inaccessible. No language recommendation follows.
+
+## Product metadata read surface follow-up
+
+See [read-boundary evidence](product-read-boundary.md). Q1 reuses UUID layer values
+and wraps instance/state UUIDs, but session allocation/close/reopen ownership remains
+open. Q6 has a minimal bulk value shape and actual-model adapter, with Mac fixture
+execution pending. Q12 has semantic error values only, no ABI or stable numeric codes.
+Q15 confines model capture to MainActor; it does not implement a background owner
+or prove host handoff. Q16 is still open: no DocumentHistory/publication manager
+connection, previews, no-op publication policy or generation exhaustion recovery.
+
+Synthetic spike validation must not be relabeled as product read-path runtime
+validation. Foundation UUID is the only framework dependency in the new Core file;
+future module/toolchain portability needs compilation evidence. Parent visibility,
+clipping and effective opacity are deliberately absent from the minimal rows, so
+this snapshot must not become a renderer contract by accident.

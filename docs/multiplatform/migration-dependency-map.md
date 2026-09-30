@@ -120,3 +120,16 @@ completion. Mac CI for S1 remains unverified. Real resources, complete history,
 ABI/host handoff and renderer projections remain unvalidated. Rollback consists of
 removing the isolated experiment and its evidence notes; no Mac behavior is touched.
 Stop after this spike. Any API skeleton requires a separately scoped task.
+
+## Minimal product read surface follows the experiment
+
+[Product boundary](product-read-boundary.md) adds only immutable metadata types
+and a one-way MainActor adapter from existing CanvasDocument. Existing S0–S9
+prerequisites remain: this is an additive landing point for S5/S8, not completion
+of those stages. There is no publisher, write boundary or renderer consumer.
+
+Validated in spike: synthetic tokens/lifetime/concurrency/errors. Product read-path:
+source and dependency checks passed, actual model tests authored but Mac execution
+unverified. Remaining gate: Mac CI, token lifecycle owner and actual resource/history
+semantics. Rollback removes the additive types/adapter/tests and guard additions;
+existing Mac call sites and persisted data need no changes. No next migration starts.

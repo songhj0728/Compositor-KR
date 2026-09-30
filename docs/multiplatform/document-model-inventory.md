@@ -266,3 +266,18 @@ boundary/source-parity/shared-C checks pass; Mac build and regression tests awai
 accessible CI evidence. S1 as a whole is not complete. ColorRange and LayerEffectKind
 remain candidates; neither is started. Two enum splits do not establish readiness
 for a product Core API/ABI skeleton with ownership, snapshots or threading.
+
+## Additive product read surface
+
+[Read-boundary record](product-read-boundary.md) adds DocumentInstanceID and
+DocumentStateID (Foundation UUID wrappers), DocumentGeneration (UInt64),
+CoreLayerSnapshot/CoreDocumentSnapshot (immutable metadata values) and CoreError
+in `Compositor/Core/CoreSnapshot.swift`. These are new boundary vocabulary, not
+reclassification/migration of the original 47 types. Layer ID remains UUID.
+
+The MainActor `Document/CanvasDocument+CoreSnapshot.swift` adapter depends on the
+existing CanvasDocument/ImageLayer and Core values. Serialization relevance: none
+(no Codable or format fields); history relevance: state meaning only, no wiring;
+renderer relevance: none, own flags/opacity are not effective rendering properties.
+CoreSnapshotTests has four tests pending Mac execution. Local boundary checks pass.
+No Document/Layer, geometry, image, effect or history migration is completed.

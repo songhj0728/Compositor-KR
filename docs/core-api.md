@@ -437,3 +437,20 @@ metadata copying blocks writers during capture, retained versions multiply memor
 and real resource destruction may have affinity requirements absent from strings.
 These are implementation questions, not a decision to use C++, mutexes or deep copies.
 Mac CI for the two preceding enum migrations remains unverified (Actions Forbidden).
+
+## 14. Minimal product read surface (execution pending)
+
+[Product read-boundary evidence](multiplatform/product-read-boundary.md) records
+CoreSnapshot.swift and the MainActor CanvasDocument adapter. This is a metadata
+projection with UUID layer IDs, explicit instance/state/generation and immutable
+bulk rows, not the full document/renderer contract. Foundation is used for UUID.
+No mutation, publisher, history integration or C ABI is added. Errors are semantic
+values; fatal invariant classification is not a recovery mechanism.
+
+**Validated in spike:** synthetic lifetime/concurrency/stale/error semantics (§13).
+**Validated in product read-path:** local dependency/source checks only; four real
+model/value tests are authored but Swift/Mac execution is pending. Do not describe
+the live app as publishing versioned snapshots. **Not yet validated:** publication
+ownership, closed-instance lifecycle, atomic writes, preview/history mapping and
+image/path/renderer data. Generation advancement refuses overflow; the future
+publisher must define exhaustion handling and advance on every observable change.
