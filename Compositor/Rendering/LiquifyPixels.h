@@ -14,12 +14,12 @@ enum { LIQUIFY_FORWARD_WARP = 0, LIQUIFY_RECONSTRUCT, LIQUIFY_TWIRL_CLOCKWISE, L
 // (0–0.98) is how far out the brush works fully; `strength` (0–1) how much. The rectangle of pixels changed is
 // written to `dirty` as x0, y0, x1, y1 (inclusive); x1 < x0 when nothing changed. Returns -1 when memory runs out.
 int liquify_dab(float *field, size_t width, size_t height, int mode, double fromX, double fromY, double toX, double toY,
-                double diameter, double hardness, double strength, long dirty[4]);
+                double diameter, double hardness, double strength, ptrdiff_t dirty[4]);
 
 // Renders the rectangle x0…x1, y0…y1 (inclusive) of `output` from `source` through `field`, all `width` × `height`
 // premultiplied RGBA with `width * 4` bytes per row, bilinearly.
 void liquify_render(const uint8_t *source, uint8_t *output, size_t width, size_t height, const float *field,
-                    long x0, long y0, long x1, long y1);
+                    ptrdiff_t x0, ptrdiff_t y0, ptrdiff_t x1, ptrdiff_t y1);
 
 // Renders the whole of a `width` × `height` `output` from `source` (same size) through a smaller `fieldWidth` ×
 // `fieldHeight` field covering the same image, which is scaled up to fit it.

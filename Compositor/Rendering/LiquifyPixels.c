@@ -1,5 +1,5 @@
 #include "LiquifyPixels.h"
-#include <dispatch/dispatch.h>
+#include "ParallelFor.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,29 +14,101 @@ static inline float liquify_weight(float u, float hardness) {
     return t * t * (3 - 2 * t);
 }
 
-static inline long liquify_clamp(long v, long lo, long hi) { return v < lo ? lo : v > hi ? hi : v; }
+static inline ptrdiff_t liquify_clamp(ptrdiff_t v, ptrdiff_t lo, ptrdiff_t hi) { return v < lo ? lo : v > hi ? hi : v; }
 
 // The columns of row `y` inside the brush's circle, within bx0…bx1; 0 when the row misses it.
-static inline int liquify_span(long y, float cy, float cx, float radius, long bx0, long bx1, long *x0, long *x1) {
+static inline int liquify_span(ptrdiff_t y, float cy, float cx, float radius, ptrdiff_t bx0, ptrdiff_t bx1, ptrdiff_t *x0, ptrdiff_t *x1) {
     float dy = (float)y - cy, reach = radius * radius - dy * dy;
     if (reach <= 0) return 0;
     float half = sqrtf(reach);
-    *x0 = liquify_clamp((long)floorf(cx - half), bx0, bx1);
-    *x1 = liquify_clamp((long)ceilf(cx + half), bx0, bx1);
+    *x0 = liquify_clamp((ptrdiff_t)floorf(cx - half), bx0, bx1);
+    *x1 = liquify_clamp((ptrdiff_t)ceilf(cx + half), bx0, bx1);
     return *x0 <= *x1;
 }
 
 // Runs `body` for rows 0..<count, over the cores when `pixels` is worth it.
-static void liquify_rows(size_t count, size_t pixels, void (^body)(size_t row)) {
+static void liquify_rows(size_t count, size_t pixels, void *context, parallel_body body) {
     if (pixels < liquify_parallel_pixels || count < 8) {
-        for (size_t row = 0; row < count; ++row) body(row);
+        for (size_t row = 0; row < count; ++row) body(context, row);
         return;
     }
-    dispatch_apply(count, DISPATCH_APPLY_AUTO, body);
+    parallel_for(count, context, body);
+}
+
+// What one dab's rows share.
+typedef struct {
+    float *field;
+    size_t width;
+    int mode;
+    float cx, cy, radius, invR, hard, mx, my, pucker, turn, restore;
+    ptrdiff_t bx0, bx1, by0;
+    // The field around the dab as it was before it, `cw` × `ch` from (sx0, sy0).
+    const float *copy;
+    size_t cw, ch;
+    ptrdiff_t sx0, sy0;
+} liquify_dab_rows;
+
+// Reconstruct: the field eases back toward nothing, all the way once it is under a hundredth of a pixel.
+static void liquify_reconstruct_row(void *context, size_t row) {
+    const liquify_dab_rows *d = context;
+    ptrdiff_t y = d->by0 + (ptrdiff_t)row, x0, x1;
+    if (!liquify_span(y, d->cy, d->cx, d->radius, d->bx0, d->bx1, &x0, &x1)) return;
+    for (ptrdiff_t x = x0; x <= x1; ++x) {
+        float dx = (float)x - d->cx, dy = (float)y - d->cy;
+        float w = liquify_weight(sqrtf(dx * dx + dy * dy) * d->invR, d->hard) * d->restore;
+        if (w <= 0) continue;
+        float *f = d->field + ((size_t)y * d->width + (size_t)x) * 2;
+        f[0] -= f[0] * w; f[1] -= f[1] * w;
+        if (fabsf(f[0]) < 0.01f) f[0] = 0;
+        if (fabsf(f[1]) < 0.01f) f[1] = 0;
+    }
+}
+
+// Every other tool: each pixel's displacement, moved by how the content under it moves.
+static void liquify_move_row(void *context, size_t row) {
+    const liquify_dab_rows *d = context;
+    const size_t cw = d->cw, ch = d->ch;
+    const float mx = d->mx, my = d->my, pucker = d->pucker, turn = d->turn;
+    ptrdiff_t y = d->by0 + (ptrdiff_t)row, x0, x1;
+    if (!liquify_span(y, d->cy, d->cx, d->radius, d->bx0, d->bx1, &x0, &x1)) return;
+    for (ptrdiff_t x = x0; x <= x1; ++x) {
+        float dx = (float)x - d->cx, dy = (float)y - d->cy;
+        float w = liquify_weight(sqrtf(dx * dx + dy * dy) * d->invR, d->hard);
+        if (w <= 0) continue;
+        // How the content under this pixel moves: it now shows what was `v` behind it.
+        float vx, vy;
+        switch (d->mode) {
+        case LIQUIFY_FORWARD_WARP: vx = mx * w; vy = my * w; break;
+        // To the left of the brush's travel (rows top-down: y points down).
+        case LIQUIFY_PUSH_LEFT: vx = my * w; vy = -mx * w; break;
+        case LIQUIFY_PUCKER: vx = -dx * w * pucker; vy = -dy * w * pucker; break;
+        case LIQUIFY_BLOAT: vx = dx * w * pucker; vy = dy * w * pucker; break;
+        case LIQUIFY_TWIRL_CLOCKWISE: {
+            float a = turn * w, c = cosf(a), n = sinf(a);
+            vx = dx * c - dy * n - dx; vy = dx * n + dy * c - dy;
+            break;
+        }
+        default: vx = 0; vy = 0; break;
+        }
+        // F'(p) = F(p - v) - v, sampling the old field bilinearly.
+        float px = fminf((float)(cw - 1), fmaxf(0, (float)(x - d->sx0) - vx));
+        float py = fminf((float)(ch - 1), fmaxf(0, (float)(y - d->sy0) - vy));
+        size_t ix = (size_t)px, iy = (size_t)py;
+        if (ix > cw - 2 && cw > 1) ix = cw - 2;
+        if (iy > ch - 2 && ch > 1) iy = ch - 2;
+        float fx = cw > 1 ? px - (float)ix : 0, fy = ch > 1 ? py - (float)iy : 0;
+        const float *a00 = d->copy + (iy * cw + ix) * 2;
+        const float *a10 = cw > 1 ? a00 + 2 : a00, *a01 = ch > 1 ? a00 + cw * 2 : a00, *a11 = cw > 1 ? a01 + 2 : a01;
+        float *f = d->field + ((size_t)y * d->width + (size_t)x) * 2;
+        for (int k = 0; k < 2; ++k) {
+            float top = a00[k] + (a10[k] - a00[k]) * fx, bottom = a01[k] + (a11[k] - a01[k]) * fx;
+            f[k] = top + (bottom - top) * fy - (k == 0 ? vx : vy);
+        }
+    }
 }
 
 int liquify_dab(float *field, size_t width, size_t height, int mode, double fromX, double fromY, double toX, double toY,
-                double diameter, double hardness, double strength, long dirty[4]) {
+                double diameter, double hardness, double strength, ptrdiff_t dirty[4]) {
     dirty[0] = 0; dirty[1] = 0; dirty[2] = -1; dirty[3] = -1;
     if (!width || !height || diameter <= 0) return 0;
     const float radius = (float)(diameter / 2), invR = 1 / radius, hard = (float)hardness, s = (float)strength;
@@ -51,74 +123,31 @@ int liquify_dab(float *field, size_t width, size_t height, int mode, double from
     case LIQUIFY_TWIRL_CLOCKWISE: reach = radius * turn; break;
     default: break;
     }
-    const long r = (long)ceilf(radius), margin = (long)ceilf(reach) + 2;
-    const long bx0 = liquify_clamp((long)floorf(cx) - r, 0, (long)width - 1), bx1 = liquify_clamp((long)ceilf(cx) + r, 0, (long)width - 1);
-    const long by0 = liquify_clamp((long)floorf(cy) - r, 0, (long)height - 1), by1 = liquify_clamp((long)ceilf(cy) + r, 0, (long)height - 1);
+    const ptrdiff_t r = (ptrdiff_t)ceilf(radius), margin = (ptrdiff_t)ceilf(reach) + 2;
+    const ptrdiff_t bx0 = liquify_clamp((ptrdiff_t)floorf(cx) - r, 0, (ptrdiff_t)width - 1), bx1 = liquify_clamp((ptrdiff_t)ceilf(cx) + r, 0, (ptrdiff_t)width - 1);
+    const ptrdiff_t by0 = liquify_clamp((ptrdiff_t)floorf(cy) - r, 0, (ptrdiff_t)height - 1), by1 = liquify_clamp((ptrdiff_t)ceilf(cy) + r, 0, (ptrdiff_t)height - 1);
     if (bx0 > bx1 || by0 > by1) return 0;
     const size_t rows = (size_t)(by1 - by0 + 1), columns = (size_t)(bx1 - bx0 + 1);
 
+    liquify_dab_rows rowsContext = {
+        .field = field, .width = width, .mode = mode, .cx = cx, .cy = cy, .radius = radius, .invR = invR, .hard = hard,
+        .mx = mx, .my = my, .pucker = pucker, .turn = turn, .restore = restore, .bx0 = bx0, .bx1 = bx1, .by0 = by0,
+    };
     if (mode == LIQUIFY_RECONSTRUCT) {
-        // The field eases back toward nothing, all the way once it is under a hundredth of a pixel.
-        liquify_rows(rows, rows * columns, ^(size_t row) {
-            long y = by0 + (long)row, x0, x1;
-            if (!liquify_span(y, cy, cx, radius, bx0, bx1, &x0, &x1)) return;
-            for (long x = x0; x <= x1; ++x) {
-                float dx = (float)x - cx, dy = (float)y - cy;
-                float w = liquify_weight(sqrtf(dx * dx + dy * dy) * invR, hard) * restore;
-                if (w <= 0) continue;
-                float *f = field + ((size_t)y * width + (size_t)x) * 2;
-                f[0] -= f[0] * w; f[1] -= f[1] * w;
-                if (fabsf(f[0]) < 0.01f) f[0] = 0;
-                if (fabsf(f[1]) < 0.01f) f[1] = 0;
-            }
-        });
+        liquify_rows(rows, rows * columns, &rowsContext, liquify_reconstruct_row);
     } else {
         // A copy of the field around the dab as it was before it, which the dab samples from.
-        const long sx0 = liquify_clamp(bx0 - margin, 0, (long)width - 1), sx1 = liquify_clamp(bx1 + margin, 0, (long)width - 1);
-        const long sy0 = liquify_clamp(by0 - margin, 0, (long)height - 1), sy1 = liquify_clamp(by1 + margin, 0, (long)height - 1);
+        const ptrdiff_t sx0 = liquify_clamp(bx0 - margin, 0, (ptrdiff_t)width - 1), sx1 = liquify_clamp(bx1 + margin, 0, (ptrdiff_t)width - 1);
+        const ptrdiff_t sy0 = liquify_clamp(by0 - margin, 0, (ptrdiff_t)height - 1), sy1 = liquify_clamp(by1 + margin, 0, (ptrdiff_t)height - 1);
         const size_t cw = (size_t)(sx1 - sx0 + 1), ch = (size_t)(sy1 - sy0 + 1);
         float *copy = malloc(cw * ch * 2 * sizeof(float));
         if (!copy) return -1;
         for (size_t y = 0; y < ch; ++y)
             memcpy(copy + y * cw * 2, field + ((size_t)(y + (size_t)sy0) * width + (size_t)sx0) * 2, cw * 2 * sizeof(float));
-        liquify_rows(rows, rows * columns, ^(size_t row) {
-            long y = by0 + (long)row, x0, x1;
-            if (!liquify_span(y, cy, cx, radius, bx0, bx1, &x0, &x1)) return;
-            for (long x = x0; x <= x1; ++x) {
-                float dx = (float)x - cx, dy = (float)y - cy;
-                float w = liquify_weight(sqrtf(dx * dx + dy * dy) * invR, hard);
-                if (w <= 0) continue;
-                // How the content under this pixel moves: it now shows what was `v` behind it.
-                float vx, vy;
-                switch (mode) {
-                case LIQUIFY_FORWARD_WARP: vx = mx * w; vy = my * w; break;
-                // To the left of the brush's travel (rows top-down: y points down).
-                case LIQUIFY_PUSH_LEFT: vx = my * w; vy = -mx * w; break;
-                case LIQUIFY_PUCKER: vx = -dx * w * pucker; vy = -dy * w * pucker; break;
-                case LIQUIFY_BLOAT: vx = dx * w * pucker; vy = dy * w * pucker; break;
-                case LIQUIFY_TWIRL_CLOCKWISE: {
-                    float a = turn * w, c = cosf(a), n = sinf(a);
-                    vx = dx * c - dy * n - dx; vy = dx * n + dy * c - dy;
-                    break;
-                }
-                default: vx = 0; vy = 0; break;
-                }
-                // F'(p) = F(p - v) - v, sampling the old field bilinearly.
-                float px = fminf((float)(cw - 1), fmaxf(0, (float)(x - sx0) - vx));
-                float py = fminf((float)(ch - 1), fmaxf(0, (float)(y - sy0) - vy));
-                size_t ix = (size_t)px, iy = (size_t)py;
-                if (ix > cw - 2 && cw > 1) ix = cw - 2;
-                if (iy > ch - 2 && ch > 1) iy = ch - 2;
-                float fx = cw > 1 ? px - (float)ix : 0, fy = ch > 1 ? py - (float)iy : 0;
-                const float *a00 = copy + (iy * cw + ix) * 2;
-                const float *a10 = cw > 1 ? a00 + 2 : a00, *a01 = ch > 1 ? a00 + cw * 2 : a00, *a11 = cw > 1 ? a01 + 2 : a01;
-                float *f = field + ((size_t)y * width + (size_t)x) * 2;
-                for (int k = 0; k < 2; ++k) {
-                    float top = a00[k] + (a10[k] - a00[k]) * fx, bottom = a01[k] + (a11[k] - a01[k]) * fx;
-                    f[k] = top + (bottom - top) * fy - (k == 0 ? vx : vy);
-                }
-            }
-        });
+        rowsContext.copy = copy;
+        rowsContext.cw = cw; rowsContext.ch = ch;
+        rowsContext.sx0 = sx0; rowsContext.sy0 = sy0;
+        liquify_rows(rows, rows * columns, &rowsContext, liquify_move_row);
         free(copy);
     }
     dirty[0] = bx0; dirty[1] = by0; dirty[2] = bx1; dirty[3] = by1;
@@ -141,48 +170,75 @@ static inline void liquify_sample(const uint8_t *source, size_t width, size_t he
     }
 }
 
+typedef struct {
+    const uint8_t *source;
+    uint8_t *output;
+    size_t width, height;
+    const float *field;
+    ptrdiff_t x0, x1, y0;
+} liquify_render_rows;
+
+static void liquify_render_row(void *context, size_t row) {
+    const liquify_render_rows *d = context;
+    size_t y = (size_t)d->y0 + row, width = d->width;
+    for (size_t x = (size_t)d->x0; x <= (size_t)d->x1; ++x) {
+        const float *f = d->field + (y * width + x) * 2;
+        uint8_t *out = d->output + (y * width + x) * 4;
+        if (f[0] == 0 && f[1] == 0) { memcpy(out, d->source + (y * width + x) * 4, 4); continue; }
+        liquify_sample(d->source, width, d->height, (float)x + f[0], (float)y + f[1], out);
+    }
+}
+
 void liquify_render(const uint8_t *source, uint8_t *output, size_t width, size_t height, const float *field,
-                    long x0, long y0, long x1, long y1) {
+                    ptrdiff_t x0, ptrdiff_t y0, ptrdiff_t x1, ptrdiff_t y1) {
     if (!width || !height) return;
-    x0 = liquify_clamp(x0, 0, (long)width - 1); x1 = liquify_clamp(x1, 0, (long)width - 1);
-    y0 = liquify_clamp(y0, 0, (long)height - 1); y1 = liquify_clamp(y1, 0, (long)height - 1);
+    x0 = liquify_clamp(x0, 0, (ptrdiff_t)width - 1); x1 = liquify_clamp(x1, 0, (ptrdiff_t)width - 1);
+    y0 = liquify_clamp(y0, 0, (ptrdiff_t)height - 1); y1 = liquify_clamp(y1, 0, (ptrdiff_t)height - 1);
     if (x0 > x1 || y0 > y1) return;
     const size_t rows = (size_t)(y1 - y0 + 1), columns = (size_t)(x1 - x0 + 1);
-    liquify_rows(rows, rows * columns, ^(size_t row) {
-        size_t y = (size_t)y0 + row;
-        for (size_t x = (size_t)x0; x <= (size_t)x1; ++x) {
-            const float *f = field + (y * width + x) * 2;
-            uint8_t *out = output + (y * width + x) * 4;
-            if (f[0] == 0 && f[1] == 0) { memcpy(out, source + (y * width + x) * 4, 4); continue; }
-            liquify_sample(source, width, height, (float)x + f[0], (float)y + f[1], out);
+    liquify_render_rows context = { source, output, width, height, field, x0, x1, y0 };
+    liquify_rows(rows, rows * columns, &context, liquify_render_row);
+}
+
+typedef struct {
+    const uint8_t *source;
+    uint8_t *output;
+    size_t width, height;
+    const float *field;
+    size_t fieldWidth, fieldHeight;
+    float sx, sy;
+} liquify_scaled_rows;
+
+static void liquify_scaled_row(void *context, size_t y) {
+    const liquify_scaled_rows *d = context;
+    const size_t width = d->width, fieldWidth = d->fieldWidth, fieldHeight = d->fieldHeight;
+    const float sx = d->sx, sy = d->sy, *field = d->field;
+    // Pixel centers line up between the two grids.
+    float qy = fminf((float)(fieldHeight - 1), fmaxf(0, ((float)y + 0.5f) * sy - 0.5f));
+    size_t iy = (size_t)qy, iy1 = iy + 1 < fieldHeight ? iy + 1 : iy;
+    float fy = qy - (float)iy;
+    for (size_t x = 0; x < width; ++x) {
+        float qx = fminf((float)(fieldWidth - 1), fmaxf(0, ((float)x + 0.5f) * sx - 0.5f));
+        size_t ix = (size_t)qx, ix1 = ix + 1 < fieldWidth ? ix + 1 : ix;
+        float fx = qx - (float)ix;
+        const float *a00 = field + (iy * fieldWidth + ix) * 2, *a10 = field + (iy * fieldWidth + ix1) * 2;
+        const float *a01 = field + (iy1 * fieldWidth + ix) * 2, *a11 = field + (iy1 * fieldWidth + ix1) * 2;
+        float disp[2];
+        for (int k = 0; k < 2; ++k) {
+            float top = a00[k] + (a10[k] - a00[k]) * fx, bottom = a01[k] + (a11[k] - a01[k]) * fx;
+            disp[k] = top + (bottom - top) * fy;
         }
-    });
+        uint8_t *out = d->output + (y * width + x) * 4;
+        if (disp[0] == 0 && disp[1] == 0) { memcpy(out, d->source + (y * width + x) * 4, 4); continue; }
+        // The field is in its own pixels; in the full-size image a pixel of it spans 1 / scale.
+        liquify_sample(d->source, width, d->height, (float)x + disp[0] / sx, (float)y + disp[1] / sy, out);
+    }
 }
 
 void liquify_render_scaled(const uint8_t *source, uint8_t *output, size_t width, size_t height,
                            const float *field, size_t fieldWidth, size_t fieldHeight) {
     if (!width || !height || !fieldWidth || !fieldHeight) return;
-    const float sx = (float)fieldWidth / (float)width, sy = (float)fieldHeight / (float)height;
-    liquify_rows(height, width * height, ^(size_t y) {
-        // Pixel centers line up between the two grids.
-        float qy = fminf((float)(fieldHeight - 1), fmaxf(0, ((float)y + 0.5f) * sy - 0.5f));
-        size_t iy = (size_t)qy, iy1 = iy + 1 < fieldHeight ? iy + 1 : iy;
-        float fy = qy - (float)iy;
-        for (size_t x = 0; x < width; ++x) {
-            float qx = fminf((float)(fieldWidth - 1), fmaxf(0, ((float)x + 0.5f) * sx - 0.5f));
-            size_t ix = (size_t)qx, ix1 = ix + 1 < fieldWidth ? ix + 1 : ix;
-            float fx = qx - (float)ix;
-            const float *a00 = field + (iy * fieldWidth + ix) * 2, *a10 = field + (iy * fieldWidth + ix1) * 2;
-            const float *a01 = field + (iy1 * fieldWidth + ix) * 2, *a11 = field + (iy1 * fieldWidth + ix1) * 2;
-            float d[2];
-            for (int k = 0; k < 2; ++k) {
-                float top = a00[k] + (a10[k] - a00[k]) * fx, bottom = a01[k] + (a11[k] - a01[k]) * fx;
-                d[k] = top + (bottom - top) * fy;
-            }
-            uint8_t *out = output + (y * width + x) * 4;
-            if (d[0] == 0 && d[1] == 0) { memcpy(out, source + (y * width + x) * 4, 4); continue; }
-            // The field is in its own pixels; in the full-size image a pixel of it spans 1 / scale.
-            liquify_sample(source, width, height, (float)x + d[0] / sx, (float)y + d[1] / sy, out);
-        }
-    });
+    liquify_scaled_rows context = { source, output, width, height, field, fieldWidth, fieldHeight,
+                                    (float)fieldWidth / (float)width, (float)fieldHeight / (float)height };
+    liquify_rows(height, width * height, &context, liquify_scaled_row);
 }

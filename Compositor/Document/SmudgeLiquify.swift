@@ -158,9 +158,13 @@ final class WarpStroke {
     /// copy's pixels.
     private func blur(at center: CGPoint) {
         let point = center.applying(toGrid)
+        Self.blurDabs &+= 1
         smear_blur_dab(pixels, width, height, context.bytesPerRow, point.x, point.y, diameter * gridScale / 2, hardness, strength,
-                       blurRadius * gridScale / CGFloat(10).squareRoot())
+                       blurRadius * gridScale / CGFloat(10).squareRoot(), Self.blurDabs)
     }
+    /// Blur dabs laid so far, across strokes: each rounds to 8 bits its own way (see `smear_blur_dab`), even clicked
+    /// again and again in one place.
+    private static var blurDabs: UInt32 = 0
 
     private func pickUp(at center: CGPoint) {
         let r = radius, side = 2 * r + 1

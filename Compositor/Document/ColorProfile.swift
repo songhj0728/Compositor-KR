@@ -1,11 +1,13 @@
-import AppKit
-import CoreGraphics
-import os
-import SwiftUI
+import Foundation
 
-/// A project's color space, chosen when it's made. Its pixels are numbers in `workingSpace`: new layers, fills,
-/// brush strokes and imported images are made in it, and saved and exported images carry it as their profile.
-/// Images that arrive in another space keep their own tag, so Core Graphics converts them wherever they're drawn.
+// MARK: - Core state (platform-neutral)
+//
+// Down to "Apple platform layer" below, only Foundation: which color profiles a project can have, and which one the
+// front project is edited in. A future non-Apple port (e.g. Windows) reuses this section and maps each profile onto its
+// own color management, the way the Apple layer below maps them onto Core Graphics color spaces.
+
+/// A project's color space, chosen when it's made. Its pixels are numbers in the profile's working space: new layers,
+/// fills, brush strokes and imported images are made in it, and saved and exported images carry it as their profile.
 nonisolated enum DocumentColorProfile: String, CaseIterable, Identifiable, Sendable, Codable {
     // Raw values are what project manifests store; "sRGB" is what every project before these had.
     case sRGB = "sRGB"
@@ -15,26 +17,50 @@ nonisolated enum DocumentColorProfile: String, CaseIterable, Identifiable, Senda
     case rec2020 = "Rec. 2020"
     case cmyk = "CMYK"
     var id: String { rawValue }
+    /// Pixels with transparency can't be CMYK, so a CMYK project is edited in sRGB and only becomes CMYK on the way
+    /// out, as an exported JPEG.
+    var editsInRGB: Bool { self == .cmyk }
+}
 
-    private static let spaces: [DocumentColorProfile: CGColorSpace] = {
+/// The profile new pixels are made in: that of the project being edited. Buffers are made all over, on and off the main
+/// thread, so they read it from here rather than each being handed the document.
+nonisolated enum WorkingColorSpace {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var stored = DocumentColorProfile.sRGB
+    static var profile: DocumentColorProfile {
+        get { lock.withLock { stored } }
+        set { lock.withLock { stored = newValue } }
+    }
+}
+
+// MARK: - Apple platform layer
+//
+// Everything below maps the profiles above onto Core Graphics and AppKit. A future non-Apple port replaces only this
+// section.
+
+import AppKit
+import CoreGraphics
+import os
+import SwiftUI
+
+extension DocumentColorProfile {
+    nonisolated private static let spaces: [DocumentColorProfile: CGColorSpace] = {
         let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
         func space(_ name: CFString) -> CGColorSpace { CGColorSpace(name: name) ?? srgb }
         return [.sRGB: srgb, .displayP3: space(CGColorSpace.displayP3), .adobeRGB: space(CGColorSpace.adobeRGB1998),
                 .rec709: space(CGColorSpace.itur_709), .rec2020: space(CGColorSpace.itur_2020),
-                // Pixels with transparency can't be CMYK in Core Graphics, so CMYK projects are edited in sRGB and
-                // become CMYK on the way out (`outputSpace`).
+                // Edited in RGB (see `editsInRGB`), made CMYK by `jpegSpace`.
                 .cmyk: srgb]
     }()
-    private static let cmykSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
+    nonisolated private static let cmykSpace = CGColorSpace(name: CGColorSpace.genericCMYK)!
 
-    /// The RGB space the project's pixels are edited in.
-    var workingSpace: CGColorSpace { Self.spaces[self]! }
+    /// The RGB space the project's pixels are edited in. Images that arrive in another space keep their own tag, so
+    /// Core Graphics converts them wherever they're drawn.
+    nonisolated var workingSpace: CGColorSpace { Self.spaces[self]! }
     /// What an exported JPEG is converted to: CMYK for a CMYK project, the working space otherwise. PNG has no CMYK,
     /// so a CMYK project's PNGs stay in its working RGB.
-    var jpegSpace: CGColorSpace { self == .cmyk ? Self.cmykSpace : workingSpace }
-}
+    nonisolated var jpegSpace: CGColorSpace { editsInRGB ? Self.cmykSpace : workingSpace }
 
-extension DocumentColorProfile {
     var displayName: LocalizedStringKey {
         switch self {
         case .sRGB: return "sRGB"
@@ -57,15 +83,9 @@ extension DocumentColorProfile {
     }
 }
 
-/// The space new pixels are made in: the working space of the project being edited. Buffers are made all over, on
-/// and off the main thread, so they read it from here rather than each being handed the document.
-nonisolated enum WorkingColorSpace {
-    private static let state = OSAllocatedUnfairLock<DocumentColorProfile>(initialState: .sRGB)
-    static var profile: DocumentColorProfile {
-        get { state.withLock { $0 } }
-        set { state.withLock { $0 = newValue } }
-    }
-    static var current: CGColorSpace { profile.workingSpace }
+extension WorkingColorSpace {
+    /// The Core Graphics space of `profile`.
+    nonisolated static var current: CGColorSpace { profile.workingSpace }
 }
 
 extension NSColor {
