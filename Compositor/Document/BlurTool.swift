@@ -4,8 +4,11 @@ import CoreImage
 extension EditorSession {
     /// What a Blur or Sharpen stroke paints: the layer's own pixels (or, painting the mask, its mask), softened or
     /// crisped by the Radius set in the options bar, measured on the canvas, at the layer's own resolution. It is taken
-    /// when the stroke starts, so going over an area again in a new stroke works it further, as in Photoshop.
-    func blurSample(for stroke: BrushStroke, sharpen: Bool = false) -> (image: CGImage, placed: CGRect, inGrid: Bool)? {
+    /// when the stroke starts, so going over an area again in a new stroke works it further, as in Photoshop. `render`
+    /// makes any part of the worked sample, so only what the brush reaches is ever worked; `image` is the sharp sample,
+    /// the same size.
+    func blurSample(for stroke: BrushStroke, sharpen: Bool = false)
+        -> (sample: (image: CGImage, placed: CGRect, inGrid: Bool), render: (CGRect) -> CGImage?)? {
         let layer = stroke.layer
         guard let image = stroke.isMask ? layer.mask?.asset.image : layer.asset?.image else { return nil }
         // The canvas's amount, carried into the layer's pixels: wider there when the layer is scaled down.
@@ -37,10 +40,18 @@ extension EditorSession {
         // for a layer that fills it) doesn't soften toward transparent. Core Image counts rows from the bottom.
         let own = CGRect(x: placed.minX, y: Double(height) - placed.maxY, width: placed.width, height: placed.height)
         let clamped = stroke.isMask ? source.clampedToExtent() : source.cropped(to: own).clampedToExtent()
-        let worked = sharpen
+        let worked = (sharpen
             ? clamped.applyingFilter("CIUnsharpMask", parameters: [kCIInputRadiusKey: sigma * fit, kCIInputIntensityKey: 0.6])
-            : clamped.applyingGaussianBlur(sigma: sigma * fit)
-        guard let result = try? PixelAdjust.render(worked.cropped(to: extent), width: width, height: height, isMask: stroke.isMask) else { return nil }
-        return (result, region, true)
+            : clamped.applyingGaussianBlur(sigma: sigma * fit)).cropped(to: extent)
+        let isMask = stroke.isMask
+        // In the working space the stroke was taken in, as the rest of the layer's pixels are.
+        let space = isMask ? CGColorSpaceCreateDeviceGray() : WorkingColorSpace.current
+        let render: (CGRect) -> CGImage? = { part in
+            // `part` counts rows from the top; Core Image counts them from the bottom.
+            PixelAdjust.ciContext.createCGImage(worked, from: CGRect(x: part.minX, y: CGFloat(height) - part.maxY,
+                                                                     width: part.width, height: part.height),
+                format: isMask ? .L8 : .RGBA8, colorSpace: space)
+        }
+        return ((sharp, region, true), render)
     }
 }

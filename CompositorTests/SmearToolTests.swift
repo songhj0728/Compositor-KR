@@ -28,8 +28,10 @@ struct SmearToolTests {
     private func sample(_ session: EditorSession, sharpen: Bool = false) throws -> (Int) throws -> Int {
         let layer = try #require(session.activeLayer)
         let stroke = try session.makeRasterEdit(for: layer)
-        let sample = try #require(session.blurSample(for: stroke, sharpen: sharpen))
-        return { x in try self.gray(sample.image, x: x - Int(sample.placed.minX), y: 50 - Int(sample.placed.minY)) }
+        let blur = try #require(session.blurSample(for: stroke, sharpen: sharpen))
+        let size = blur.sample.image
+        let image = try #require(blur.render(CGRect(x: 0, y: 0, width: size.width, height: size.height)))
+        return { x in try self.gray(image, x: x - Int(blur.sample.placed.minX), y: 50 - Int(blur.sample.placed.minY)) }
     }
 
     @Test func modesAreBlurSharpenAndSmudge() {

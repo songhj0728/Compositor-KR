@@ -158,9 +158,13 @@ final class WarpStroke {
     /// copy's pixels.
     private func blur(at center: CGPoint) {
         let point = center.applying(toGrid)
+        Self.blurDabs &+= 1
         smear_blur_dab(pixels, width, height, context.bytesPerRow, point.x, point.y, diameter * gridScale / 2, hardness, strength,
-                       blurRadius * gridScale / CGFloat(10).squareRoot())
+                       blurRadius * gridScale / CGFloat(10).squareRoot(), Self.blurDabs)
     }
+    /// Blur dabs laid so far, across strokes: each rounds to 8 bits its own way (see `smear_blur_dab`), even clicked
+    /// again and again in one place.
+    private static var blurDabs: UInt32 = 0
 
     private func pickUp(at center: CGPoint) {
         let r = radius, side = 2 * r + 1
@@ -243,7 +247,15 @@ extension EditorSession {
                 : (result, CGRect(x: 0, y: 0, width: result.width, height: result.height), false)
             stroke.replacesWithClone = true
             stroke.editName = (warp.blurs ? BlurToolMode.blur : .smudge).rawValue
-            for point in warp.points { try stroke.append(point) }
+            // The tip is solid and a little wider than the brush, so a point every twentieth of its width covers what
+            // every dab did: a big brush on a big canvas lays thousands of dabs, and replaying each one stalled the release.
+            let spacing = max(1, warp.diameter * 0.05)
+            var kept: CGPoint?
+            for (index, point) in warp.points.enumerated() {
+                if let kept, index < warp.points.count - 1, hypot(point.x - kept.x, point.y - kept.y) < spacing { continue }
+                try stroke.append(point)
+                kept = point
+            }
             try stroke.flush()
             if !stroke.patches.isEmpty { try commitPaintSnapshot(stroke) }
         } catch { brushError = error.localizedDescription }

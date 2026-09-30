@@ -978,6 +978,16 @@
         }
       }
     },
+    "Break the lines into glowing beads" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "주사선을 빛나는 점들로 끊어 줍니다."
+          }
+        }
+      }
+    },
     "Brush" : {
       "localizations" : {
         "ko" : {
@@ -2242,6 +2252,7 @@
       }
     },
     "Drag a divider to change which tones the neighboring sliders affect." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -2252,11 +2263,22 @@
       }
     },
     "Drag a point. Click the curve to add one. Double-click a point to remove it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "점을 드래그합니다. 곡선을 클릭하여 점을 추가합니다. 점을 더블 클릭하여 삭제합니다."
+          }
+        }
+      }
+    },
+    "Drag a point. Click to add one. Double-click a point to remove it." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점을 드래그합니다. 클릭하여 점을 추가합니다. 점을 더블 클릭하여 삭제합니다."
           }
         }
       }
@@ -2307,6 +2329,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "드래그하여 색조와 채도를 설정합니다. 더블 클릭하면 이 휠이 초기화됩니다."
+          }
+        }
+      }
+    },
+    "Drag up or down to lift or lower those tones. Drag a divider along the bottom to change which tones each region covers." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "위아래로 드래그하여 해당 톤을 밝히거나 어둡게 합니다. 아래쪽 구분선을 드래그하여 각 영역이 맡는 톤 범위를 바꿉니다."
           }
         }
       }
@@ -3460,6 +3492,16 @@
         }
       }
     },
+    "How far apart the screen's lines are" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "화면 주사선 사이의 간격입니다."
+          }
+        }
+      }
+    },
     "How far each color channel (0–255) can differ from the clicked color and still be selected" : {
       "localizations" : {
         "ko" : {
@@ -4057,6 +4099,16 @@
         }
       }
     },
+    "Light blooming around the lines, like a CRT's phosphors" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CRT 형광체처럼 주사선 주위로 번지는 빛입니다."
+          }
+        }
+      }
+    },
     "Light on Dark" : {
       "localizations" : {
         "ko" : {
@@ -4265,6 +4317,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "각 디더링 픽셀의 크기를 지정한 픽셀 수만큼 크게 만들어, 예전 화면처럼 큼직한 느낌을 냅니다."
+          }
+        }
+      }
+    },
+    "Make the lines waver sideways down the screen, like a CRT losing sync" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기가 어긋난 CRT처럼 주사선이 화면 아래로 가며 좌우로 흔들리게 합니다."
           }
         }
       }
@@ -6178,6 +6240,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "너비와 높이를 중심을 기준으로 함께 조정합니다."
+          }
+        }
+      }
+    },
+    "Scanlines (CRT)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "주사선 (CRT)"
           }
         }
       }

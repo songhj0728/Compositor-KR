@@ -1,5 +1,10 @@
-import AppKit
-import SwiftUI
+import Foundation
+
+// MARK: - Core state (platform-neutral)
+//
+// Down to "Apple platform layer" below, only Foundation: the tools, the brush, and the undo steps. The displacement
+// math itself is C (LiquifyPixels.c) and builds anywhere; a future non-Apple port (e.g. Windows) reuses both and
+// supplies its own dialog and pixel buffers in place of the Apple layer.
 
 /// The Liquify dialog's tools: how a stroke moves the pixels under the brush.
 nonisolated enum LiquifyMode: String, CaseIterable, Sendable {
@@ -9,27 +14,6 @@ nonisolated enum LiquifyMode: String, CaseIterable, Sendable {
     case pucker = "Pucker"
     case bloat = "Bloat"
     case pushLeft = "Push Left"
-    /// `rawValue` as a localizable display name; `rawValue` itself stays the stable, unlocalized identifier.
-    var displayName: LocalizedStringKey {
-        switch self {
-        case .forwardWarp: return "Forward Warp"
-        case .reconstruct: return "Reconstruct"
-        case .twirlClockwise: return "Twirl Clockwise"
-        case .pucker: return "Pucker"
-        case .bloat: return "Bloat"
-        case .pushLeft: return "Push Left"
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .forwardWarp: return "hand.point.up.left"
-        case .reconstruct: return "clock.arrow.circlepath"
-        case .twirlClockwise: return "arrow.clockwise"
-        case .pucker: return "arrow.down.right.and.arrow.up.left"
-        case .bloat: return "arrow.up.left.and.arrow.down.right"
-        case .pushLeft: return "arrow.left"
-        }
-    }
     /// Tools that keep working while the brush is held still, as well as when it moves.
     var worksInPlace: Bool { self == .reconstruct || self == .twirlClockwise || self == .pucker || self == .bloat }
 }
@@ -52,6 +36,39 @@ nonisolated struct LiquifyStep: Sendable {
     let before: [Float]
     let after: [Float]
     var byteCount: Int { (before.count + after.count) * MemoryLayout<Float>.size }
+}
+
+// MARK: - Apple platform layer
+//
+// Everything below works the field over Core Graphics buffers and presents it in AppKit and SwiftUI. A future non-Apple
+// port replaces only this section.
+
+import AppKit
+import SwiftUI
+
+extension LiquifyMode {
+    /// `rawValue` as a localizable display name; `rawValue` itself stays the stable, unlocalized identifier.
+    var displayName: LocalizedStringKey {
+        switch self {
+        case .forwardWarp: return "Forward Warp"
+        case .reconstruct: return "Reconstruct"
+        case .twirlClockwise: return "Twirl Clockwise"
+        case .pucker: return "Pucker"
+        case .bloat: return "Bloat"
+        case .pushLeft: return "Push Left"
+        }
+    }
+    /// Its SF Symbol.
+    var symbol: String {
+        switch self {
+        case .forwardWarp: return "hand.point.up.left"
+        case .reconstruct: return "clock.arrow.circlepath"
+        case .twirlClockwise: return "arrow.clockwise"
+        case .pucker: return "arrow.down.right.and.arrow.up.left"
+        case .bloat: return "arrow.up.left.and.arrow.down.right"
+        case .pushLeft: return "arrow.left"
+        }
+    }
 }
 
 /// The dialog's working copy: the layer's pixels, the displacement field strokes build up over them, and the
