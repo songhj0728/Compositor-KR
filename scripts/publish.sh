@@ -6,6 +6,10 @@
 # its public half is SUPublicEDKey in Config/Info.plist), and either `gh` signed in (brew install gh; gh auth login) or
 # a GitHub token allowed to write this repository's contents in GITHUB_TOKEN.
 # Release notes: RELEASE_NOTES="…" ./scripts/publish.sh
+#
+# Versions follow upstream Compositor's number. While it stays the same, each further release of this fork adds a
+# letter: 1.4.5, then 1.4.5(A), 1.4.5(B)…; when upstream moves on (1.4.6), the number follows it and the letters start
+# over. The build number (CURRENT_PROJECT_VERSION) goes up by one every release, whatever the version.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,6 +29,11 @@ NOTES="${RELEASE_NOTES:-$APP $VERSION}"
 SOURCE="$PROJECT_DIR/dist/$APP-$VERSION.dmg"
 [[ -f "$SOURCE" ]] || { echo "No $SOURCE — run scripts/release.sh first."; exit 1; }
 [[ -x "$SIGN_UPDATE" ]] || { echo "Sparkle's sign_update isn't built — run scripts/release.sh first."; exit 1; }
+# Sparkle offers an update by its build number, not its version: a release that doesn't raise it reaches no one.
+PREVIOUS=$(sed -n 's:.*<sparkle\:version>\([0-9]*\)</sparkle\:version>.*:\1:p' "$PROJECT_DIR/appcast.xml" | head -1)
+if [[ -n "$PREVIOUS" ]] && (( BUILD <= PREVIOUS )); then
+  echo "Build $BUILD isn't above the last release's $PREVIOUS: raise CURRENT_PROJECT_VERSION first."; exit 1
+fi
 
 # GitHub through gh when it's installed, or its REST API with GITHUB_TOKEN.
 if command -v gh >/dev/null; then

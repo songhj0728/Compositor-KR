@@ -436,7 +436,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = "1.4.5(P)";
+				MARKETING_VERSION = "1.4.5(A)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor;
 				PRODUCT_MODULE_NAME = Compositor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -479,7 +479,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = "1.4.5(P)";
+				MARKETING_VERSION = "1.4.5(A)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.wonderassembly.compositor-kr";
 				PRODUCT_MODULE_NAME = Compositor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -505,7 +505,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = "1.4.5(P)";
+				MARKETING_VERSION = "1.4.5(A)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -528,7 +528,7 @@
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = "1.4.5(P)";
+				MARKETING_VERSION = "1.4.5(A)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -549,7 +549,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = "1.4.5(P)";
+				MARKETING_VERSION = "1.4.5(A)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -570,7 +570,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = "1.4.5(P)";
+				MARKETING_VERSION = "1.4.5(A)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.wonderassembly.compositor.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
