@@ -154,10 +154,7 @@ final class EffectsPreviewCache {
         }
         let pixels = factor == 1 ? image : try resized(image, mask: false)
         let mask = try request.mask.map { factor == 1 ? $0 : try resized($0, mask: true) }
-        var effects = request.effects
-        effects.stroke?.size *= factor
-        effects.shadow?.distance *= factor
-        effects.shadow?.blur *= factor
+        let effects = request.effects.scaled(by: factor)
         let rendered = try LayerEffectsRenderer.render(pixels, mask: mask, effects: effects)
         return Result(image: rendered.image, inset: rendered.inset)
     }

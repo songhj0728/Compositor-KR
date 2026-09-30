@@ -37,7 +37,25 @@ nonisolated struct LayerShapeStyle: Codable, Equatable, Sendable {
     var lineWidth: CGFloat? = nil
     var start: CGPoint? = nil
     var end: CGPoint? = nil
+    /// Whether the inside is filled; missing means filled, as every shape was before strokes.
+    var filled: Bool? = nil
+    /// An outline around a rectangle or ellipse, in document pixels, and its color. Missing (or a width of 0) means no
+    /// outline.
+    var strokeWidth: CGFloat? = nil
+    /// The outline sits outside the shape, which the layer's box grows to hold, as a Photoshop shape's Outside stroke.
+    /// Missing means just inside the edge, as the first outlined shapes were drawn, so those keep their look.
+    var strokeOutside: Bool? = nil
+    var strokeRed: CGFloat? = nil
+    var strokeGreen: CGFloat? = nil
+    var strokeBlue: CGFloat? = nil
     var color: PaletteColor { PaletteColor(red: red, green: green, blue: blue) }
+    var fills: Bool { filled ?? true }
+    var strokeColor: PaletteColor { PaletteColor(red: strokeRed ?? 0, green: strokeGreen ?? 0, blue: strokeBlue ?? 0) }
+    var strokeSize: CGFloat { kind == .line ? 0 : max(0, strokeWidth ?? 0) }
+    /// How far the layer's box reaches past the shape on each side: the width of an outline drawn outside it.
+    var outsideMargin: CGFloat { strokeOutside == true ? strokeSize : 0 }
+    mutating func setColor(_ color: PaletteColor) { red = color.red; green = color.green; blue = color.blue }
+    mutating func setStrokeColor(_ color: PaletteColor) { strokeRed = color.red; strokeGreen = color.green; strokeBlue = color.blue }
 }
 
 /// A layer made with the Shape tool. Its pixels are an ordinary raster, so it clips, masks, blends and filters like
@@ -59,6 +77,14 @@ extension ImageLayer {
         guard let shape, let image = asset?.image, image === shape.image else { return nil }
         return shape
     }
+}
+
+/// A click with the Shape tool: the dialog asking for the shape's size is open.
+struct ShapeSizeRequest: Equatable, Identifiable {
+    let id = UUID()
+    let kind: ShapeKind
+    /// Where the click was, in document pixels.
+    let point: CGPoint
 }
 
 /// A shape being dragged out with the Shape tool, in whole document pixels.
@@ -119,21 +145,68 @@ extension EditorSession {
         shapeKind = kinds[((kinds.firstIndex(of: shapeKind) ?? 0) + 1) % kinds.count]
     }
 
-    /// Fills the dragged shape with the foreground color on a new layer above the active one,
-    /// in one undo step. A click without a drag makes nothing; the selection is left alone.
+    /// Makes the dragged shape on a new layer above the active one, in the Shape tool's fill, outline and line
+    /// width, in one undo step. A click without a drag asks for a size instead (see `ShapeSizeRequest`); the
+    /// selection is left alone.
     func finishShape() {
         guard let draft = shapeDraft else { return }
         shapeDraft = nil
+        let clicked = draft.kind == .line ? (draft.end ?? draft.anchor) == draft.anchor : draft.rect.width < 1 && draft.rect.height < 1
+        if clicked {
+            if canEditLayers, document != nil { shapeSizeRequest = ShapeSizeRequest(kind: draft.kind, point: draft.anchor) }
+            return
+        }
         var rect = draft.rect
-        let thickness = CGFloat(shapeLineWidth)
-        // A line keeps the two points it was dragged between; the layer is their box with room for the stroke's own
-        // thickness (and its round ends) around them.
         var ends: (start: CGPoint, end: CGPoint)?
-        if draft.kind == .line {
-            let from = draft.anchor, to = draft.end ?? draft.anchor
+        if draft.kind == .line { ends = (draft.anchor, draft.end ?? draft.anchor) }
+        makeShape(draft.kind, rect: &rect, ends: ends, cornerRadius: draft.cornerRadius)
+    }
+
+    /// The shape of the size asked for by a click: centered on the canvas with From Center, on the click otherwise.
+    /// A line runs from the box's top-left corner to its bottom-right one, so a height of 0 draws it flat.
+    func finishShapeSize(width: Int, height: Int, fromCenter: Bool) {
+        guard let request = shapeSizeRequest else { return }
+        shapeSizeRequest = nil
+        guard let document, width >= 0, height >= 0 else { return }
+        let center = fromCenter ? CGPoint(x: CGFloat(document.width) / 2, y: CGFloat(document.height) / 2) : request.point
+        let origin = CGPoint(x: (center.x - CGFloat(width) / 2).rounded(), y: (center.y - CGFloat(height) / 2).rounded())
+        var rect = CGRect(origin: origin, size: CGSize(width: width, height: height))
+        shapeSizeWidth = width
+        shapeSizeHeight = height
+        shapeSizeFromCenter = fromCenter
+        if request.kind == .line {
+            guard width > 0 || height > 0 else { return }
+            makeShape(.line, rect: &rect, ends: (CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.maxY)), cornerRadius: 0)
+        } else {
+            guard width >= 1, height >= 1 else { return }
+            makeShape(request.kind, rect: &rect, ends: nil, cornerRadius: request.kind == .rectangle ? CGFloat(shapeCornerRadius) : 0)
+        }
+    }
+
+    func cancelShapeSize() { shapeSizeRequest = nil }
+
+    /// The Shape tool's own look for the next shape: its fill, outline and line width.
+    func shapeToolStyle(_ kind: ShapeKind, cornerRadius: CGFloat) -> LayerShapeStyle {
+        var style = LayerShapeStyle(kind: kind, red: shapeFillColor.red, green: shapeFillColor.green, blue: shapeFillColor.blue,
+                                    cornerRadius: cornerRadius, lineWidth: kind == .line ? CGFloat(shapeLineWidth) : nil)
+        if kind != .line {
+            style.filled = shapeFills ? nil : false
+            if shapeStrokeWidth > 0 {
+                style.strokeWidth = CGFloat(shapeStrokeWidth)
+                style.strokeOutside = true
+                style.setStrokeColor(shapeStrokeColor)
+            }
+        }
+        return style
+    }
+
+    /// A shape on a new layer covering `rect` (a line's box grows by room for its own thickness and round ends).
+    private func makeShape(_ kind: ShapeKind, rect: inout CGRect, ends: (start: CGPoint, end: CGPoint)?, cornerRadius: CGFloat) {
+        let thickness = CGFloat(shapeLineWidth)
+        if kind == .line, let ends {
+            let from = ends.start, to = ends.end
             rect = CGRect(x: min(from.x, to.x), y: min(from.y, to.y),
                           width: abs(to.x - from.x), height: abs(to.y - from.y)).insetBy(dx: -thickness / 2, dy: -thickness / 2)
-            ends = (from, to)
         }
         guard canEditLayers, document != nil, rect.width >= 1, rect.height >= 1 else { return }
         guard Int(rect.width) * Int(rect.height) <= Self.maxShapePixels else {
@@ -142,21 +215,113 @@ extension EditorSession {
         }
         do {
             // The ends as fractions of the box, so a scaled line still runs between the same two places.
+            let box = rect
             func unit(_ point: CGPoint) -> CGPoint {
-                CGPoint(x: rect.width > 0 ? (point.x - rect.minX) / rect.width : 0.5,
-                        y: rect.height > 0 ? (point.y - rect.minY) / rect.height : 0.5)
+                CGPoint(x: box.width > 0 ? (point.x - box.minX) / box.width : 0.5,
+                        y: box.height > 0 ? (point.y - box.minY) / box.height : 0.5)
             }
-            let start = ends.map { unit($0.start) }, finish = ends.map { unit($0.end) }
-            let image = try Self.shapeImage(draft.kind, size: rect.size, color: foregroundColor, cornerRadius: draft.cornerRadius,
-                                            lineWidth: thickness, start: start, end: finish)
-            let style = LayerShapeStyle(kind: draft.kind, red: foregroundColor.red, green: foregroundColor.green,
-                                        blue: foregroundColor.blue, cornerRadius: draft.cornerRadius,
-                                        lineWidth: draft.kind == .line ? thickness : nil, start: start, end: finish)
-            addPixelLayer(image, at: rect.origin, name: nextShapeName(draft.kind), editName: draft.kind.rawValue,
+            var style = shapeToolStyle(kind, cornerRadius: cornerRadius)
+            style.start = ends.map { unit($0.start) }
+            style.end = ends.map { unit($0.end) }
+            // The size asked for is the shape's; an outline outside it widens the layer on every side.
+            rect = rect.insetBy(dx: -style.outsideMargin, dy: -style.outsideMargin)
+            guard Int(rect.width) * Int(rect.height) <= Self.maxShapePixels else {
+                brushError = "That shape is too large. A shape can cover up to \(DocumentLimits.maxSurfaceMegapixels) megapixels."
+                return
+            }
+            let image = try Self.shapeImage(style, size: rect.size)
+            addPixelLayer(image, at: rect.origin, name: nextShapeName(kind), editName: kind.rawValue,
                           dropsSelection: false, shape: LayerShape(style: style, image: image))
         } catch { brushError = error.localizedDescription }
     }
 
+    /// The active layer when it is still a shape the Shape tool made.
+    var activeShape: LayerShape? { activeLayer?.liveShape }
+
+    /// Changes the Shape tool's look, and the selected shape's with it, so the shape just made (or any shape picked in
+    /// the Layers panel) takes a new fill, outline or line width. One undo step for the shape; the tool remembers
+    /// the setting for the shapes after it.
+    func changeShapeStyle(name: String = "Shape Style", _ change: (inout LayerShapeStyle) -> Void) {
+        guard let index = document?.layers.firstIndex(where: { $0.id == activeLayerID }),
+              let layer = document?.layers[index], let shape = layer.liveShape, let asset = layer.asset, canEditLayers else { return }
+        var style = shape.style
+        change(&style)
+        guard style != shape.style else { return }
+        // An outline outside the shape grows (or shrinks) the layer's box around the shape's own center, whichever way
+        // the layer is turned, so the shape itself stays exactly where it was.
+        var transform = layer.transform
+        let grow = style.outsideMargin - shape.style.outsideMargin
+        if grow != 0 {
+            // Outline widths are document pixels, as the layer's box is.
+            transform.origin.x -= grow; transform.origin.y -= grow
+            transform.size.width += 2 * grow; transform.size.height += 2 * grow
+            guard transform.isValid else { return }
+        }
+        let width = max(1, Int(transform.size.width.rounded())), height = max(1, Int(transform.size.height.rounded()))
+        guard width * height <= Self.maxShapePixels,
+              let image = try? Self.shapeImage(style, size: CGSize(width: width, height: height)),
+              let thumbnail = try? PixelInvert.thumbnail(of: image) else { return }
+        finishOpacityEdit()
+        beginEdit(name)
+        // A mask that follows the layer's pixel grid stays exactly where it is if that grid changes size.
+        if let mask = layer.mask, mask.placement == nil, asset.image.width != width || asset.image.height != height {
+            document?.layers[index].mask?.placement = layer.maskTransform
+        }
+        document?.layers[index].transform = transform
+        document?.layers[index].asset = ImportedImage(image: image, thumbnail: thumbnail, name: asset.name)
+        document?.layers[index].shape = LayerShape(style: style, image: image)
+        endEdit()
+    }
+
+    /// The fill the Shape tool's bar shows: the selected shape's, otherwise the next shape's.
+    var shapeBarFill: PaletteColor { activeShape?.style.color ?? shapeFillColor }
+    var shapeBarFills: Bool { activeShape.map { $0.style.kind == .line || $0.style.fills } ?? shapeFills }
+    var shapeBarStroke: PaletteColor { activeShape.map { $0.style.strokeSize > 0 ? $0.style.strokeColor : shapeStrokeColor } ?? shapeStrokeColor }
+    var shapeBarStrokeWidth: Double { activeShape.map { Double($0.style.strokeSize) } ?? shapeStrokeWidth }
+    var shapeBarLineWidth: Double { activeShape?.style.lineWidth.map { Double($0) } ?? shapeLineWidth }
+
+    func setShapeFill(_ color: PaletteColor) {
+        shapeFillColor = color
+        changeShapeStyle(name: "Shape Fill") { $0.setColor(color) }
+    }
+    func setShapeFills(_ fills: Bool) {
+        shapeFills = fills
+        changeShapeStyle(name: "Shape Fill") { if $0.kind != .line { $0.filled = fills ? nil : false } }
+    }
+    func setShapeStroke(_ color: PaletteColor) {
+        shapeStrokeColor = color
+        changeShapeStyle(name: "Shape Stroke") { style in
+            guard style.kind != .line else { return }
+            style.setStrokeColor(color)
+            if style.strokeSize == 0, self.shapeStrokeWidth > 0 {
+                style.strokeWidth = CGFloat(self.shapeStrokeWidth)
+                style.strokeOutside = true
+            }
+        }
+    }
+    func setShapeStrokeWidth(_ width: Double) {
+        let width = width.isFinite ? min(1000, max(0, width.rounded())) : 0
+        shapeStrokeWidth = width
+        changeShapeStyle(name: "Shape Stroke") { style in
+            guard style.kind != .line else { return }
+            style.strokeWidth = width > 0 ? CGFloat(width) : nil
+            // Any outline set from here on sits outside the shape, an older inside one included.
+            style.strokeOutside = width > 0 ? true : nil
+            if width > 0, style.strokeRed == nil { style.setStrokeColor(self.shapeStrokeColor) }
+        }
+    }
+    func setShapeLineWidth(_ width: Double) {
+        let width = width.isFinite ? min(5000, max(1, width.rounded())) : 4
+        shapeLineWidth = width
+        changeShapeStyle(name: "Line Width") { style in
+            guard style.kind == .line else { return }
+            style.lineWidth = CGFloat(width)
+        }
+    }
+    func openShapeColorPicker(stroke: Bool) {
+        guard canEditPalette, colorPicker == nil else { return }
+        colorPicker = ColorPickerState(target: .shape(stroke: stroke), original: stroke ? shapeBarStroke : shapeBarFill)
+    }
     /// "Rectangle 1", "Ellipse 2", … skipping names already in the document.
     func nextShapeName(_ kind: ShapeKind) -> String {
         let names = Set(document?.layers.map(\.name) ?? [])
@@ -171,10 +336,7 @@ extension EditorSession {
         guard let layer = document?.layers[index], let shape = layer.liveShape, let asset = layer.asset else { return }
         let width = max(1, Int(layer.transform.size.width.rounded())), height = max(1, Int(layer.transform.size.height.rounded()))
         guard width != asset.image.width || height != asset.image.height, width * height <= Self.maxShapePixels,
-              let image = try? Self.shapeImage(shape.style.kind, size: CGSize(width: width, height: height),
-                                               color: shape.style.color, cornerRadius: shape.style.cornerRadius,
-                                               lineWidth: shape.style.lineWidth ?? 0,
-                                               start: shape.style.start, end: shape.style.end),
+              let image = try? Self.shapeImage(shape.style, size: CGSize(width: width, height: height)),
               let thumbnail = try? PixelInvert.thumbnail(of: image) else { return }
         // A mask that follows the layer's pixel grid stays exactly where it is while that grid changes size.
         if let mask = layer.mask, mask.placement == nil { document?.layers[index].mask?.placement = layer.maskTransform }
@@ -196,15 +358,26 @@ extension EditorSession {
         let factor = min(1, 2048 / max(size.width, size.height))
         let drawn = CGSize(width: max(1, (size.width * factor).rounded()), height: max(1, (size.height * factor).rounded()))
         if let cached = shapeTransformPreviewCache[layer.id], cached.size == drawn { return cached.image }
-        guard let image = try? Self.shapeImage(.rectangle, size: drawn, color: shape.style.color,
-                                               cornerRadius: shape.style.cornerRadius * factor) else { return nil }
+        var scaled = shape.style
+        scaled.cornerRadius *= factor
+        scaled.strokeWidth = scaled.strokeWidth.map { $0 * factor }
+        guard let image = try? Self.shapeImage(scaled, size: drawn) else { return nil }
         shapeTransformPreviewCache[layer.id] = (drawn, image)
         return image
     }
 
+    /// A shape layer's pixels at `size`: its fill, then its outline, outside the shape or just inside its edge.
+    nonisolated static func shapeImage(_ style: LayerShapeStyle, size: CGSize) throws -> CGImage {
+        try shapeImage(style.kind, size: size, color: style.color, cornerRadius: style.cornerRadius,
+                       lineWidth: style.lineWidth ?? 0, start: style.start, end: style.end, fills: style.fills,
+                       stroke: style.strokeSize > 0 ? style.strokeColor : nil, strokeWidth: style.strokeSize,
+                       strokeOutside: style.strokeOutside == true)
+    }
+
     /// The shape filling its box, anti-aliased where it curves.
     nonisolated static func shapeImage(_ kind: ShapeKind, size: CGSize, color: PaletteColor, cornerRadius: CGFloat = 0,
-                           lineWidth: CGFloat = 0, start: CGPoint? = nil, end: CGPoint? = nil) throws -> CGImage {
+                           lineWidth: CGFloat = 0, start: CGPoint? = nil, end: CGPoint? = nil, fills: Bool = true,
+                           stroke: PaletteColor? = nil, strokeWidth: CGFloat = 0, strokeOutside: Bool = false) throws -> CGImage {
         let context = try BrushRaster.context(width: Int(size.width), height: Int(size.height), mask: false)
         let bounds = CGRect(origin: .zero, size: size)
         if kind == .line {
@@ -224,9 +397,29 @@ extension EditorSession {
             guard let image = context.makeImage() else { throw ExportError.render }
             return image
         }
-        context.setFillColor(CGColor(srgbRed: color.red, green: color.green, blue: color.blue, alpha: 1))
-        context.addPath(kind.path(in: bounds, cornerRadius: cornerRadius))
-        context.fillPath()
+        // Outside: the shape is the box less the outline's width all round, and the outline runs around it, its outer
+        // edge on the box's, its corners rounded out by the shape's radius plus half its width.
+        let outside = strokeOutside && stroke != nil ? min(strokeWidth, max(0, (min(size.width, size.height) - 1) / 2)) : 0
+        let body = bounds.insetBy(dx: outside, dy: outside)
+        if fills {
+            context.setFillColor(CGColor(srgbRed: color.red, green: color.green, blue: color.blue, alpha: 1))
+            context.addPath(kind.path(in: body, cornerRadius: cornerRadius))
+            context.fillPath()
+        }
+        if let stroke, outside > 0 {
+            context.setStrokeColor(CGColor(srgbRed: stroke.red, green: stroke.green, blue: stroke.blue, alpha: 1))
+            context.setLineWidth(outside)
+            context.addPath(kind.path(in: body.insetBy(dx: -outside / 2, dy: -outside / 2),
+                                      cornerRadius: cornerRadius > 0 ? cornerRadius + outside / 2 : 0))
+            context.strokePath()
+        } else if let stroke, strokeWidth > 0 {
+            // Inside the edge, so the outline never grows the layer, as a Photoshop shape's Inside stroke.
+            let width = min(strokeWidth, min(size.width, size.height) / 2)
+            context.setStrokeColor(CGColor(srgbRed: stroke.red, green: stroke.green, blue: stroke.blue, alpha: 1))
+            context.setLineWidth(width)
+            context.addPath(kind.path(in: bounds.insetBy(dx: width / 2, dy: width / 2), cornerRadius: max(0, cornerRadius - width / 2)))
+            context.strokePath()
+        }
         guard let image = context.makeImage() else { throw ExportError.render }
         return image
     }

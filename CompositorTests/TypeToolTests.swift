@@ -75,6 +75,28 @@ struct TypeToolTests {
         #expect(session.foregroundColor == PaletteColor(red: 0, green: 0, blue: 1))
     }
 
+    /// The Type bar's color reaches a text layer that is only selected, keeps it editable text, and is the color
+    /// the next text starts in.
+    @Test func typeColorRecolorsTheSelectedTextLayerAndIsRemembered() throws {
+        let session = makeSession()
+        session.beginText(at: CGPoint(x: 30, y: 40))
+        session.textDraft?.style.content = "Hello"
+        #expect(session.finishText())
+        let id = try #require(session.activeLayerID)
+        #expect(session.textDraft == nil)
+        let blue = PaletteColor(red: 0, green: 0, blue: 1)
+        session.openTextColorPicker()
+        try #require(session.colorPicker).hsb.setRGB(blue)
+        session.closeColorPicker(commit: true)
+        #expect(session.document?.layers.first { $0.id == id }?.liveText?.style.blue == 1)
+        #expect(session.typeColor == blue)
+
+        session.foregroundColor = PaletteColor(red: 1, green: 0, blue: 0)
+        session.beginText(at: CGPoint(x: 300, y: 300), newLayer: true)
+        #expect(session.textDraft?.style.blue == 1 && session.textDraft?.style.red == 0)
+        session.cancelText()
+    }
+
     @Test func transformsDuplicatesAndClippingKeepTextEditable() throws {
         let session = makeSession()
         session.beginText(at: CGPoint(x: 20, y: 20))
@@ -415,7 +437,7 @@ struct TypeToolTests {
         #expect(pixels.red > 50 && pixels.dark > 50)
 
         let snapshot = try #require(session.projectSnapshot())
-        #expect(snapshot.manifest.version == 11)
+        #expect(snapshot.manifest.version == 12)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("TextColors-\(UUID()).comp")
         defer { try? FileManager.default.removeItem(at: url) }
         try await ProjectStore.shared.save(snapshot, to: url)

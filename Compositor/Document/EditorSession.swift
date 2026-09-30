@@ -99,8 +99,8 @@ enum NavigationTool: String, CaseIterable {
     var isBrushTool: Bool { self == .brush || self == .spotHealing || self == .cloneStamp || self == .blur }
     /// Tools that draw and edit selections, sharing modifiers, moving, and nudging.
     var isSelectionTool: Bool { self == .marquee || self == .lasso || self == .wand }
-    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.left.and.arrow.down.right" : self == .hand ? "hand.draw" : "magnifyingglass" }
-    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear (R)" : self == .gradient ? "Gradient (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .crop ? "Crop (C)" : self == .move ? "Move / Transform (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
+    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.and.down.and.arrow.left.and.right" : self == .hand ? "hand.draw" : "magnifyingglass" }
+    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear (R)" : self == .gradient ? "Gradient (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .crop ? "Crop (C)" : self == .move ? "Move (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
 }
 
 @Observable
@@ -117,9 +117,8 @@ final class EditorSession {
     var showsSampleRing = true
     var adjustmentOriginal: LayerAdjustment?
     var adjustmentEditingID: UUID? { didSet { resumeFileRequests() } }
-    /// The layer whose effects panel is open.
-    var effectsEditing: LayerEffectSelection?
-    var effectsEditingOriginal: LayerEffects?
+    /// The Layer Style dialog, open on one layer.
+    var layerStyle: LayerStyleEdit?
     var effectSelection: LayerEffectSelection?
     @ObservationIgnored var effectsPreviews = EffectsPreviewCache()
     var projectURL: URL?
@@ -247,7 +246,18 @@ final class EditorSession {
     /// Corner radius in pixels for rectangles the Shape tool draws; 0 keeps the corners square.
     var shapeCornerRadius: Double = 0
     /// A Line shape's thickness in document pixels.
-    var shapeLineWidth: Double = 4
+    var shapeLineWidth: Double = Double(ToolDefaults.int("shapeLineWidth", 4)) { didSet { ToolDefaults.set(Int(shapeLineWidth), "shapeLineWidth") } }
+    /// The Shape tool's own look, kept for every shape after the one it was set on, across launches.
+    var shapeFillColor = PaletteColor(hex: ToolDefaults.string("shapeFill", "")) ?? .black { didSet { ToolDefaults.set(shapeFillColor.hex, "shapeFill") } }
+    var shapeFills = ToolDefaults.bool("shapeFills", true) { didSet { ToolDefaults.set(shapeFills, "shapeFills") } }
+    var shapeStrokeColor = PaletteColor(hex: ToolDefaults.string("shapeStroke", "")) ?? .black { didSet { ToolDefaults.set(shapeStrokeColor.hex, "shapeStroke") } }
+    /// 0 is no outline.
+    var shapeStrokeWidth: Double = Double(ToolDefaults.int("shapeStrokeWidth", 0)) { didSet { ToolDefaults.set(Int(shapeStrokeWidth), "shapeStrokeWidth") } }
+    /// A click with the Shape tool asks for a size; the last one asked for, and whether it was centered on the canvas.
+    var shapeSizeRequest: ShapeSizeRequest?
+    var shapeSizeWidth = ToolDefaults.int("shapeWidth", 100) { didSet { ToolDefaults.set(shapeSizeWidth, "shapeWidth") } }
+    var shapeSizeHeight = ToolDefaults.int("shapeHeight", 100) { didSet { ToolDefaults.set(shapeSizeHeight, "shapeHeight") } }
+    var shapeSizeFromCenter = ToolDefaults.bool("shapeFromCenter", false) { didSet { ToolDefaults.set(shapeSizeFromCenter, "shapeFromCenter") } }
     /// The shape being dragged out with the Shape tool, before it becomes a layer.
     var shapeDraft: ShapeDraft?
     var selectionModeChoice = SelectionMode.replace
@@ -374,7 +384,7 @@ final class EditorSession {
     func selectTool(_ value: NavigationTool) {
         if tool != value, !finishText() { return }
         guard !isProjectBusy, brushStroke == nil, warpStroke == nil, levels == nil else { return }
-        if tool != value { commitTransform(); cancelCrop(); resolveGradient(); cancelLasso(); cancelShape() }
+        if tool != value { commitTransform(); cancelCrop(); resolveGradient(); cancelLasso(); cancelShape(); cancelShapeSize() }
         let from = Self.tipFamily(tool), to = Self.tipFamily(value)
         if from != to, let parked = parkedBrushTips[to] {
             parkedBrushTips[from] = (brushSettings.diameter, brushSettings.hardness, brushSettings.opacity)
@@ -616,7 +626,7 @@ final class EditorSession {
     var isModified: Bool { history.isModified }
     var canUseHistory: Bool {
         _ = showsBusy
-        return selectionAmountOperation == nil && colorRange == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && liquify == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && transformEdit == nil && !showsConversionSheet
+        return selectionAmountOperation == nil && colorRange == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && liquify == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && transformEdit == nil && !showsConversionSheet && layerStyle == nil
     }
     var canUndo: Bool { canUseHistory && (history.canUndo || gradientEdit != nil) }
     var canRedo: Bool { canUseHistory && history.canRedo }
@@ -654,6 +664,8 @@ final class EditorSession {
     var canEditLayers: Bool {
         _ = showsBusy
         return selectionAmountOperation == nil && colorRange == nil && textDraft == nil && document != nil && brushStroke == nil && warpStroke == nil && liquify == nil && !isProjectBusy && !isImporting && !showsNewDocument && !showsImporter && renamingLayerID == nil && transformEdit == nil && cropRect == nil && gradientEdit == nil && pixelMove == nil && hueSaturation == nil && levels == nil && filterEdit == nil && adjustmentEditingID == nil
+            // The Layer Style dialog works on its layer alone until OK or Cancel, as Photoshop's does.
+            && layerStyle == nil
     }
 
     func addBlankLayer() {

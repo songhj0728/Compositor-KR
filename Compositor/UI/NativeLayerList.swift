@@ -121,6 +121,12 @@ struct NativeLayerList: NSViewRepresentable {
             duplicateItem.isEnabled = validateMenuItem(duplicateItem)
             menu.addItem(duplicateItem)
 
+            // The Layer Style dialog, on its Blending Options, as Photoshop's menu starts.
+            let styleItem = NSMenuItem(title: String(localized: "Blending Options…"), action: #selector(layerStyleAction), keyEquivalent: "")
+            styleItem.target = self
+            styleItem.isEnabled = validateMenuItem(styleItem)
+            menu.addItem(styleItem)
+
             // 2. Rename…
             let renameItem = NSMenuItem(title: "Rename…", action: #selector(renameLayerAction), keyEquivalent: "")
             renameItem.target = self
@@ -235,6 +241,8 @@ struct NativeLayerList: NSViewRepresentable {
                 return session.canEditLayers && session.activeLayer != nil
             case #selector(toggleClippingMaskAction):
                 return session.activeLayerID.map { session.canToggleClippingMask($0) } ?? false
+            case #selector(layerStyleAction):
+                return session.canEditEffects
             case #selector(groupSelectedLayersAction):
                 return session.canEditLayers && session.document != nil && (session.document?.layers.count ?? 0) < 10_000 && !session.selectedLayerIDs.isEmpty
             case #selector(ungroupLayersAction):
@@ -272,6 +280,10 @@ struct NativeLayerList: NSViewRepresentable {
 
         @objc func deleteLayerAction(_ sender: Any?) {
             session.deleteLayerOrMask()
+        }
+
+        @objc func layerStyleAction(_ sender: Any?) {
+            session.openLayerStyle(page: .blending)
         }
 
         @objc func toggleClippingMaskAction(_ sender: Any?) {

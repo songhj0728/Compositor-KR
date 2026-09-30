@@ -1,14 +1,14 @@
 import SwiftUI
 
+/// The Move tool's bar: picking and moving layers. Sizing, scaling and turning them by numbers is the Shape tool's
+/// (see `TransformSizeFields`); the handles on the canvas still do all of it by hand.
 struct TransformInspector: View {
     @Bindable var session: EditorSession
-    private var value: LayerTransform {
-        session.transformEdit?.draft ?? session.activeLayer.map { session.editedTransform(for: $0) }
-            ?? LayerTransform(origin: .zero, size: CGSize(width: 1, height: 1))
-    }
+    private var value: LayerTransform { TransformFieldEditing(session: session).value }
     var body: some View {
+        let editing = TransformFieldEditing(session: session)
         HStack(spacing: 12) {
-          Text(session.transformTargetsMask ? "Transform Mask" : "Transform").font(ToolHeaderStyle.titleFont)
+          Text(session.transformTargetsMask ? "Move Mask" : "Move").font(ToolHeaderStyle.titleFont)
               .padding(.leading, 18)
           // Command flips Auto Select while it's held, and the box shows it flipped (see HeldModifiers).
           Toggle("Auto Select", isOn: Binding(get: { session.transformAutoSelect != held.contains(.command) },
@@ -19,28 +19,25 @@ struct TransformInspector: View {
               .help("Show the transform box and handles (⌘H). When hidden, drag anywhere to move the layer.")
           ScrollView(.horizontal) {
             HStack(spacing: 12) {
-                field("X", value: value.origin.x) { $0.origin.x = $1 }.frame(width: 85)
-                field("Y", value: value.origin.y) { $0.origin.y = $1 }.frame(width: 85)
-                TransformValueField(label: "W", value: value.size.width, range: 1...30_000, finish: finish) { resize($0, width: true) }.frame(width: 85)
-                TransformValueField(label: "H", value: value.size.height, range: 1...30_000, finish: finish) { resize($0, width: false) }.frame(width: 85)
-                // Shift flips the lock while dragging a handle, and the button shows it flipped.
-                Toggle(isOn: Binding(get: { session.locksTransformRatio != held.contains(.shift) },
-                                     set: { session.locksTransformRatio = $0 != held.contains(.shift) })) { Image(systemName: "link") }
-                    .toggleStyle(.button).help("Lock aspect ratio. Hold Shift while dragging a handle to turn it the other way.")
-                TransformValueField(label: "Scale", suffix: "%", value: value.scalePercent(pixelSize: pixelSize), range: 0.1...30_000, finish: finish) { number in
-                    change { value in
-                        guard number > 0 else { return }
-                        value = value.scaled(toPercent: number, pixelSize: pixelSize)
-                    }
-                }.frame(width: 110).help("Scale width and height together, about the center")
-                field("°", value: value.rotation, range: -360...360) { $0.rotation = $1.truncatingRemainder(dividingBy: 360) }.frame(width: 75)
+                editing.field("X", value: value.origin.x) { $0.origin.x = $1 }.frame(width: 85)
+                editing.field("Y", value: value.origin.y) { $0.origin.y = $1 }.frame(width: 85)
                 Picker("Sampling", selection: Binding(get: { value.sampling }, set: { sampling in
-                    change { $0.sampling = sampling }
+                    editing.change { $0.sampling = sampling }
                 })) {
                     ForEach(LayerSampling.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }.frame(width: 170)
-                Button("Flip H") { change { $0.flipX.toggle() } }
-                Button("Flip V") { change { $0.flipY.toggle() } }
+                HStack(spacing: 4) {
+                    Button { editing.change { $0.flipX.toggle() } } label: {
+                        Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+                            .frame(width: 22, height: 18)
+                    }
+                    .help("Flip Horizontal").accessibilityLabel("Flip Horizontal").accessibilityIdentifier("flipHorizontal")
+                    Button { editing.change { $0.flipY.toggle() } } label: {
+                        Image(systemName: "arrow.up.and.down.righttriangle.up.righttriangle.down")
+                            .frame(width: 22, height: 18)
+                    }
+                    .help("Flip Vertical").accessibilityLabel("Flip Vertical").accessibilityIdentifier("flipVertical")
+                }
 
             // Numbers describe an ordinary transform; while distorted, the handles are the controls.
             }.disabled((!session.canTransform && session.transformEdit == nil) || session.transformEdit?.corners != nil)
@@ -49,30 +46,75 @@ struct TransformInspector: View {
           // Only an edit that waits for them — typed values, ⌘T, a distortion — has anything to cancel or apply. A
           // handle drag applies itself on release, and ghosted buttons after it read as the pixels being resampled,
           // which they never are. Left in place unseen, so Escape and Return still reach a drag in progress.
-          let pending = session.transformEdit?.persistent == true
-          HStack(spacing: 12) {
-              Button("Cancel") { session.cancelTransform() }.configuredNativeShortcut(.escape)
-                  .disabled(session.transformEdit == nil)
-              Button("Apply") { session.commitTransform() }.configuredNativeShortcut(.return)
-                  .disabled(session.transformEdit == nil).accessibilityIdentifier("applyTransform")
-          }
-          .opacity(pending ? 1 : 0).allowsHitTesting(pending).accessibilityHidden(!pending)
-          .animation(.easeOut(duration: 0.12), value: pending)
+          TransformPendingButtons(session: session)
         }.padding(.trailing, 18).toolHeaderBar().releasesFocusOnCommit(session)
     }
 
-    /// 100% scale: the layer's pixels (a blank layer's size before this edit, so typing doesn't compound).
     private var held: NSEvent.ModifierFlags { HeldModifiers.shared.flags }
-    private var pixelSize: CGSize { session.transformPixelSize ?? session.activeLayer?.size ?? value.size }
-    private func field(_ label: String, value: CGFloat, range: ClosedRange<CGFloat> = -30_000...30_000,
-                       set: @escaping (inout LayerTransform, CGFloat) -> Void) -> some View {
+}
+
+/// Cancel and Apply for an edit that waits for them: typed values, ⌘T, a distortion.
+struct TransformPendingButtons: View {
+    @Bindable var session: EditorSession
+    var body: some View {
+        let pending = session.transformEdit?.persistent == true
+        HStack(spacing: 12) {
+            Button("Cancel") { session.cancelTransform() }.configuredNativeShortcut(.escape)
+                .disabled(session.transformEdit == nil)
+            Button("Apply") { session.commitTransform() }.configuredNativeShortcut(.return)
+                .disabled(session.transformEdit == nil).accessibilityIdentifier("applyTransform")
+        }
+        .opacity(pending ? 1 : 0).allowsHitTesting(pending).accessibilityHidden(!pending)
+        .animation(.easeOut(duration: 0.12), value: pending)
+    }
+}
+
+/// The active layer's size in pixels, its scale and its angle, typed or dragged. Shown on the Shape tool's bar.
+struct TransformSizeFields: View {
+    @Bindable var session: EditorSession
+    private var value: LayerTransform { TransformFieldEditing(session: session).value }
+    var body: some View {
+        let editing = TransformFieldEditing(session: session)
+        HStack(spacing: 12) {
+            TransformValueField(label: "W", value: value.size.width, range: 1...30_000, finish: editing.finish) { editing.resize($0, width: true) }.frame(width: 85)
+            TransformValueField(label: "H", value: value.size.height, range: 1...30_000, finish: editing.finish) { editing.resize($0, width: false) }.frame(width: 85)
+            // Shift flips the lock while dragging a handle, and the button shows it flipped.
+            Toggle(isOn: Binding(get: { session.locksTransformRatio != held.contains(.shift) },
+                                 set: { session.locksTransformRatio = $0 != held.contains(.shift) })) { Image(systemName: "link") }
+                .toggleStyle(.button).help("Lock aspect ratio. Hold Shift while dragging a handle to turn it the other way.")
+            TransformValueField(label: "Scale", suffix: "%", value: value.scalePercent(pixelSize: editing.pixelSize), range: 0.1...30_000, finish: editing.finish) { number in
+                editing.change { value in
+                    guard number > 0 else { return }
+                    value = value.scaled(toPercent: number, pixelSize: editing.pixelSize)
+                }
+            }.frame(width: 110).help("Scale width and height together, about the center")
+            editing.field("°", value: value.rotation, range: -360...360) { $0.rotation = $1.truncatingRemainder(dividingBy: 360) }.frame(width: 75)
+                .help("Angle")
+        }
+        // Numbers describe an ordinary transform; while distorted, the handles are the controls.
+        .disabled((!session.canTransform && session.transformEdit == nil) || session.transformEdit?.corners != nil)
+    }
+    private var held: NSEvent.ModifierFlags { HeldModifiers.shared.flags }
+}
+
+/// How the transform fields change the active layer.
+@MainActor struct TransformFieldEditing {
+    let session: EditorSession
+    var value: LayerTransform {
+        session.transformEdit?.draft ?? session.activeLayer.map { session.editedTransform(for: $0) }
+            ?? LayerTransform(origin: .zero, size: CGSize(width: 1, height: 1))
+    }
+    /// 100% scale: the layer's pixels (a blank layer's size before this edit, so typing doesn't compound).
+    var pixelSize: CGSize { session.transformPixelSize ?? session.activeLayer?.size ?? value.size }
+    func field(_ label: String, value: CGFloat, range: ClosedRange<CGFloat> = -30_000...30_000,
+               set: @escaping (inout LayerTransform, CGFloat) -> Void) -> some View {
         TransformValueField(label: label, value: value, range: range, finish: finish) { number in change { set(&$0, number) } }
     }
     /// A value typed, stepped or dragged shows on the canvas as it changes, and is applied without Cancel or Apply —
     /// a transform never resamples the layer's pixels, so there is nothing to confirm — as one undo step once the
     /// field is done with it (see `finish`), as a handle drag is when it's let go. An edit already waiting for Apply —
     /// ⌘T, a distortion, selected pixels being transformed — takes it as part of that edit.
-    private func change(_ update: (inout LayerTransform) -> Void) {
+    func change(_ update: (inout LayerTransform) -> Void) {
         if session.transformEdit == nil {
             session.beginTransform(persistent: false)
             session.transformEdit?.fromFields = true
@@ -83,10 +125,10 @@ struct TransformInspector: View {
     }
     /// A field done with its value — a drag on its label let go, or the field left (Return, Tab, a click elsewhere):
     /// what the fields changed is applied, one undo step.
-    private func finish() {
+    func finish() {
         if session.transformEdit?.fromFields == true { session.commitTransform() }
     }
-    private func resize(_ number: CGFloat, width: Bool) {
+    func resize(_ number: CGFloat, width: Bool) {
         change { value in
             guard number >= 1 else { return }
             if width {
@@ -100,7 +142,7 @@ struct TransformInspector: View {
     }
 }
 
-private struct TransformValueField: View {
+struct TransformValueField: View {
     let label: String
     var suffix: String? = nil
     let value: CGFloat

@@ -127,4 +127,22 @@ import Testing
         raster = try await ImageExporter.shared.render(#require(s.projectSnapshot()))
         #expect(try alpha(raster.image) == [0,0,128,255])
     }
+    /// Hiding a clipping base hides the layers clipped to it, as in Photoshop; a live mask from a layer above keeps
+    /// working hidden.
+    @Test func hidingTheClippingBaseHidesItsClippedLayers() async throws {
+        let s = EditorSession(); s.createDocument(width: 2, height: 2)
+        s.insert(try asset([255,255,0,0])); s.insert(try asset([255,255,255,255]))
+        for i in 0..<2 { s.document?.layers[i].transform.sampling = .nearest }
+        let base = s.document!.layers[0].id, clipped = s.document!.layers[1].id
+        s.toggleClippingMask(clipped)
+        #expect(s.document?.layers[1].maskSourceID == base)
+        var raster = try await ImageExporter.shared.render(#require(s.projectSnapshot()))
+        #expect(try alpha(raster.image) == [255,255,0,0])
+        s.toggleLayerVisibility(base)
+        #expect(s.document?.effectiveVisibleIDs.contains(clipped) == false)
+        raster = try await ImageExporter.shared.render(#require(s.projectSnapshot()))
+        #expect(try alpha(raster.image) == [0,0,0,0])
+        s.toggleLayerVisibility(base)
+        #expect(s.document?.renderLayers.map(\.id) == [base, clipped])
+    }
 }

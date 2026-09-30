@@ -1245,11 +1245,11 @@ final class CanvasView: NSView {
         let rect = CGRect(x: middle.x - draft.rect.width * scale / 2, y: middle.y - draft.rect.height * scale / 2,
                           width: draft.rect.width * scale, height: draft.rect.height * scale)
         context.saveGState()
-        context.setFillColor(session.foregroundColor.nsColor.cgColor)
+        context.setFillColor(session.shapeFillColor.nsColor.cgColor)
         if draft.kind == .line {
             guard let ends = session.shapeLineEnds else { context.restoreGState(); return }
             let thickness = max(1, CGFloat(session.shapeLineWidth) * scale)
-            context.setStrokeColor(session.foregroundColor.nsColor.cgColor)
+            context.setStrokeColor(session.shapeFillColor.nsColor.cgColor)
             context.setLineWidth(thickness)
             context.setLineCap(.round)
             // Exactly the two points being dragged between, so the start never shifts.
@@ -1257,8 +1257,18 @@ final class CanvasView: NSView {
             context.addLine(to: center(ends.end))
             context.strokePath()
         } else {
-            context.addPath(draft.kind.path(in: rect, cornerRadius: draft.cornerRadius * scale))
-            context.fillPath()
+            if session.shapeFills {
+                context.addPath(draft.kind.path(in: rect, cornerRadius: draft.cornerRadius * scale))
+                context.fillPath()
+            }
+            let outline = min(CGFloat(session.shapeStrokeWidth) * scale, min(rect.width, rect.height) / 2)
+            if outline > 0 {
+                context.setStrokeColor(session.shapeStrokeColor.nsColor.cgColor)
+                context.setLineWidth(outline)
+                context.addPath(draft.kind.path(in: rect.insetBy(dx: outline / 2, dy: outline / 2),
+                                                cornerRadius: max(0, draft.cornerRadius * scale - outline / 2)))
+                context.strokePath()
+            }
         }
         context.restoreGState()
     }

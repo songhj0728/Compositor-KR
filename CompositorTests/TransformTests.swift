@@ -150,6 +150,27 @@ struct TransformTests {
         #expect(TransformOverlay(session: session).geometry != nil)
     }
 
+    /// Other tools outline the selected layer so it stays in sight, with no handles to drag; the Move tool keeps its
+    /// box and handles, and only those take presses.
+    @Test func otherToolsOutlineTheSelectedLayerWithoutHandles() throws {
+        let session = EditorSession()
+        session.createDocument(width: 100, height: 100)
+        try insertPaintedLayer(into: session)
+        let overlay = TransformOverlay(session: session)
+        session.selectTool(.move)
+        #expect(overlay.geometry != nil)
+        #expect(overlay.outlineGeometry == nil)
+        for tool in [NavigationTool.brush, .marquee, .eyedropper] {
+            session.selectTool(tool)
+            #expect(overlay.geometry == nil, "\(tool): no handles to press")
+            let outline = try #require(overlay.outlineGeometry, "\(tool): the selected layer stays outlined")
+            #expect(outline.hit(outline.handles[0]) != nil, "the outline follows the layer's box")
+        }
+        // Crop draws its own box instead.
+        session.selectTool(.crop)
+        #expect(overlay.outlineGeometry == nil)
+    }
+
     private func near(_ a: CGPoint, _ b: CGPoint) -> Bool { hypot(a.x - b.x, a.y - b.y) < 0.0001 }
 
     @Test func rotatedResizeKeepsOppositeAnchorAtEveryHandle() {

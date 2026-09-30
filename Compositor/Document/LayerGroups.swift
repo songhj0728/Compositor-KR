@@ -9,12 +9,13 @@ nonisolated enum LayerHierarchy {
     static func entries(_ layers: [ProjectLayerRecord], topFirst: Bool = false,
                         collapsed: Set<UUID> = []) -> [Entry] {
         let children = Dictionary(grouping: layers, by: \.parentID)
+        let clipBaseHidden = LayerOrder.hiddenClipping(layers.map { (id: $0.id, parentID: $0.parentID, isVisible: $0.isVisible, maskSourceID: $0.maskSourceID) })
         var result: [Entry] = []
         func visit(_ parent: UUID?, depth: Int, visible: Bool) {
             guard depth <= 64 else { return }
             let siblings = children[parent] ?? []
             for layer in topFirst ? Array(siblings.reversed()) : siblings {
-                let effective = visible && layer.isVisible
+                let effective = visible && layer.isVisible && !clipBaseHidden.contains(layer.id)
                 result.append(Entry(layer: layer, depth: depth, visible: effective))
                 if layer.isGroup == true, !collapsed.contains(layer.id) {
                     visit(layer.id, depth: depth + 1, visible: effective)
@@ -104,6 +105,8 @@ nonisolated enum LayerOrder {
         let parentID: UUID?
         let isGroup: Bool
         let isVisible: Bool
+        /// The clipping base, whose visibility a clipped layer shares.
+        var maskSourceID: UUID? = nil
     }
     struct Result {
         /// Every layer and folder, in the order `LayerHierarchy.entries` lists them.
@@ -113,18 +116,33 @@ nonisolated enum LayerOrder {
         /// The layers that show, folders left out, bottom to top.
         let drawn: [UUID]
     }
+    /// The layers clipped to a hidden base, which hide with it, as in Photoshop: the base is a lower layer in the same
+    /// folder. A live mask taken from anywhere else (a layer above, say) still works hidden, as it always has.
+    static func hiddenClipping(_ layers: [(id: UUID, parentID: UUID?, isVisible: Bool, maskSourceID: UUID?)]) -> Set<UUID> {
+        guard layers.contains(where: { $0.maskSourceID != nil }) else { return [] }
+        var position: [UUID: Int] = [:]
+        for (index, layer) in layers.enumerated() where position[layer.id] == nil { position[layer.id] = index }
+        var hidden = Set<UUID>()
+        for (index, layer) in layers.enumerated() {
+            guard let source = layer.maskSourceID, let at = position[source], at < index else { continue }
+            let base = layers[at]
+            if base.parentID == layer.parentID, !base.isVisible { hidden.insert(layer.id) }
+        }
+        return hidden
+    }
     private static let lock = NSLock()
     nonisolated(unsafe) private static var last: (nodes: [Node], result: Result)?
 
     static func resolve(_ layers: [ImageLayer]) -> Result {
-        let nodes = layers.map { Node(id: $0.id, parentID: $0.parentID, isGroup: $0.isGroup, isVisible: $0.isVisible) }
+        let nodes = layers.map { Node(id: $0.id, parentID: $0.parentID, isGroup: $0.isGroup, isVisible: $0.isVisible, maskSourceID: $0.maskSourceID) }
         if let known = lock.withLock({ last }), known.nodes == nodes { return known.result }
         let children = Dictionary(grouping: nodes, by: \.parentID)
+        let clipBaseHidden = hiddenClipping(nodes.map { (id: $0.id, parentID: $0.parentID, isVisible: $0.isVisible, maskSourceID: $0.maskSourceID) })
         var order: [UUID] = [], visible = Set<UUID>(), drawn: [UUID] = []
         func visit(_ parent: UUID?, depth: Int, shown: Bool) {
             guard depth <= 64 else { return }
             for node in children[parent] ?? [] {
-                let effective = shown && node.isVisible
+                let effective = shown && node.isVisible && !clipBaseHidden.contains(node.id)
                 order.append(node.id)
                 if effective {
                     visible.insert(node.id)

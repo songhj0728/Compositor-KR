@@ -36,6 +36,9 @@ import CoreImage
         if let shadow = effects.shadow, shadow.isEnabled { reach = max(reach, shadow.distance + shadow.blur * 3 + 2) }
         if let glow = effects.outerGlow, glow.isEnabled { reach = max(reach, glow.size * 3 + 2) }
         if let glow = effects.innerGlow, glow.isEnabled { reach = max(reach, glow.size * 3 + 2) }
+        if let inner = effects.innerShadow, inner.isEnabled { reach = max(reach, inner.distance + inner.blur * 3 + 2) }
+        if let bevel = effects.bevel, bevel.isEnabled { reach = max(reach, bevel.size * 3 + bevel.soften * 3 + 4) }
+        if let satin = effects.satin, satin.isEnabled { reach = max(reach, satin.distance + satin.size * 3 + 2) }
         return ceil(reach)
     }
 
@@ -88,8 +91,13 @@ import CoreImage
         // Everything that can reach into `inner` has to be looked at.
         let outer = inner.insetBy(dx: -reach, dy: -reach).integral
         guard let pixels = window(outer, base: base, patches: patches, mask: mask) else { return }
+        // Photoshop's Layer Style past the GPU pass's reach, drawn in floating point; a pattern keeps its place.
+        let styled = effects.needsStyleRenderer
+            ? try? LayerStyleRenderer.render(pixels, effects: effects,
+                                             origin: CGPoint(x: outer.minX - sourceRect.minX, y: outer.minY - sourceRect.minY))
+            : nil
         // In one pass on the GPU when it is available: the outline's reach and the shadow's blur are what cost.
-        if let metal = MetalLayerEffects.shared, let built = try? metal.render(pixels, effects: effects) {
+        if let built = styled ?? (effects.needsStyleRenderer ? nil : MetalLayerEffects.shared.flatMap({ try? $0.render(pixels, effects: effects) })) {
             context.saveGState()
             context.clip(to: inner.offsetBy(dx: margin, dy: margin))
             context.clear(inner.offsetBy(dx: margin, dy: margin))

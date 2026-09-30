@@ -211,8 +211,84 @@ struct PSDExportTests {
         // Inside the base's 20 × 20 it shows; past it, it's cut away.
         #expect(try pixel(farImage, x: 10, y: 10)[3] == 255)
         #expect(try pixel(farImage, x: 30, y: 30)[3] == 0)
-        // The stroke is drawn around the layer, so its pixels reach past the layer's own 10 × 10.
-        #expect(result.notes.contains { $0.layerName == "Stroked" })
-        #expect(try #require(read.first { $0.name == "Stroked" }).bounds.width > 10)
+        // The stroke stays Photoshop's own Layer Style, over the layer's own 10 × 10 pixels.
+        let styled = try #require(read.first { $0.name == "Stroked" })
+        #expect(styled.bounds.width == 10 && styled.kind == .effects)
+        #expect(!result.notes.contains { $0.layerName == "Stroked" })
+        // Unticked, the stroke is drawn around the layer, so its pixels reach past it.
+        let (flat, flatResult) = try await export([base, between, far, stroked], options: PSDExportOptions(editableTextAndStyles: false))
+        #expect(flatResult.notes.contains { $0.layerName == "Stroked" })
+        let merged = try #require(PSDReader.read(flat).layers.first { $0.name == "Stroked" })
+        #expect(merged.bounds.width > 10 && merged.kind == .raster)
+    }
+
+    /// Text is written as a Photoshop type layer that reads back as the same text, colors and faces letter by letter.
+    @Test func textIsWrittenAsEditableType() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 400, height: 300, emptyLayer: true)
+        session.selectTool(.type)
+        session.beginText(at: CGPoint(x: 40, y: 80))
+        session.textDraft?.style.content = "Hello\nType"
+        session.textDraft?.style.fontSize = 36
+        session.textDraft?.style.setColor(PaletteColor(red: 1, green: 0, blue: 0), in: NSRange(location: 6, length: 4))
+        #expect(session.finishText())
+        let snapshot = try #require(session.projectSnapshot())
+        let result = try await ImageExporter.shared.psd(snapshot)
+        #expect(!result.notes.contains { $0.message.contains("Text") })
+        let parsed = try #require(PSDReader.read(result.data).layers.first { $0.text != nil }?.text)
+        #expect(parsed.style.content == "Hello\nType")
+        #expect(abs(parsed.style.fontSize - 36) < 0.01)
+        #expect(parsed.style.color(at: 0) == PaletteColor(red: 0, green: 0, blue: 0))
+        #expect(parsed.style.color(at: 7) == PaletteColor(red: 1, green: 0, blue: 0))
+        let layer = try #require(session.activeLayer)
+        let baseline = PSDText.baseline(layer.liveText!.style, image: layer.transform.size)
+        #expect(abs(parsed.documentAnchor.x - (layer.transform.origin.x + LayerTextStyle.padding)) < 0.5)
+        #expect(abs(parsed.documentAnchor.y - (layer.transform.origin.y + baseline)) < 0.5)
+    }
+
+    /// Photoshop's matrix maps text space row-vector style: a 90° clockwise turn sends its x axis straight down.
+    @Test func rotatedTextKeepsItsTurn() throws {
+        var style = LayerTextStyle()
+        style.content = "Turn"
+        let transform = LayerTransform(origin: CGPoint(x: 100, y: 100), size: CGSize(width: 200, height: 100), rotation: 90)
+        let block = try #require(PSDTextWriter.block(style, transform: transform, width: 200, height: 100))
+        let parsed = try #require(PSDText.parse(extra: ["TySh": block]))
+        #expect(abs(parsed.rotation - 90) < 0.01)
+    }
+
+    /// Layer styles go to Photoshop as its own Layer Style and come back as the same effects.
+    @Test func layerStylesRoundTripThroughPhotoshopsLayerStyle() async throws {
+        var effects = LayerEffects()
+        effects.shadow = ShadowEffect(angle: 135, distance: 7, blur: 9, opacity: 0.6, spread: 20, blendMode: .multiply)
+        var bevel = BevelEffect()
+        bevel.style = .emboss
+        bevel.technique = .chiselSoft
+        bevel.size = 12
+        bevel.usesContour = true
+        bevel.contour = .ring
+        effects.bevel = bevel
+        effects.satin = SatinEffect()
+        effects.stroke = StrokeEffect(size: 3, red: 0, green: 0, blue: 1, opacity: 1, inside: false, centered: true)
+        effects.fillOpacity = 0.4
+        var layer = ImageLayer(asset: try solid(1, 0, 0, width: 20, height: 20), origin: CGPoint(x: 30, y: 30))
+        layer.name = "Styled"
+        layer.effects = effects
+        let (data, _) = try await export([layer])
+        let record = try #require(PSDReader.read(data).layers.first { $0.name == "Styled" })
+        let read = try #require(record.effects)
+        #expect(read.shadow?.angle == 135 && read.shadow?.distance == 7 && read.shadow?.blur == 9)
+        #expect(read.shadow?.spread == 20 && read.shadow?.blendMode == .multiply)
+        #expect(abs((read.shadow?.opacity ?? 0) - 0.6) < 0.001)
+        #expect(read.bevel?.style == .emboss && read.bevel?.technique == .chiselSoft && read.bevel?.size == 12)
+        #expect(read.bevel?.hasContour == true && read.bevel?.contour == .ring)
+        #expect(read.satin == SatinEffect())
+        #expect(read.stroke?.centered == true && read.stroke?.color == PaletteColor(red: 0, green: 0, blue: 1))
+        #expect(abs(read.fill - 0.4) < 0.01)
+
+        // A Pattern Overlay has no Photoshop form here, so that layer's effects are drawn into its pixels.
+        layer.effects?.patternOverlay = PatternOverlayEffect()
+        let (flat, result) = try await export([layer])
+        #expect(result.notes.contains { $0.layerName == "Styled" })
+        #expect(try #require(PSDReader.read(flat).layers.first { $0.name == "Styled" }).effects == nil)
     }
 }

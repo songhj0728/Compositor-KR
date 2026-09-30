@@ -7,7 +7,7 @@
 
 포토샵을 사용해 본 사용자라면 큰 어려움 없이 사용할 수 있도록 개발하고 있으며, 무료로 이용할 수 있습니다.
 
-현재 버전에서는 PSD로 변환할 경우 포토샵에서 레이어 작업은 가능하지만, 텍스트 등의 일부 요소는 편집이 불가능할 수 있습니다.
+PSD로 내보내면 텍스트는 포토샵에서 편집 가능한 문자 레이어로, 레이어 효과는 포토샵의 레이어 스타일로 저장됩니다. 패턴 오버레이와 경사의 텍스처처럼 포토샵 라이브러리가 필요한 일부 효과는 픽셀로 병합됩니다.
 
 원본 제작자의 설명과 링크는 아래 있습니다.
 
@@ -19,7 +19,7 @@ We are currently working on Korean localization and additional features aimed at
 
 The goal is to make the application familiar and easy to use for users who are already accustomed to Photoshop. It will be free to use.
 
-In the current version, PSD files can be converted and opened in Photoshop with their layer structure preserved. However, some elements, such as text, may not be editable after conversion.
+Exported PSD files keep their layer structure in Photoshop; text is written as editable type and layer effects as Photoshop's own Layer Style. A few effects that need Photoshop's pattern library (Pattern Overlay, a bevel's Texture) are merged into pixels.
 
 
 # Compositor
@@ -44,12 +44,14 @@ The original, English-only Compositor is at [robbietilton.com/compositor](https:
 - Layer masks: paint, fill, invert, blur and feather them anywhere on the canvas, past the layer's own pixels; link or unlink them to transform a mask on its own
 - Clipping masks and folder masks
 - Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Invert, Gaussian Blur, Motion Blur and Noise
-- Layer effects: Stroke, Drop Shadow, Color Overlay, Inner Shadow, Outer Glow and Inner Glow, rendered on the GPU and editable at any time
+- Layer Style, as in Photoshop: Blending Options (blend mode, opacity, Fill Opacity), Bevel & Emboss with Contour and Texture, Stroke, Inner Shadow, Inner Glow, Satin, Color Overlay, Pattern Overlay, Outer Glow and Drop Shadow, each with its own blend mode, editable at any time in the Layer Style dialog (click the fx icon; its arrow adds a style directly)
+- Clipping masks hide with their base, as in Photoshop
 - Merge Down, Merge Layers and Merge Group (⌘E)
 - Duplicate, rename inline, reorder and nest by drag and drop; Option-drag to duplicate; a right-click menu in the Layers panel
 - Copy and paste whole layers and folders (⌘C/⌘V with no selection), within a project or between projects, or drag them between projects
 
-### Transform
+### Move and transform
+- Move tool (V): pick, move and flip layers, with the transform box's handles for scaling, rotating and distorting by hand; exact width, height, scale and angle are typed in the Shape tool's bar
 - Non-destructive move, scale, rotate and flip — images keep their full resolution however small you make them
 - Free distort (⌘-drag a handle), with Shift to lock to an axis
 - Transform several layers, or a whole folder, together
@@ -69,8 +71,8 @@ The original, English-only Compositor is at [robbietilton.com/compositor](https:
 - Spot Healing Brush (content-aware)
 - Clone Stamp, aligned or not, sampling one layer or all of them
 - Blur tool, on pixels or masks
-- Gradient tool and Shape tool (rectangles, rounded rectangles, ellipses and lines), which stay editable rather than being rasterized
-- Type tool (T): inline multiline editing in draggable, resizable paragraph boxes; font, size, color, alignment and spacing in the tool header; transform text and use it as a clipping mask
+- Gradient tool and Shape tool (rectangles, rounded rectangles, ellipses and lines), which stay editable rather than being rasterized: a fill, an outline and a line width of their own, remembered for the next shape and changed on a selected shape; click instead of dragging to type a size, around the click or From Center
+- Type tool (T): inline multiline editing in draggable, resizable paragraph boxes; font, size, color, alignment and spacing in the tool header (the color also recolors a selected text layer, and new text keeps the last color); transform text and use it as a clipping mask
 - Eyedropper and a full color picker
 
 ### Adjustments and filters
@@ -86,7 +88,7 @@ The original, English-only Compositor is at [robbietilton.com/compositor](https:
 - Crop with snapping, ratios including 3:4 and 9:16, and Option for symmetric cropping; with a selection, the crop starts at it
 - Canvas Size, Image Size and Trim
 - Sharp high-quality downsampling when zoomed out, and a pixel grid when zoomed in
-- Import JPEG, PNG, HEIC, TIFF, SVG, camera RAW (with a develop step first) and Photoshop PSD and PSB (8-bit RGB; not CMYK). Photoshop folders, masks, blend modes, fill rectangles/ellipses, and simple horizontal text stay editable; other vectors and vertical text become pixels. A conversion report is shown before anything is applied.
+- Import JPEG, PNG, HEIC, TIFF, SVG, camera RAW (with a develop step first) and Photoshop PSD and PSB (8-bit RGB; not CMYK). Photoshop folders, masks, blend modes, layer styles, fill rectangles/ellipses, and horizontal text (with its per-letter colors and faces) stay editable; other vectors and vertical text become pixels. A conversion report is shown before anything is applied.
 - Large documents: the memory budget scales with your Mac, and a Photoshop file too big to open has its layers cropped to the canvas instead
 - Export JPEG with a live preview (⇧⌥⌘S); Copy Merged
 - Keep working while a project saves

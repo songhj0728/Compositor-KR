@@ -6,6 +6,8 @@ nonisolated struct PSDExportOptions: Sendable {
     /// Adjustments Photoshop has adjustment layers for stay editable; off, every adjustment is saved as the pixels
     /// it makes.
     var editableAdjustments = true
+    /// Text stays type Photoshop can edit, and layer effects stay its Layer Style; off, both are saved as pixels.
+    var editableTextAndStyles = true
     /// Folders shown collapsed in the Layers panel, which Photoshop opens closed too.
     var collapsedGroups: Set<UUID> = []
 }
@@ -197,15 +199,37 @@ nonisolated struct PSDLayerBuilder {
             entry.mask = try mask(of: record, over: record.transform)
             return entry
         }
-        if record.text != nil { note(record.name, String(localized: "Text was saved as pixels.")) }
+        // Effects Photoshop's Layer Style can hold stay editable there, over the layer's own pixels; the rest are drawn
+        // into the pixels below.
+        let effects = record.effects?.visible
+        let hasStyles = !(effects?.kinds.isEmpty ?? true)
+        let style = hasStyles && options.editableTextAndStyles ? effects.flatMap(PSDLayerStyle.block) : nil
+        let stylesEditable = options.editableTextAndStyles && (!hasStyles || style != nil)
+        if let text = record.text {
+            if stylesEditable, let type = PSDTextWriter.block(text, transform: record.transform, width: image.width, height: image.height) {
+                entry.extras.append(("TySh", type))
+            } else {
+                note(record.name, String(localized: "Text was saved as pixels."))
+            }
+        }
         if record.shape != nil { note(record.name, String(localized: "The shape was saved as pixels.")) }
+        if stylesEditable, let effects {
+            if let style { entry.extras.append(("lfx2", style)) }
+            if let fillOpacity = PSDLayerStyle.fillOpacity(effects) { entry.extras.append(("iOpa", fillOpacity)) }
+            try fill(&entry, image: image, transform: record.transform)
+            entry.mask = try mask(of: record, over: record.transform)
+            return entry
+        }
+        if hasStyles, options.editableTextAndStyles {
+            note(record.name, String(localized: "A Pattern Overlay or bevel Texture has no Photoshop form here, so the layer's effects were merged into its pixels."))
+        }
         // Effects (stroke, shadow) are drawn into the layer, mask and all, as the canvas shows them.
         var layerMask = snapshot.mask(for: record)
         layerMask?.isEnabled = true
         let clip = layerMask?.clipImage(placement: layerMask?.placement, over: record.transform, width: image.width, height: image.height)
         if let effects = LayerEffectsRenderer.cached(image, mask: snapshot.mask(for: record)?.isEnabled == true ? clip : nil,
                                                      effects: record.effects) {
-            note(record.name, String(localized: "Layer effects were merged into the layer's pixels."))
+            if !options.editableTextAndStyles { note(record.name, String(localized: "Layer effects were merged into the layer's pixels.")) }
             try fill(&entry, image: effects.image,
                      transform: LayerEffectsRenderer.placed(record.transform, image: effects.image, inset: effects.inset))
             if snapshot.mask(for: record)?.isEnabled == false { entry.mask = try mask(of: record, over: record.transform) }
