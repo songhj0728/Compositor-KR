@@ -1,7 +1,7 @@
 // Tests for the shared pixel code, run the same way on macOS and Windows (see CMakeLists.txt). They check that
 // the code gives the macOS app's results wherever it's built, and that sharing work out over the cores changes nothing.
 #include "LiquifyPixels.h"
-#include "PixelParallel.h"
+#include "ParallelFor.h"
 #include "SmearPixels.h"
 #include "LiquifySmearReference.h"
 #include <math.h>
@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+int parallel_for_serial = 0;  // ParallelFor.h's test switch (PARALLEL_FOR_TESTING).
 static int failures = 0;
 
 #define CHECK(condition, ...)                                                   \
@@ -40,7 +41,7 @@ static uint8_t *make_image(size_t w, size_t h) {
 }
 
 // Four dabs of each tool but Reconstruct, travelling right and down.
-static void warp_dabs(float *field, size_t w, size_t h, long *dirty) {
+static void warp_dabs(float *field, size_t w, size_t h, ptrdiff_t *dirty) {
     int k = 0;
     for (int mode = 0; mode <= LIQUIFY_PUSH_LEFT; ++mode) {
         if (mode == LIQUIFY_RECONSTRUCT) continue;
@@ -53,17 +54,16 @@ static void warp_dabs(float *field, size_t w, size_t h, long *dirty) {
     }
 }
 
-static void reconstruct_dabs(float *field, size_t w, size_t h, long dirty[4]) {
+static void reconstruct_dabs(float *field, size_t w, size_t h, ptrdiff_t dirty[4]) {
     for (int i = 0; i < 3; ++i)
         liquify_dab(field, w, h, LIQUIFY_RECONSTRUCT, (double)w * 0.4, (double)h * 0.5, (double)w * 0.45,
                     (double)h * 0.5, (double)w * 0.7, 0.2, 0.9, dirty);
 }
 
-// Two dabs from a fresh count, so their rounding is the same every time.
+// Two dabs, seeded 0 and 1 as the app's first two dabs are, so their rounding matches the reference.
 static void smear_dabs(uint8_t *rgba, size_t w, size_t h, double sigma1, double sigma2) {
-    smear_reset_dab_count();
-    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.5, (double)h * 0.45, (double)w * 0.35, 0.25, 0.9, sigma1);
-    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.3, (double)h * 0.6, (double)w * 0.2, 0.6, 0.5, sigma2);
+    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.5, (double)h * 0.45, (double)w * 0.35, 0.25, 0.9, sigma1, 0);
+    smear_blur_dab(rgba, w, h, w * 4, (double)w * 0.3, (double)h * 0.6, (double)w * 0.2, 0.6, 0.5, sigma2, 1);
 }
 
 // Compilers and CPUs round sines, square roots and fused multiply-adds slightly differently, so results are compared
@@ -98,13 +98,13 @@ static void test_liquify_and_smear_match_reference(void) {
     const size_t W = 24, H = 18;
     uint8_t *source = make_image(W, H);
     float *field = calloc(W * H * 2, sizeof(float));
-    long dirty[4 * 20];
+    ptrdiff_t dirty[4 * 20];
     warp_dabs(field, W, H, dirty);
     CHECK(!memcmp(dirty, reference_dirty, sizeof dirty), "liquify: the changed rectangles differ");
     expect_floats_near("liquify field", field, reference_warped_field, W * H * 2);
 
     uint8_t *render = calloc(W * H * 4, 1);
-    liquify_render(source, render, W, H, field, 0, 0, (long)W - 1, (long)H - 1);
+    liquify_render(source, render, W, H, field, 0, 0, (ptrdiff_t)W - 1, (ptrdiff_t)H - 1);
     expect_bytes_near("liquify render", render, reference_render, W * H * 4);
 
     const size_t SW = W * 3 / 2, SH = H * 3 / 2;
@@ -112,7 +112,7 @@ static void test_liquify_and_smear_match_reference(void) {
     liquify_render_scaled(scaledSource, scaled, SW, SH, field, W, H);
     expect_bytes_near("liquify scaled render", scaled, reference_render_scaled, SW * SH * 4);
 
-    long reconstructDirty[4];
+    ptrdiff_t reconstructDirty[4];
     reconstruct_dabs(field, W, H, reconstructDirty);
     CHECK(!memcmp(reconstructDirty, reference_reconstruct_dirty, sizeof reconstructDirty),
           "liquify reconstruct: the changed rectangle differs");
@@ -138,12 +138,12 @@ static big_results run_big(void) {
     big_results r;
     uint8_t *source = make_image(W, H);
     float *field = calloc(W * H * 2, sizeof(float));
-    long dirty[4 * 20];
+    ptrdiff_t dirty[4 * 20];
     warp_dabs(field, W, H, dirty);
     r.warped = malloc(W * H * 2 * sizeof(float));
     memcpy(r.warped, field, W * H * 2 * sizeof(float));
     r.render = calloc(W * H * 4, 1);
-    liquify_render(source, r.render, W, H, field, 0, 0, (long)W - 1, (long)H - 1);
+    liquify_render(source, r.render, W, H, field, 0, 0, (ptrdiff_t)W - 1, (ptrdiff_t)H - 1);
     uint8_t *scaledSource = make_image(SW, SH);
     r.scaled = calloc(SW * SH * 4, 1);
     liquify_render_scaled(scaledSource, r.scaled, SW, SH, field, W, H);
@@ -156,9 +156,9 @@ static big_results run_big(void) {
 }
 
 static void test_threads_change_nothing(void) {
-    pixel_parallel_set_enabled(0);
+    parallel_for_serial = 1;
     big_results serial = run_big();
-    pixel_parallel_set_enabled(1);
+    parallel_for_serial = 0;
     for (int run = 0; run < 3; ++run) {
         big_results parallel = run_big();
         CHECK(!memcmp(serial.warped, parallel.warped, 700 * 500 * 2 * sizeof(float)), "threaded liquify field differs");
@@ -180,10 +180,10 @@ static void test_parallel_for_runs_each_index_once(void) {
     for (size_t c = 0; c < sizeof counts / sizeof counts[0]; ++c) {
         size_t n = counts[c];
         unsigned char *seen = calloc(n ? n : 1, 1);
-        pixel_parallel_for(n, seen, count_index);
+        parallel_for(n, seen, count_index);
         size_t wrong = 0;
         for (size_t i = 0; i < n; ++i) wrong += seen[i] != 1;
-        CHECK(!wrong, "pixel_parallel_for(%zu): %zu indices not run exactly once", n, wrong);
+        CHECK(!wrong, "parallel_for(%zu): %zu indices not run exactly once", n, wrong);
         free(seen);
     }
 }

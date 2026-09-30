@@ -6,9 +6,9 @@ Evolve the existing macOS application into a macOS + Windows product without thr
 
 ## Status
 
-- Phase 0: the branch carries Compositor-KR 1.4.2 from main (synchronized per AGENTS.md rules 11–20). macOS build and tests run in CI (`verify.yml`).
+- Phase 0: the branch carries Compositor-KR 1.4.5 (build 40) from main (synchronized per AGENTS.md rules 11–20). macOS build and tests run in CI (`verify.yml`).
 - Phase 1: done — [docs/multiplatform/inventory.md](docs/multiplatform/inventory.md).
-- Phase 2: first boundary — the C pixel code no longer depends on Grand Central Dispatch (`PixelParallel`).
+- Phase 2: first boundary — the C pixel code no longer depends on Grand Central Dispatch (`ParallelFor.h`, from main 1.4.5, with a Windows thread-pool path added here).
 - Phase 4: first foundation — `CMakeLists.txt` builds and tests the C pixel code on Windows and macOS
   (`shared.yml`). The Windows app itself waits on [docs/multiplatform/windows-decisions.md](docs/multiplatform/windows-decisions.md).
 - Phase 2, document model: Core API contract in [docs/core-api.md](docs/core-api.md); inventory, A–E classification and file-by-file plan in [docs/multiplatform/document-model-inventory.md](docs/multiplatform/document-model-inventory.md), order in [migration-dependency-map.md](docs/multiplatform/migration-dependency-map.md), open decisions in [architecture-questions.md](docs/multiplatform/architecture-questions.md). Nothing moved yet.

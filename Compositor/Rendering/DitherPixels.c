@@ -1,17 +1,29 @@
 #include "DitherPixels.h"
+#include "ParallelFor.h"
 #include <math.h>
 #include <stdlib.h>
-#include <dispatch/dispatch.h>
 
 static inline float clamp01(float v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
 
+typedef void (*band_body)(void *context, size_t start, size_t end);
+
+typedef struct {
+    size_t count, size;
+    void *context;
+    band_body body;
+} bands_job;
+
+static void run_band(void *job, size_t band) {
+    const bands_job *j = job;
+    size_t start = band * j->size, end = start + j->size < j->count ? start + j->size : j->count;
+    if (start < end) j->body(j->context, start, end);
+}
+
 // Runs `body` over `count` items split into a few runs per core, each a (start, end) range, all at once.
-static void in_bands(size_t count, void (^body)(size_t start, size_t end)) {
+static void in_bands(size_t count, void *context, band_body body) {
     size_t bands = count < 64 ? 1 : 32, size = (count + bands - 1) / bands;
-    dispatch_apply(bands, DISPATCH_APPLY_AUTO, ^(size_t band) {
-        size_t start = band * size, end = start + size < count ? start + size : count;
-        if (start < end) body(start, end);
-    });
+    bands_job job = { count, size, context, body };
+    parallel_for(bands, &job, run_band);
 }
 
 // Density darkens (positive) or lightens as a gamma, so black and white stay put; contrast pivots on mid gray.
@@ -124,6 +136,123 @@ static inline void write_pixel(uint8_t *px, float r, float g, float b) {
     px[2] = (uint8_t)lroundf(clamp01(b) * a * 255.0f);
 }
 
+// Each pixel's alpha, and its tone (or the three planes' tones, and its own color) with density and contrast applied.
+typedef struct {
+    const uint8_t *rgba;
+    size_t width, stride, count;
+    const DitherParams *p;
+    float gamma, contrast;
+    uint8_t *alpha;
+    float *tone, *source;
+} dither_tone_rows;
+
+static void dither_tone_band(void *context, size_t first, size_t last) {
+    const dither_tone_rows *d = context;
+    const DitherParams *p = d->p;
+    const size_t width = d->width, count = d->count;
+    float *tone = d->tone, *source = d->source;
+    for (size_t y = first; y < last; ++y) {
+        const uint8_t *row = d->rgba + y * d->stride;
+        for (size_t x = 0; x < width; ++x) {
+            const uint8_t *px = row + x * 4;
+            size_t at = y * width + x;
+            d->alpha[at] = px[3];
+            float r = 0, g = 0, b = 0;
+            if (px[3]) {
+                float scale = 1.0f / (float)px[3];
+                r = px[0] * scale; g = px[1] * scale; b = px[2] * scale;
+            }
+            if (p->originalColors) {
+                tone[at] = adjust_tone(r, d->gamma, d->contrast);
+                tone[count + at] = adjust_tone(g, d->gamma, d->contrast);
+                tone[2 * count + at] = adjust_tone(b, d->gamma, d->contrast);
+                source[at * 3] = r; source[at * 3 + 1] = g; source[at * 3 + 2] = b;
+            } else {
+                tone[at] = adjust_tone(0.2126f * r + 0.7152f * g + 0.0722f * b, d->gamma, d->contrast);
+            }
+        }
+    }
+}
+
+// What the scanline bands share. `failed` is set by any band that couldn't get its working memory.
+typedef struct {
+    uint8_t *rgba;
+    size_t width, height, stride, count, spacing;
+    const DitherParams *p;
+    int planes;
+    float middle, dots;
+    const uint8_t *alpha;
+    const float *tone, *screen, *phosphor;
+    volatile int failed;
+} dither_scan_lines;
+
+// A CRT: each line scans the image, its tone along the line the average of the rows it covers. The beam glows
+// brighter and blooms thicker where the picture is light, and the screen between lines stays dark.
+static void dither_scan_band(void *context, size_t firstLine, size_t lastLine) {
+    dither_scan_lines *d = context;
+    const DitherParams *p = d->p;
+    const size_t width = d->width, height = d->height, spacing = d->spacing, count = d->count;
+    const int planes = d->planes;
+    const float middle = d->middle, dots = d->dots;
+    const uint8_t *alpha = d->alpha;
+    const float *tone = d->tone, *screen = d->screen, *phosphor = d->phosphor;
+    float *scan = malloc(width * sizeof(float) * (size_t)planes);
+    if (!scan) { d->failed = 1; return; }
+    for (size_t line = firstLine; line < lastLine; ++line) {
+        size_t top = line * spacing;
+        size_t bottom = top + spacing < height ? top + spacing : height;
+        // Wobble: each line is pushed sideways, a slow wave down the screen with a quicker one over it, as a
+        // CRT's picture wavers when its sync drifts.
+        float wave = sinf((float)line * 0.45f) * 0.7f + sinf((float)line * 1.7f + 1.3f) * 0.3f;
+        long shift = lroundf(p->wobble * wave);
+        for (size_t x = 0; x < width; ++x) {
+            float sum[3] = { 0, 0, 0 }; int n = 0;
+            long sx = (long)x - shift;
+            if (sx >= 0 && sx < (long)width)
+                for (size_t y = top; y < bottom; ++y) {
+                    size_t at = y * width + (size_t)sx;
+                    if (!alpha[at]) continue;
+                    for (int c = 0; c < planes; ++c) sum[c] += tone[(size_t)c * count + at];
+                    ++n;
+                }
+            for (int c = 0; c < planes; ++c) scan[(size_t)c * width + x] = n ? sum[c] / (float)n : 0;
+        }
+        for (size_t y = top; y < bottom; ++y) {
+            uint8_t *row = d->rgba + y * d->stride;
+            float offset = fabsf((float)(y - top) + 0.5f - middle);
+            for (size_t x = 0; x < width; ++x) {
+                if (!alpha[y * width + x]) continue;
+                // Dots: the line breaks into beads, one every line spacing, each lit in the color at its middle.
+                float along = fmodf((float)x + 0.5f, (float)spacing) - middle;
+                long centered = lroundf((float)x - along * dots);
+                size_t at = centered < 0 ? 0 : (size_t)centered >= width ? width - 1 : (size_t)centered;
+                float r, g, b, t;
+                if (p->originalColors) {
+                    r = scan[at]; g = scan[width + at]; b = scan[2 * width + at];
+                    t = 0.2126f * r + 0.7152f * g + 0.0722f * b;
+                } else {
+                    t = scan[at];
+                    r = screen[0] + (phosphor[0] - screen[0]) * t;
+                    g = screen[1] + (phosphor[1] - screen[1]) * t;
+                    b = screen[2] + (phosphor[2] - screen[2]) * t;
+                }
+                // The beam is driven brighter than the picture, making up for the dark screen between lines.
+                r *= 1.35f; g *= 1.35f; b *= 1.35f;
+                // Half the beam's height: a thin line in the shadows, most of the way across in the highlights,
+                // always leaving dark screen between lines.
+                float beam = middle * (0.2f + 0.5f * sqrtf(clamp01(t)));
+                float across = along * dots, distance = sqrtf(offset * offset + across * across);
+                float cover = clamp01(beam - distance + 0.5f);
+                // Between the lines, the screen: black in Original, else the dark color.
+                float br = p->originalColors ? 0 : screen[0], bg = p->originalColors ? 0 : screen[1];
+                float bb = p->originalColors ? 0 : screen[2];
+                write_pixel(row + x * 4, br + (r - br) * cover, bg + (g - bg) * cover, bb + (b - bb) * cover);
+            }
+        }
+    }
+    free(scan);
+}
+
 int dither_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, const DitherParams *p) {
     size_t count = width * height;
     if (!count) return 1;
@@ -136,29 +265,8 @@ int dither_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, cons
 
     float gamma = exp2f(p->density * 1.5f);
     float contrast = p->contrast >= 0 ? 1.0f / (1.0f - 0.95f * p->contrast) : 1.0f + p->contrast;
-    in_bands(height, ^(size_t first, size_t last) {
-        for (size_t y = first; y < last; ++y) {
-            const uint8_t *row = rgba + y * stride;
-            for (size_t x = 0; x < width; ++x) {
-                const uint8_t *px = row + x * 4;
-                size_t at = y * width + x;
-                alpha[at] = px[3];
-                float r = 0, g = 0, b = 0;
-                if (px[3]) {
-                    float scale = 1.0f / (float)px[3];
-                    r = px[0] * scale; g = px[1] * scale; b = px[2] * scale;
-                }
-                if (p->originalColors) {
-                    tone[at] = adjust_tone(r, gamma, contrast);
-                    tone[count + at] = adjust_tone(g, gamma, contrast);
-                    tone[2 * count + at] = adjust_tone(b, gamma, contrast);
-                    source[at * 3] = r; source[at * 3 + 1] = g; source[at * 3 + 2] = b;
-                } else {
-                    tone[at] = adjust_tone(0.2126f * r + 0.7152f * g + 0.0722f * b, gamma, contrast);
-                }
-            }
-        }
-    });
+    dither_tone_rows toneRows = { rgba, width, stride, count, p, gamma, contrast, alpha, tone, source };
+    in_bands(height, &toneRows, dither_tone_band);
 
     float dark[3] = { p->dark[0] / 255.0f, p->dark[1] / 255.0f, p->dark[2] / 255.0f };
     float light[3] = { p->light[0] / 255.0f, p->light[1] / 255.0f, p->light[2] / 255.0f };
@@ -196,72 +304,13 @@ int dither_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, cons
             }
         }
     } else if (style == DITHER_SCANLINES) {
-        // A CRT: each line scans the image, its tone along the line the average of the rows it covers. The beam glows
-        // brighter and blooms thicker where the picture is light, and the screen between lines stays dark.
         size_t spacing = (size_t)(p->cell < 2 ? 2 : p->cell);
-        float middle = (float)spacing / 2, dots = clamp01(p->dots);
         // Each line is drawn on its own, so the lines are shared out across the cores.
         size_t lines = (height + spacing - 1) / spacing;
-        const float *screen = dark, *phosphor = light;
-        __block int failed = 0;
-        in_bands(lines, ^(size_t firstLine, size_t lastLine) {
-            float *scan = malloc(width * sizeof(float) * (size_t)planes);
-            if (!scan) { failed = 1; return; }
-            for (size_t line = firstLine; line < lastLine; ++line) {
-                size_t top = line * spacing;
-                size_t bottom = top + spacing < height ? top + spacing : height;
-                // Wobble: each line is pushed sideways, a slow wave down the screen with a quicker one over it, as a
-                // CRT's picture wavers when its sync drifts.
-                float wave = sinf((float)line * 0.45f) * 0.7f + sinf((float)line * 1.7f + 1.3f) * 0.3f;
-                long shift = lroundf(p->wobble * wave);
-                for (size_t x = 0; x < width; ++x) {
-                    float sum[3] = { 0, 0, 0 }; int n = 0;
-                    long sx = (long)x - shift;
-                    if (sx >= 0 && sx < (long)width)
-                        for (size_t y = top; y < bottom; ++y) {
-                            size_t at = y * width + (size_t)sx;
-                            if (!alpha[at]) continue;
-                            for (int c = 0; c < planes; ++c) sum[c] += tone[(size_t)c * count + at];
-                            ++n;
-                        }
-                    for (int c = 0; c < planes; ++c) scan[(size_t)c * width + x] = n ? sum[c] / (float)n : 0;
-                }
-                for (size_t y = top; y < bottom; ++y) {
-                    uint8_t *row = rgba + y * stride;
-                    float offset = fabsf((float)(y - top) + 0.5f - middle);
-                    for (size_t x = 0; x < width; ++x) {
-                        if (!alpha[y * width + x]) continue;
-                        // Dots: the line breaks into beads, one every line spacing, each lit in the color at its middle.
-                        float along = fmodf((float)x + 0.5f, (float)spacing) - middle;
-                        long centered = lroundf((float)x - along * dots);
-                        size_t at = centered < 0 ? 0 : (size_t)centered >= width ? width - 1 : (size_t)centered;
-                        float r, g, b, t;
-                        if (p->originalColors) {
-                            r = scan[at]; g = scan[width + at]; b = scan[2 * width + at];
-                            t = 0.2126f * r + 0.7152f * g + 0.0722f * b;
-                        } else {
-                            t = scan[at];
-                            r = screen[0] + (phosphor[0] - screen[0]) * t;
-                            g = screen[1] + (phosphor[1] - screen[1]) * t;
-                            b = screen[2] + (phosphor[2] - screen[2]) * t;
-                        }
-                        // The beam is driven brighter than the picture, making up for the dark screen between lines.
-                        r *= 1.35f; g *= 1.35f; b *= 1.35f;
-                        // Half the beam's height: a thin line in the shadows, most of the way across in the highlights,
-                        // always leaving dark screen between lines.
-                        float beam = middle * (0.2f + 0.5f * sqrtf(clamp01(t)));
-                        float across = along * dots, distance = sqrtf(offset * offset + across * across);
-                        float cover = clamp01(beam - distance + 0.5f);
-                        // Between the lines, the screen: black in Original, else the dark color.
-                        float br = p->originalColors ? 0 : screen[0], bg = p->originalColors ? 0 : screen[1];
-                        float bb = p->originalColors ? 0 : screen[2];
-                        write_pixel(row + x * 4, br + (r - br) * cover, bg + (g - bg) * cover, bb + (b - bb) * cover);
-                    }
-                }
-            }
-            free(scan);
-        });
-        if (failed) { free(tone); free(alpha); free(source); return 0; }
+        dither_scan_lines scanLines = { rgba, width, height, stride, count, spacing, p, planes, (float)spacing / 2,
+                                        clamp01(p->dots), alpha, tone, dark, light, 0 };
+        in_bands(lines, &scanLines, dither_scan_band);
+        if (scanLines.failed) { free(tone); free(alpha); free(source); return 0; }
     } else {
         // Marks (halftone shapes, patterns, glyphs) cover as much of each spot as the tone calls for. On light, they
         // stand for darkness and are drawn in the dark color; light on dark, the reverse.
@@ -357,18 +406,29 @@ void dither_dots(uint8_t *rgba, size_t width, size_t height, size_t stride, int 
     }
 }
 
-void dither_glow(uint8_t *rgba, const uint8_t *glow, size_t width, size_t height, size_t stride, float amount) {
-    in_bands(height, ^(size_t first, size_t last) {
-        for (size_t y = first; y < last; ++y) {
-            uint8_t *row = rgba + y * stride;
-            const uint8_t *light = glow + y * stride;
-            for (size_t x = 0; x < width * 4; x += 4) {
-                float a = row[x + 3];
-                for (int c = 0; c < 3; ++c) {
-                    float v = (float)row[x + c] + (float)light[x + c] * amount * a / 255.0f;
-                    row[x + c] = (uint8_t)lroundf(v > a ? a : v);
-                }
+typedef struct {
+    uint8_t *rgba;
+    const uint8_t *glow;
+    size_t width, stride;
+    float amount;
+} dither_glow_rows;
+
+static void dither_glow_band(void *context, size_t first, size_t last) {
+    const dither_glow_rows *d = context;
+    for (size_t y = first; y < last; ++y) {
+        uint8_t *row = d->rgba + y * d->stride;
+        const uint8_t *light = d->glow + y * d->stride;
+        for (size_t x = 0; x < d->width * 4; x += 4) {
+            float a = row[x + 3];
+            for (int c = 0; c < 3; ++c) {
+                float v = (float)row[x + c] + (float)light[x + c] * d->amount * a / 255.0f;
+                row[x + c] = (uint8_t)lroundf(v > a ? a : v);
             }
         }
-    });
+    }
+}
+
+void dither_glow(uint8_t *rgba, const uint8_t *glow, size_t width, size_t height, size_t stride, float amount) {
+    dither_glow_rows rows = { rgba, glow, width, stride, amount };
+    in_bands(height, &rows, dither_glow_band);
 }

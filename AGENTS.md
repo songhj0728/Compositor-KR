@@ -12,7 +12,7 @@ If you've been asked to make or change an image in a `.comp` project, you don't 
   `xcodebuild -project Compositor.xcodeproj -scheme Compositor -destination 'platform=macOS' build`.
 - Tests: `CompositorTests` target (`xcodebuild ... test -only-testing:CompositorTests`). CI runs on every push.
 - The C pixel code in `Compositor/Rendering` is shared with Windows: `CMakeLists.txt` builds and tests it there too
-  (see [BUILD.md](BUILD.md)). Keep it plain C11 — no blocks or Grand Central Dispatch; use `PixelParallel.h`.
+  (see [BUILD.md](BUILD.md)). Keep it plain C11 — no blocks or Grand Central Dispatch; use `ParallelFor.h`.
 - Match the surrounding code: its naming, its comment style and density.
 - American spelling in code, comments and UI ("color", not "colour").
 - The project file format is described in [docs/project-format.md](docs/project-format.md). A change to what's saved means a format version bump there and in `ProjectManifest.current`.

@@ -11,9 +11,10 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(COMPOSITOR_BUILD_TESTS "Build the shared-code tests" ON)
 
-# The pixel algorithms: plain C, no OS frameworks. Threads go through PixelParallel.
+# The pixel algorithms: plain C, no OS frameworks. Threads go through ParallelFor.h (GCD on macOS, the system thread
+# pool on Windows).
 set(COMPOSITOR_PIXELS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Compositor/Rendering)
-add_library(compositor_pixels STATIC
+set(COMPOSITOR_PIXEL_SOURCES
     ${COMPOSITOR_PIXELS_DIR}/AdjustPixels.c
     ${COMPOSITOR_PIXELS_DIR}/BrushPixels.c
     ${COMPOSITOR_PIXELS_DIR}/ContentFill.c
@@ -23,39 +24,41 @@ add_library(compositor_pixels STATIC
     ${COMPOSITOR_PIXELS_DIR}/LevelsPixels.c
     ${COMPOSITOR_PIXELS_DIR}/LiquifyPixels.c
     ${COMPOSITOR_PIXELS_DIR}/NoisePixels.c
-    ${COMPOSITOR_PIXELS_DIR}/PixelParallel.c
     ${COMPOSITOR_PIXELS_DIR}/PSDPixels.c
     ${COMPOSITOR_PIXELS_DIR}/SmearPixels.c
     ${COMPOSITOR_PIXELS_DIR}/WandPixels.c
 )
-target_include_directories(compositor_pixels PUBLIC ${COMPOSITOR_PIXELS_DIR})
-if(MSVC)
-    # M_PI and friends.
-    target_compile_definitions(compositor_pixels PRIVATE _USE_MATH_DEFINES)
-    target_compile_options(compositor_pixels PRIVATE /W3)
-else()
-    target_compile_options(compositor_pixels PRIVATE -Wall)
-endif()
-if(NOT WIN32)
-    find_library(COMPOSITOR_LIBM m)
-    if(COMPOSITOR_LIBM)
-        target_link_libraries(compositor_pixels PUBLIC ${COMPOSITOR_LIBM})
-    endif()
+if(WIN32)
+    list(APPEND COMPOSITOR_PIXEL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Windows/ParallelForWin32.c)
 endif()
 
-if(MSVC)
-    # The sources are UTF-8. Without this, MSVC reads them in the system code page (949 on Korean Windows) and
-    # mangles the non-ASCII characters in comments (warning C4819).
-    target_compile_options(compositor_pixels PRIVATE /utf-8)
-    # SmearPixels.c counts dabs with C11 <stdatomic.h>, which MSVC only compiles with this switch (VS 2022 17.5+).
-    # Still labeled experimental by Microsoft; see docs/multiplatform/inventory.md.
-    target_compile_options(compositor_pixels PRIVATE /experimental:c11atomics)
-endif()
+function(compositor_pixels_library name)
+    add_library(${name} STATIC ${COMPOSITOR_PIXEL_SOURCES})
+    target_include_directories(${name} PUBLIC ${COMPOSITOR_PIXELS_DIR})
+    if(MSVC)
+        # M_PI and friends. The sources are UTF-8: without /utf-8, MSVC reads them in the system code page (949 on
+        # Korean Windows) and mangles the non-ASCII characters in comments (warning C4819).
+        target_compile_definitions(${name} PRIVATE _USE_MATH_DEFINES)
+        target_compile_options(${name} PRIVATE /W3 /utf-8)
+    else()
+        target_compile_options(${name} PRIVATE -Wall)
+        find_library(COMPOSITOR_LIBM m)
+        if(COMPOSITOR_LIBM)
+            target_link_libraries(${name} PUBLIC ${COMPOSITOR_LIBM})
+        endif()
+    endif()
+endfunction()
+
+# What an app links.
+compositor_pixels_library(compositor_pixels)
 
 if(COMPOSITOR_BUILD_TESTS)
     enable_testing()
+    # The same sources with ParallelFor.h's test switch, so the tests can run each loop on one thread and compare.
+    compositor_pixels_library(compositor_pixels_testing)
+    target_compile_definitions(compositor_pixels_testing PUBLIC PARALLEL_FOR_TESTING)
     add_executable(compositor_pixel_tests Tests/Pixels/PixelTests.c)
-    target_link_libraries(compositor_pixel_tests PRIVATE compositor_pixels)
+    target_link_libraries(compositor_pixel_tests PRIVATE compositor_pixels_testing)
     if(MSVC)
         target_compile_options(compositor_pixel_tests PRIVATE /utf-8)
     endif()

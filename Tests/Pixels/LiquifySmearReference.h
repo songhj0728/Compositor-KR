@@ -3,8 +3,9 @@
 // builds. Generated; don't edit.
 #ifndef LiquifySmearReference_h
 #define LiquifySmearReference_h
+#include <stddef.h>
 #include <stdint.h>
-static const long reference_dirty[80] = {0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17};
+static const ptrdiff_t reference_dirty[80] = {0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17,0,0,17,16,1,0,18,17,2,0,19,17,4,1,20,17};
 static const float reference_warped_field[864] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,
@@ -295,7 +296,7 @@ static const uint8_t reference_render_scaled[3888] = {
     179,139,150,245,30,139,153,158,63,4,24,131,51,132,13,145,66,140,17,144,61,145,19,145,53,141,2,165,62,131,2,168,
     94,5,43,130,89,145,29,147,4,132,180,241,64,134,183,189
 };
-static const long reference_reconstruct_dirty[4] = {1,0,20,17};
+static const ptrdiff_t reference_reconstruct_dirty[4] = {1,0,20,17};
 static const float reference_reconstructed_field[864] = {
     0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,

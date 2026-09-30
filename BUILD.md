@@ -37,7 +37,9 @@ CI runs this on Windows and macOS for every push (`.github/workflows/shared.yml`
 (`.github/workflows/verify.yml`).
 
 Rules for the shared C code: plain C11 that MSVC and Clang both compile — no Clang blocks (`^{ }`), no Grand Central
-Dispatch, no Apple headers. Use `pixel_parallel_for` (`PixelParallel.h`) to spread work over the cores.
+Dispatch, no Apple headers. Use `parallel_for` (`Compositor/Rendering/ParallelFor.h`) to spread work over the cores:
+GCD on macOS, the system thread pool on Windows (`Platform/Windows/ParallelForWin32.c`). The test build compiles the
+same sources with `PARALLEL_FOR_TESTING`, so the tests can compare threaded results with one thread's.
 
 ## Windows app workflow (planned)
 

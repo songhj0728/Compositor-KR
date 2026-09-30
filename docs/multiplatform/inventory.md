@@ -8,7 +8,7 @@ branch. Counts are lines of source, including comments.
 
 | Area | Size | Platform dependencies | Shareable today? |
 |---|---|---|---|
-| C pixel algorithms (`Compositor/Rendering/*.c`, `*.h`) | ~2,900 lines, 13 source files | None: C11 and the C library. Threads go through `PixelParallel` | **Yes.** Built for Windows and macOS by `CMakeLists.txt`, tested by `Tests/Pixels` |
+| C pixel algorithms (`Compositor/Rendering/*.c`, `*.h`) | ~3,100 lines, 12 source files | None: C11 and the C library. Threads go through `ParallelFor.h` | **Yes.** Built for Windows and macOS by `CMakeLists.txt`, tested by `Tests/Pixels` |
 | Swift, geometry and logic only | ~1,400 lines, 10 files | Foundation and CoreGraphics *geometry* (`CGRect`, `CGPoint`), which Swift on Windows also has | Yes, if Windows uses Swift (see [windows-decisions.md](windows-decisions.md)) |
 | Swift, CoreGraphics images | ~3,600 lines, 14 files (PSD, masks, tiled renderer, resizers, history, guides) | `CGImage`, `CGContext`, `CGColorSpace` — Apple only | After an image-buffer boundary |
 | Document model (`CanvasDocument`, `ImageLayer`) | in `EditorSession.swift` (1,008 lines) | The file imports SwiftUI; layers hold `CGImage`s | After it moves out and gets its own image type |
@@ -26,21 +26,20 @@ Swift in total: ~36,600 lines. The macOS app remains the reference implementatio
 apps use one copy:
 
 AdjustPixels, BrushPixels, ContentFill, DitherPixels, HealPixels, LensPixels, LevelsPixels, LiquifyPixels, NoisePixels,
-PSDPixels, SmearPixels, WandPixels, and PixelParallel.
+PSDPixels, SmearPixels, WandPixels, with `ParallelFor.h` for threads (and `Platform/Windows/ParallelForWin32.c` on
+Windows).
 
-Before this, LiquifyPixels.c and SmearPixels.c called Grand Central Dispatch through Clang blocks (`^{ }`), which MSVC
-can't compile. They now call `pixel_parallel_for` (`PixelParallel.h`): GCD on Apple platforms, exactly as before, and
-the system thread pool on Windows. The rows each call works on are unchanged, and their output was checked byte for
-byte against the previous code, threaded and not.
+Clang blocks (`^{ }`) and Grand Central Dispatch, which MSVC can't compile, are gone from the pixel code: main's 1.4.5
+portability cleanup introduced `ParallelFor.h` (GCD on Apple platforms, OpenMP or one thread elsewhere), and this
+branch adds its Windows path — the system thread pool — and converts 1.4.5's Scanlines dither, which had reintroduced
+blocks. Every conversion was checked byte for byte against the code before it, threaded and not.
 
 Portability notes for this code:
-- `long` is 32 bits on Windows. The C code uses it for pixel coordinates and in-window offsets; with
-  `DocumentLimits.maxSide` at 30,000 the largest product (30,000²) still fits.
+- `long` is 32 bits on Windows. 1.4.5 moved Liquify and Smear to `ptrdiff_t`; the rest still use `long` for pixel
+  coordinates and in-window offsets, which fits because `DocumentLimits.maxSide` is 30,000 (30,000² < 2³¹).
 - `M_PI` needs `_USE_MATH_DEFINES` under MSVC; `CMakeLists.txt` defines it.
-- `SmearPixels.c` (since 1.4.2) counts dabs with C11 `<stdatomic.h>`. MSVC compiles that only with
-  `/experimental:c11atomics` (VS 2022 17.5+), which `CMakeLists.txt` sets. Microsoft still labels it experimental;
-  if that becomes a problem, the alternative is an atomic helper next to `PixelParallel` (Interlocked on Windows) —
-  a small change to macOS code, so not done yet.
+- Since 1.4.5, Smear takes each dab's rounding seed from its caller instead of a shared atomic counter, so no C11
+  atomics (and no experimental MSVC switch) are needed.
 - The sources contain UTF-8 comments; MSVC needs `/utf-8` or it reads them in the system code page (949 on Korean
   Windows).
 
