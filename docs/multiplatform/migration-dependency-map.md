@@ -18,11 +18,11 @@ the stored-property references found in the code (1.4.2), not guesses. Nothing h
 
 ## Graph
 
-Arrows point from a type to what it needs first. Colors: A (move as is), B (platform types out first), C (adapter
+Arrows point from a type to what it needs first (so foundations sit on the right). Colors: A (move as is), B (platform types out first), C (adapter
 first), D (stays platform), F (foundation).
 
 ```mermaid
-flowchart BT
+flowchart LR
   classDef A fill:#d9f2d9,stroke:#3a7d3a,color:#000
   classDef B fill:#fff1c2,stroke:#a07d00,color:#000
   classDef C fill:#ffd9cc,stroke:#b34700,color:#000
