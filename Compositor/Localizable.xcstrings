@@ -3315,11 +3315,22 @@
       }
     },
     "Font face, including bold and italic variants" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "굵게, 기울임꼴 변형을 포함한 글꼴체"
+          }
+        }
+      }
+    },
+    "Font family, and its weight and style (bold, italic, …)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "글꼴 패밀리와 그 굵기·스타일(굵게, 기울임꼴 등)"
           }
         }
       }

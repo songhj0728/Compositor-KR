@@ -18,7 +18,20 @@ struct TypeControls: View {
             Text("Type").font(ToolHeaderStyle.titleFont)
             ScrollView(.horizontal) {
                 HStack(spacing: 10) {
-                    TypeFontPicker(fontName: Binding(get: {
+                    TypeFontPicker(fontFamily: Binding(get: {
+                        guard let draft = session.textDraft else {
+                            let name = session.currentTextStyle.fontName
+                            return NSFont(name: name, size: NSFont.systemFontSize)?.familyName ?? name
+                        }
+                        let selection = draft.selection
+                        if selection.length == 0 {
+                            let name = draft.style.fontName(at: max(0, selection.location - 1))
+                            return NSFont(name: name, size: NSFont.systemFontSize)?.familyName ?? name
+                        }
+                        // A family stays selected while its weight or style varies within the selection, even where
+                        // the face picker beside it sees more than one and shows neither.
+                        return draft.style.uniformFontFamily(in: selection) ?? ""
+                    }, set: { _ in }), fontName: Binding(get: {
                         guard let draft = session.textDraft else { return session.currentTextStyle.fontName }
                         let selection = draft.selection
                         if selection.length == 0 {
@@ -36,7 +49,7 @@ struct TypeControls: View {
                         case .keep: session.keepFontPreview()
                         }
                     })
-                        .frame(width: 210).help("Font face, including bold and italic variants")
+                        .frame(width: 230).help("Font family, and its weight and style (bold, italic, …)")
                     TextField("Size", value: number(\.fontSize), format: ArithmeticFloatFormatStyle()).frame(width: 52)
                         .unitSuffix("px", scrubValue: value(\.fontSize), sensitivity: 1, range: 1...2000, step: 1)
                         .arrowSteps(value: { Double(session.currentTextStyle.fontSize) },
@@ -100,47 +113,105 @@ struct TypeControls: View {
     }
 }
 
-/// Keep the installed-font catalog out of SwiftUI's per-keystroke view updates.
-/// The closed control needs only the current name; populate its menu on demand.
+/// Reads AppKit's installed-font catalog by family, so a font's dozen weights show as one family with its own short
+/// list of faces instead of a dozen entries in one flat list. Kept apart from `TypeFontPicker`'s AppKit glue below so
+/// it's plain, testable logic.
+enum FontCatalog {
+    /// Every installed family, minus the system's own hidden internal ones (their name starts with a dot, as
+    /// Font Book leaves them out too), sorted for a menu.
+    static func families() -> [String] { NSFontManager.shared.availableFontFamilies.filter { !$0.hasPrefix(".") }.sorted() }
+    /// `family`'s faces, lightest to heaviest; upright before italic falls out of their names ("Bold" sorts before
+    /// "Bold Italic") without reading traits at all.
+    static func faces(ofFamily family: String) -> [(postscript: String, face: String)] {
+        let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
+        return members.compactMap { member -> (postscript: String, face: String, weight: Int)? in
+            guard member.count >= 3, let postscript = member[0] as? String, let face = member[1] as? String,
+                  let weight = member[2] as? Int else { return nil }
+            return (postscript, face, weight)
+        }
+        .sorted { $0.weight != $1.weight ? $0.weight < $1.weight : $0.face < $1.face }
+        .map { ($0.postscript, $0.face) }
+    }
+    /// `postscript`'s family and its own face name within it — nil when that font isn't installed.
+    static func familyAndFace(of postscript: String) -> (family: String, face: String)? {
+        guard !postscript.isEmpty, let font = NSFont(name: postscript, size: NSFont.systemFontSize) else { return nil }
+        let family = font.familyName ?? postscript
+        return (family, faces(ofFamily: family).first { $0.postscript == postscript }?.face ?? postscript)
+    }
+    /// `base`'s weight and style, carried into `family` as its closest matching face there — the same fallback
+    /// Photoshop and every other font-family menu uses, so switching family doesn't silently reset to Regular.
+    static func convert(_ base: String, toFamily family: String) -> String {
+        let current = NSFont(name: base, size: NSFont.systemFontSize) ?? .systemFont(ofSize: NSFont.systemFontSize)
+        return NSFontManager.shared.convert(current, toFamily: family).fontName
+    }
+}
+
+/// Keep the installed-font catalog out of SwiftUI's per-keystroke view updates. Two pop-ups side by side — the
+/// family, then its weight and style — rather than one flat list of every face of every font: a family with a dozen
+/// weights used to mean scrolling past its eleven other faces (and everyone else's) to find the one after it.
+/// The closed controls need only the current names; each menu populates on demand.
 private struct TypeFontPicker: NSViewRepresentable {
+    /// The face's family, shown in the left control; setting it only informs the coordinator's next `choose(_:)` —
+    /// the actual change always goes through `fontName`, converted into the new family, so there is one source of
+    /// truth for what the text actually uses.
+    @Binding var fontFamily: String
     @Binding var fontName: String
     /// The open menu trying faces on the text: the one under the pointer, putting the text back, or keeping it.
     enum PreviewStep { case show(String), revert, keep }
     var preview: (PreviewStep) -> Void = { _ in }
     @Environment(\.isEnabled) private var isEnabled
 
-    func makeCoordinator() -> Coordinator { Coordinator(fontName: $fontName, preview: preview) }
+    func makeCoordinator() -> Coordinator { Coordinator(fontFamily: $fontFamily, fontName: $fontName, preview: preview) }
 
-    func makeNSView(context: Context) -> NSPopUpButton {
-        let button = FixedWidthPopUpButton(frame: .zero, pullsDown: false)
-        if !fontName.isEmpty { button.addItem(withTitle: fontName) }
-        button.borderShape = .capsule
-        // A long font name is cut off at its end rather than widening the control or scrolling its start away.
-        button.cell?.lineBreakMode = .byTruncatingTail
-        button.cell?.usesSingleLineMode = true
-        button.cell?.alignment = .left
-        button.setAccessibilityLabel("Font")
-        button.target = context.coordinator
-        button.action = #selector(Coordinator.choose(_:))
-        button.menu?.delegate = context.coordinator
-        Coordinator.prepareStyledNames()
-        context.coordinator.button = button
-        return button
+    func makeNSView(context: Context) -> Container {
+        let view = Container()
+        let initialFace = FontCatalog.familyAndFace(of: fontName)?.face ?? fontName
+        for (button, initial, label) in [(view.family, fontFamily, "Font family"), (view.face, initialFace, "Font weight and style")] {
+            if !initial.isEmpty { button.addItem(withTitle: initial) }
+            button.borderShape = .capsule
+            // A long name is cut off at its end rather than widening the control or scrolling its start away.
+            button.cell?.lineBreakMode = .byTruncatingTail
+            button.cell?.usesSingleLineMode = true
+            button.cell?.alignment = .left
+            button.setAccessibilityLabel(label)
+            button.target = context.coordinator
+            button.action = #selector(Coordinator.choose(_:))
+            button.menu?.delegate = context.coordinator
+        }
+        Coordinator.prepareFamilyLabels()
+        context.coordinator.familyButton = view.family
+        context.coordinator.faceButton = view.face
+        return view
     }
 
-    func updateNSView(_ button: NSPopUpButton, context: Context) {
+    func updateNSView(_ view: Container, context: Context) {
+        context.coordinator.fontFamily = $fontFamily
         context.coordinator.fontName = $fontName
         context.coordinator.preview = preview
-        button.isEnabled = isEnabled
+        view.family.isEnabled = isEnabled
+        view.face.isEnabled = isEnabled
         guard !context.coordinator.tracking else { return }
-        if fontName.isEmpty { Self.showMultiple(in: button); return }
-        Self.hideMultiple(in: button)
-        guard button.titleOfSelectedItem != fontName else { return }
-        if button.item(withTitle: fontName) == nil { button.addItem(withTitle: fontName) }
-        button.selectItem(withTitle: fontName)
+        if fontFamily.isEmpty { Self.showMultiple(in: view.family) }
+        else {
+            Self.hideMultiple(in: view.family)
+            if view.family.titleOfSelectedItem != fontFamily {
+                if view.family.item(withTitle: fontFamily) == nil { view.family.addItem(withTitle: fontFamily) }
+                view.family.selectItem(withTitle: fontFamily)
+            }
+        }
+        let face = fontFamily.isEmpty ? "" : (FontCatalog.familyAndFace(of: fontName)?.face ?? fontName)
+        if face.isEmpty { Self.showMultiple(in: view.face) }
+        else {
+            Self.hideMultiple(in: view.face)
+            if view.face.titleOfSelectedItem != face {
+                if view.face.item(withTitle: face) == nil { view.face.addItem(withTitle: face) }
+                view.face.selectItem(withTitle: face)
+            }
+        }
     }
 
-    /// Selected letters in more than one face: the menu says so with an item of its own at the top, which isn't a font.
+    /// Selected letters in more than one face (or family): the menu says so with an item of its own at the top,
+    /// which isn't a font.
     private static let multiple = "(Multiple)"
     private static func isMultiple(_ item: NSMenuItem?) -> Bool { item?.representedObject as? String == multiple }
     static func showMultiple(in button: NSPopUpButton) {
@@ -155,9 +226,8 @@ private struct TypeFontPicker: NSViewRepresentable {
         if isMultiple(button.item(at: 0)) { button.removeItem(at: 0) }
     }
 
-    static func dismantleNSView(_ button: NSPopUpButton, coordinator: Coordinator) {
-        button.menu?.delegate = nil
-        button.target = nil
+    static func dismantleNSView(_ view: Container, coordinator: Coordinator) {
+        for button in [view.family, view.face] { button.menu?.delegate = nil; button.target = nil }
     }
 
     /// The font list holds names of every length; the control keeps whatever width it is given, so choosing a long
@@ -168,57 +238,134 @@ private struct TypeFontPicker: NSViewRepresentable {
         }
     }
 
+    /// The family control fills whatever room is left; the face control (its labels are short — "Bold Italic" is
+    /// about the longest common one) keeps a fixed width instead of shrinking the family control to fit it.
+    final class Container: NSView {
+        let family = FixedWidthPopUpButton(frame: .zero, pullsDown: false)
+        let face = FixedWidthPopUpButton(frame: .zero, pullsDown: false)
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            for button in [family, face] {
+                button.translatesAutoresizingMaskIntoConstraints = false
+                addSubview(button)
+            }
+            NSLayoutConstraint.activate([
+                family.leadingAnchor.constraint(equalTo: leadingAnchor),
+                family.topAnchor.constraint(equalTo: topAnchor),
+                family.bottomAnchor.constraint(equalTo: bottomAnchor),
+                face.leadingAnchor.constraint(equalTo: family.trailingAnchor, constant: 6),
+                face.trailingAnchor.constraint(equalTo: trailingAnchor),
+                face.topAnchor.constraint(equalTo: topAnchor),
+                face.bottomAnchor.constraint(equalTo: bottomAnchor),
+                face.widthAnchor.constraint(equalToConstant: 92),
+            ])
+        }
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+        override var intrinsicContentSize: NSSize { NSSize(width: NSView.noIntrinsicMetric, height: family.intrinsicContentSize.height) }
+    }
+
     final class Coordinator: NSObject, NSMenuDelegate {
+        var fontFamily: Binding<String>
         var fontName: Binding<String>
         var preview: (PreviewStep) -> Void
-        weak var button: NSPopUpButton?
+        weak var familyButton: NSPopUpButton?
+        weak var faceButton: NSPopUpButton?
         var tracking = false
-        private var loaded = false
+        private var familyLoaded = false
+        /// The family the face menu was last built for; rebuilt only when that changes, so reopening it after
+        /// picking one of its own faces doesn't reset or re-style anything.
+        private var faceMenuFamily: String?
         /// A face was chosen in the menu just closing, so its preview stays rather than being put back.
         private var chose = false
 
-        init(fontName: Binding<String>, preview: @escaping (PreviewStep) -> Void) { self.fontName = fontName; self.preview = preview }
+        init(fontFamily: Binding<String>, fontName: Binding<String>, preview: @escaping (PreviewStep) -> Void) {
+            self.fontFamily = fontFamily; self.fontName = fontName; self.preview = preview
+        }
 
-        /// Each face's name set in that face, made once for the app. Building them all takes about half a second, so
-        /// `prepareStyledNames` does it in the background when the Type bar first appears, ahead of the menu opening.
-        /// Faces that can't draw their own name (symbol fonts) keep the menu's font, so the name stays readable; they're
-        /// stored as an empty string.
-        @MainActor private static var styledNames: [String: NSAttributedString] = [:]
-        @MainActor private static var preparing = false
-        @MainActor static func styledName(_ name: String) -> NSAttributedString? {
-            if styledNames[name] == nil { styledNames[name] = makeStyledName(name) }
-            let styled = styledNames[name]!
+        /// Each family's own name set in a representative face of it, made once for the app in the background,
+        /// ahead of the menu opening. A family that can't draw its own name (an all-symbol font) keeps the menu's
+        /// font instead, so the name stays readable; that's stored as an empty string.
+        @MainActor private static var styledFamilyLabels: [String: NSAttributedString] = [:]
+        @MainActor private static var preparingFamilies = false
+        @MainActor static func styledFamilyLabel(_ family: String) -> NSAttributedString? {
+            if styledFamilyLabels[family] == nil {
+                let sample = NSFontManager.shared.availableMembers(ofFontFamily: family)?.first?[0] as? String
+                styledFamilyLabels[family] = sample.map { makeStyledLabel(family, using: $0) } ?? NSAttributedString()
+            }
+            let styled = styledFamilyLabels[family]!
             return styled.length == 0 ? nil : styled
         }
-        @MainActor static func prepareStyledNames() {
-            guard !preparing, styledNames.isEmpty else { return }
-            preparing = true
-            let names = NSFontManager.shared.availableFonts
+        @MainActor static func prepareFamilyLabels() {
+            guard !preparingFamilies, styledFamilyLabels.isEmpty else { return }
+            preparingFamilies = true
+            let families = FontCatalog.families()
             Task.detached(priority: .utility) {
-                let made = Made(names: Dictionary(uniqueKeysWithValues: names.map { ($0, makeStyledName($0)) }))
-                await MainActor.run { styledNames.merge(made.names) { current, _ in current } }
+                let made = Made(labels: Dictionary(uniqueKeysWithValues: families.compactMap { family -> (String, NSAttributedString)? in
+                    guard let sample = NSFontManager.shared.availableMembers(ofFontFamily: family)?.first?[0] as? String else { return nil }
+                    return (family, makeStyledLabel(family, using: sample))
+                }))
+                await MainActor.run { styledFamilyLabels.merge(made.labels) { current, _ in current } }
             }
         }
         /// Finished strings, never changed after they're made, handed over to the main thread.
-        private struct Made: @unchecked Sendable { let names: [String: NSAttributedString] }
-        nonisolated private static func makeStyledName(_ name: String) -> NSAttributedString {
-            guard let font = NSFont(name: name, size: NSFont.systemFontSize),
-                  name.unicodeScalars.filter({ $0.properties.isAlphabetic }).allSatisfy({ font.coveredCharacterSet.contains($0) })
+        private struct Made: @unchecked Sendable { let labels: [String: NSAttributedString] }
+        /// A family has only a handful of faces, so unlike the family list, styling them is cheap enough to do the
+        /// first time each is shown rather than warming the whole catalog ahead of time.
+        @MainActor private static var styledFaceLabels: [String: NSAttributedString] = [:]
+        @MainActor static func styledFaceLabel(_ postscript: String, face: String) -> NSAttributedString? {
+            if styledFaceLabels[postscript] == nil { styledFaceLabels[postscript] = makeStyledLabel(face, using: postscript) }
+            let styled = styledFaceLabels[postscript]!
+            return styled.length == 0 ? nil : styled
+        }
+        nonisolated private static func makeStyledLabel(_ text: String, using postscriptName: String) -> NSAttributedString {
+            guard let font = NSFont(name: postscriptName, size: NSFont.systemFontSize),
+                  text.unicodeScalars.filter({ $0.properties.isAlphabetic }).allSatisfy({ font.coveredCharacterSet.contains($0) })
             else { return NSAttributedString() }
-            return NSAttributedString(string: name, attributes: [.font: font])
+            return NSAttributedString(string: text, attributes: [.font: font])
         }
 
         func menuNeedsUpdate(_ menu: NSMenu) {
-            guard !loaded, let button else { return }
-            let selected = fontName.wrappedValue
-            var names = NSFontManager.shared.availableFonts
-            if !selected.isEmpty, !names.contains(selected) { names.append(selected) }
-            names.sort()
+            if menu === familyButton?.menu { updateFamilyMenu() }
+            else if menu === faceButton?.menu { updateFaceMenu() }
+        }
+        private func updateFamilyMenu() {
+            guard !familyLoaded, let button = familyButton else { return }
+            let selected = fontFamily.wrappedValue
+            var names = FontCatalog.families()
+            if !selected.isEmpty, !names.contains(selected) { names.append(selected); names.sort() }
             button.removeAllItems()
             button.addItems(withTitles: names)
-            for item in button.itemArray { item.attributedTitle = Self.styledName(item.title) }
+            for item in button.itemArray { item.attributedTitle = Self.styledFamilyLabel(item.title) }
             if selected.isEmpty { TypeFontPicker.showMultiple(in: button) } else { button.selectItem(withTitle: selected) }
-            loaded = true
+            familyLoaded = true
+        }
+        private func updateFaceMenu() {
+            guard let button = faceButton else { return }
+            let family = fontFamily.wrappedValue
+            guard !family.isEmpty else {
+                button.removeAllItems()
+                TypeFontPicker.showMultiple(in: button)
+                faceMenuFamily = nil
+                return
+            }
+            let selected = fontName.wrappedValue
+            if faceMenuFamily != family {
+                var faces = FontCatalog.faces(ofFamily: family)
+                if !selected.isEmpty, !faces.contains(where: { $0.postscript == selected }) {
+                    faces.append((selected, FontCatalog.familyAndFace(of: selected)?.face ?? selected))
+                }
+                button.removeAllItems()
+                for face in faces {
+                    let item = NSMenuItem(title: face.face, action: nil, keyEquivalent: "")
+                    item.representedObject = face.postscript
+                    item.attributedTitle = Self.styledFaceLabel(face.postscript, face: face.face)
+                    button.menu?.addItem(item)
+                }
+                faceMenuFamily = family
+            }
+            TypeFontPicker.hideMultiple(in: button)
+            if let face = FontCatalog.familyAndFace(of: selected)?.face, button.item(withTitle: face) != nil { button.selectItem(withTitle: face) }
+            else if selected.isEmpty { TypeFontPicker.showMultiple(in: button) }
         }
 
         func menuWillOpen(_ menu: NSMenu) { tracking = true }
@@ -231,19 +378,28 @@ private struct TypeFontPicker: NSViewRepresentable {
                 self.chose = false
             }
         }
-        /// Only a face previews. Nothing highlighted (the pointer off the list, or the menu closing on a click) leaves the
-        /// last face showing: reverting there flashed the old face just before the chosen one landed.
+        /// Only a face previews. Nothing highlighted (the pointer off the list, or the menu closing on a click) leaves
+        /// the last face showing: reverting there flashed the old face just before the chosen one landed.
         func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
-            if let item, !TypeFontPicker.isMultiple(item) { preview(.show(item.title)) }
+            guard let item, !TypeFontPicker.isMultiple(item) else { return }
+            if menu === familyButton?.menu { preview(.show(FontCatalog.convert(fontName.wrappedValue, toFamily: item.title))) }
+            else if let postscript = item.representedObject as? String { preview(.show(postscript)) }
         }
 
-        @objc func choose(_ button: NSPopUpButton) {
+        @objc func choose(_ sender: NSPopUpButton) {
             // The text already shows the face under the pointer: keep it as it is, so it doesn't flash back.
             chose = true
             preview(.keep)
-            guard !TypeFontPicker.isMultiple(button.selectedItem),
-                  let selected = button.titleOfSelectedItem, selected != fontName.wrappedValue else { return }
-            fontName.wrappedValue = selected
+            guard !TypeFontPicker.isMultiple(sender.selectedItem) else { return }
+            if sender === familyButton {
+                guard let family = sender.titleOfSelectedItem, family != fontFamily.wrappedValue else { return }
+                let converted = FontCatalog.convert(fontName.wrappedValue, toFamily: family)
+                guard converted != fontName.wrappedValue else { return }
+                fontName.wrappedValue = converted
+            } else if sender === faceButton {
+                guard let postscript = sender.selectedItem?.representedObject as? String, postscript != fontName.wrappedValue else { return }
+                fontName.wrappedValue = postscript
+            }
         }
     }
 }

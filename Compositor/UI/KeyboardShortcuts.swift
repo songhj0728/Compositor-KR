@@ -1,5 +1,37 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
+
+extension NSEvent {
+    /// `charactersIgnoringModifiers`, but always read off the plain ASCII (US) keyboard layout rather than whichever
+    /// input source is active — Korean, Japanese, and other non-Latin layouts remap most letter keys to something
+    /// else entirely, which broke every single-key shortcut (tool letters, brush-size brackets, …) under them. This
+    /// mirrors the fallback macOS already gives Command-key menu equivalents, extended to the rest of the app's own
+    /// shortcuts. Falls back to the real characters if the layout can't be read.
+    var shortcutCharacters: String? {
+        NSEvent.asciiCharacters(forKeyCode: keyCode, shift: modifierFlags.contains(.shift)) ?? charactersIgnoringModifiers
+    }
+
+    /// `keyCode`'s character on the ASCII-capable layout (Shift applied, every other modifier ignored, as
+    /// `charactersIgnoringModifiers` does), independent of the active input source.
+    private static func asciiCharacters(forKeyCode keyCode: UInt16, shift: Bool) -> String? {
+        guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue(),
+              let dataPointer = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { return nil }
+        let layoutData = unsafeBitCast(dataPointer, to: CFData.self)
+        guard let bytes = CFDataGetBytePtr(layoutData) else { return nil }
+        return bytes.withMemoryRebound(to: UCKeyboardLayout.self, capacity: 1) { layout -> String? in
+            var deadKeyState: UInt32 = 0
+            var length = 0
+            var characters = [UniChar](repeating: 0, count: 4)
+            // UCKeyTranslate wants the modifier state's high byte; 0x02 there is Shift. Leaving Command, Option and
+            // Control off keeps their own shortcuts (Option-drag, Control-click, …) from being read as typed text.
+            let status = UCKeyTranslate(layout, keyCode, UInt16(kUCKeyActionDown), shift ? 0x02 : 0, 0,
+                                        OptionBits(kUCKeyTranslateNoDeadKeysBit), &deadKeyState, 4, &length, &characters)
+            guard status == noErr, length > 0 else { return nil }
+            return String(utf16CodeUnits: characters, count: length)
+        }
+    }
+}
 
 struct ShortcutChord: Codable, Equatable, Hashable {
     var key: String
@@ -21,12 +53,12 @@ struct ShortcutChord: Codable, Equatable, Hashable {
         case 125: key = "\u{f701}"
         case 126: key = "\u{f700}"
         default:
-            let typed = event.charactersIgnoringModifiers?.lowercased() ?? ""
+            let typed = event.shortcutCharacters?.lowercased() ?? ""
             key = ["{": "[", "}": "]", "+": "=", "_": "-" ][typed] ?? typed
         }
     }
-    var eventModifiers: EventModifiers {
-        var flags: EventModifiers = []
+    var eventModifiers: SwiftUI.EventModifiers {
+        var flags: SwiftUI.EventModifiers = []
         if modifiers & 1 != 0 { flags.insert(.command) }
         if modifiers & 2 != 0 { flags.insert(.option) }
         if modifiers & 4 != 0 { flags.insert(.control) }
@@ -140,14 +172,14 @@ final class ShortcutSettings {
            Self.problem(in: saved) == nil { overrides = saved }
     }
     func chord(_ definition: ShortcutDefinition) -> ShortcutChord { overrides[definition.id] ?? definition.original }
-    func menu(_ key: KeyEquivalent, modifiers: EventModifiers) -> ShortcutChord {
+    func menu(_ key: KeyEquivalent, modifiers: SwiftUI.EventModifiers) -> ShortcutChord {
         let bits = (modifiers.contains(.command) ? 1 : 0) | (modifiers.contains(.option) ? 2 : 0)
             | (modifiers.contains(.control) ? 4 : 0) | (modifiers.contains(.shift) ? 8 : 0)
         let original = ShortcutChord(String(key.character), bits)
         guard let definition = ShortcutDefinition.all.first(where: { $0.isMenu && $0.original == original }) else { return original }
         return chord(definition)
     }
-    func native(_ key: KeyEquivalent, modifiers: EventModifiers = []) -> ShortcutChord {
+    func native(_ key: KeyEquivalent, modifiers: SwiftUI.EventModifiers = []) -> ShortcutChord {
         let bits = (modifiers.contains(.command) ? 1 : 0) | (modifiers.contains(.option) ? 2 : 0)
             | (modifiers.contains(.control) ? 4 : 0) | (modifiers.contains(.shift) ? 8 : 0)
         let original = ShortcutChord(String(key.character), bits)
@@ -215,12 +247,12 @@ final class ShortcutSettings {
 }
 
 extension View {
-    func configuredNativeShortcut(_ key: KeyEquivalent, modifiers: EventModifiers = []) -> some View {
+    func configuredNativeShortcut(_ key: KeyEquivalent, modifiers: SwiftUI.EventModifiers = []) -> some View {
         let chord = ShortcutSettings.shared.native(key, modifiers: modifiers)
         guard let first = chord.key.first else { return keyboardShortcut(key, modifiers: modifiers) }
         return keyboardShortcut(KeyEquivalent(first), modifiers: chord.eventModifiers)
     }
-    func configuredKeyboardShortcut(_ key: KeyEquivalent, modifiers: EventModifiers = .command) -> some View {
+    func configuredKeyboardShortcut(_ key: KeyEquivalent, modifiers: SwiftUI.EventModifiers = .command) -> some View {
         let chord = ShortcutSettings.shared.menu(key, modifiers: modifiers)
         guard let first = chord.key.first else { return keyboardShortcut(key, modifiers: modifiers) }
         return keyboardShortcut(KeyEquivalent(first), modifiers: chord.eventModifiers)

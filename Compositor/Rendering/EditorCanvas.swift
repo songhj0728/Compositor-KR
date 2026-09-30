@@ -776,7 +776,7 @@ final class CanvasView: NSView {
                   !(window.firstResponder is NSText) else { return originalEvent }
             if self.handleKeyboardZoom(event) { return nil }
             guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
-                  let key = event.charactersIgnoringModifiers else { return originalEvent }
+                  let key = event.shortcutCharacters else { return originalEvent }
             // Shift-+ / Shift-− step the active layer's blend mode, in every tool.
             if event.modifierFlags.contains(.shift), key == "+" || key == "_" || event.keyCode == 24 || event.keyCode == 27 {
                 self.session.cycleBlendMode(forward: key == "+" || event.keyCode == 24)
@@ -2150,7 +2150,7 @@ final class CanvasView: NSView {
         if let edit = session.levels {
             if event.keyCode == 53 { session.cancelLevels(); return }
             if [36, 76].contains(event.keyCode) { Task { await session.commitLevels() }; return }
-            if event.charactersIgnoringModifiers?.lowercased() == "p", event.modifierFlags.contains(.option) {
+            if event.shortcutCharacters?.lowercased() == "p", event.modifierFlags.contains(.option) {
                 session.updateLevels(edit.settings, preview: !edit.preview); return
             }
             if event.keyCode != 49 { super.keyDown(with: event); return }
@@ -2221,7 +2221,7 @@ final class CanvasView: NSView {
             updateBrushCursor()
             window?.invalidateCursorRects(for: self)
         } else if event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
-            switch event.charactersIgnoringModifiers?.lowercased() {
+            switch event.shortcutCharacters?.lowercased() {
             case "x": session.swapPaletteColors()
             case "d": session.resetPaletteColors()
             case "b": session.selectTool(.brush); session.brushMode = .paint
