@@ -25,6 +25,43 @@ struct LayerStyleTests {
         return (straight(data[at]), straight(data[at + 1]), straight(data[at + 2]), alpha)
     }
 
+    /// A project is saved in the oldest format version that holds it: without Layer Style it stays at the version
+    /// older copies of the app open (and they check that number, on disk, before anything else); with it, it moves to
+    /// the new one, which keeps them from opening it and dropping the style unseen.
+    @Test func savesInTheOldestVersionThatHoldsTheProject() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60)
+        let image = try square()
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Square"))
+        let id = try #require(session.activeLayerID)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Versions-\(UUID()).comp")
+        defer { try? FileManager.default.removeItem(at: url) }
+        func saved() async throws -> (onDisk: Int?, loaded: ProjectSnapshot) {
+            try await ProjectStore.shared.save(try #require(session.projectSnapshot()), to: url)
+            let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url.appendingPathComponent("manifest.json")))
+            return ((json as? [String: Any])?["version"] as? Int, try await ProjectStore.shared.load(from: url))
+        }
+
+        let plain = try await saved()
+        #expect(plain.onDisk == ProjectManifest.compatible)
+        // The effects older copies know stay at that version too.
+        session.setEffects(LayerEffects(stroke: StrokeEffect(), shadow: ShadowEffect()), on: id)
+        let older = try await saved()
+        #expect(older.onDisk == ProjectManifest.compatible)
+        #expect(older.loaded.manifest.layers.first { $0.id == id }?.effects?.stroke != nil)
+
+        var styled = LayerEffects(stroke: StrokeEffect())
+        styled.bevel = BevelEffect()
+        session.setEffects(styled, on: id)
+        let new = try await saved()
+        #expect(new.onDisk == ProjectManifest.current)
+        #expect(new.loaded.manifest.layers.first { $0.id == id }?.effects?.bevel != nil)
+
+        // Taking the style off again lets the project go back to the older version.
+        session.setEffects(LayerEffects(stroke: StrokeEffect()), on: id)
+        #expect(try await saved().onDisk == ProjectManifest.compatible)
+    }
+
     @Test func legacyEffectsStayOnTheGPUPassAndNewOnesDoNot() {
         var effects = LayerEffects(stroke: StrokeEffect(), shadow: ShadowEffect(), colorOverlay: ColorOverlayEffect())
         #expect(!effects.needsStyleRenderer)

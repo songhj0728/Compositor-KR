@@ -11,11 +11,20 @@ extension UTType {
 }
 
 nonisolated struct ProjectManifest: Codable, Sendable {
-    /// The format version new saves write.
+    /// The newest format version: what a save writes when the project needs it.
     static let current = 12
+    /// What a save writes when nothing in the project needs `current`: the version before Photoshop's Layer Style,
+    /// which Compositor-KR 1.4.5 and earlier open. A project is written in the oldest version that holds it, so it keeps
+    /// opening in older copies of the app until it uses something they can't keep.
+    static let compatible = 11
     /// Every version `load` accepts. The package-header check, the manifest check and the error
     /// message all read this, so they cannot drift apart when `current` is bumped.
     static let supported = 1...ProjectManifest.current
+    /// The oldest version that holds this manifest: `current` once any layer uses Photoshop's Layer Style (the same
+    /// test `load` applies to let it in), `compatible` otherwise.
+    var neededVersion: Int {
+        layers.contains { $0.effects?.usesLayerStyle == true } ? ProjectManifest.current : ProjectManifest.compatible
+    }
 
     var format = "com.compositor.project"
     var version = ProjectManifest.current
@@ -82,7 +91,10 @@ actor ProjectStore {
     }
 
     func save(_ snapshot: ProjectSnapshot, to url: URL, quickLook: QuickLookImages? = nil) throws {
-        try validate(snapshot.manifest)
+        var manifest = snapshot.manifest
+        // Written in the oldest version that can hold it (a version set on purpose, as an older one, is left alone).
+        if manifest.version == ProjectManifest.current { manifest.version = manifest.neededVersion }
+        try validate(manifest)
         var images: [String: FileWrapper] = [:]
         var pixels = 0, maskPixels = 0
         for layer in snapshot.manifest.layers {
@@ -107,7 +119,7 @@ actor ProjectStore {
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let metadata = try encoder.encode(snapshot.manifest)
+        let metadata = try encoder.encode(manifest)
         guard metadata.count <= 4 * 1024 * 1024 else { throw ProjectError.tooLarge }
         var contents = [
             "manifest.json": FileWrapper(regularFileWithContents: metadata),
