@@ -49,3 +49,18 @@ Windows and macOS, locally and in CI.
 7. **Swift on Windows without Foundation.** `CGFloat`/`CGPoint`/`CGSize`/`CGRect` exist only in full Foundation
    (with ICU, ~63 MB runtime); `CGAffineTransform`, `CGPath`, `CGImage` don't exist. `FoundationEssentials` (13.5 MB,
    no ICU) has `UUID`, `Data` and JSON. → core-api.md §2 (Core types).
+
+## What the findings decided (2026-09-30)
+
+- **Core language: C++20** (with the C kernels kept and a C ABI) — findings 2, 4 and 7 weighed against the project's
+  priorities, Windows performance first; the safety gap shown by finding 3 is closed by fail-fast rules, sanitizers,
+  fuzzing and differential tests. [windows-architecture.md](windows-architecture.md) §1.
+- **Bulk-first reads** (finding 1–2) are in core-api.md §8; **policies instead of dialogs** in §11.1.
+- **Windows App SDK** self-contained with component packages only (finding 6); .NET self-contained; static CRT, so no
+  VC++ runtime files ship.
+- **Keep Windows project paths short** (finding 5) — the repository layout and CI already do.
+
+Merging 1.4.5 added one more finding: its Scanlines dither brought back Clang blocks and GCD in shared C code — caught
+at once because the shared code is built with MSVC in CI. Syncing after every `main` release (Q22) keeps such fixes
+small.
+

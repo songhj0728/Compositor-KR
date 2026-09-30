@@ -6,8 +6,16 @@ contract ([core-api.md](../core-api.md)), and the order in which it can be separ
 work is drawn in [migration-dependency-map.md](migration-dependency-map.md); open questions are in
 [architecture-questions.md](architecture-questions.md).
 
-Taken from Compositor-KR 1.4.2 on the `Compositor-Multiplatform` branch. (main's 1.4.3 changes the brush engine
-only — `BrushStroke`, `BlurTool`, `SmudgeLiquify` internals — and no type in this list.)
+Taken from Compositor-KR 1.4.2 and updated for **1.4.5** (build 40), now merged into `Compositor-Multiplatform`.
+What 1.4.3–1.4.5 changed for this list: `ColorProfile.swift` and `LiquifyFilter.swift` were split by main (3672e7f)
+into a Foundation-only core section and an Apple display layer — `DocumentColorProfile` moves from B to A; the split
+also made visible `WorkingColorSpace`, a process-wide current profile (E8). 1.4.3's brush-engine and 1.4.5's
+Camera Raw/Scanlines changes touch no type in this list.
+
+**The Core is C++20** (decided — [windows-architecture.md](windows-architecture.md) §1). "Target" below is where a
+type's counterpart lives in the C++ Core (`Core/…`) or which layer keeps it; the Swift type becomes a thin wrapper or
+is removed when its area switches over in Wave 2 ([implementation-plan.md](implementation-plan.md)), after
+differential tests show the two agree.
 
 ## How the list was made
 
@@ -32,11 +40,11 @@ doesn't change the file format — to be proven by golden-file tests first (step
 
 | | Meaning | Count |
 |---|---|---|
-| **A** | Move to the shared Core as is (at most a file move) | 12 |
-| **B** | Move after removing platform types (CoreGraphics geometry, UI helpers, `NSLock`) | 24 |
+| **A** | Move to the shared Core as is (at most a file move) | 13 |
+| **B** | Move after removing platform types (CoreGraphics geometry, UI helpers, `NSLock`) | 23 |
 | **C** | Needs an adapter first: the `ImageRef` handle, `CorePath`, or operations taken out of the editor session | 8 |
 | **D** | Stays in the renderer / platform layer, behind a Core boundary | 3 |
-| **E** | Pieces *inside* the types above to remove or replace (listed separately) | 7 items |
+| **E** | Pieces *inside* the types above to remove or replace (listed separately) | 8 items |
 
 Difficulty: **S** — mechanical, few call sites; **M** — many call sites or format-sensitive; **L** — needs a new
 abstraction and touches the renderer and tools.
@@ -62,6 +70,7 @@ They are destinations, not folders to create now.
 | `AdjustmentColor` | Document/ImageAdjustments.swift | — | Core/Adjustments | S | ImageAdjustmentTests, FinishingFilterTests |
 | `LayerTextFontRun` | Document/TypeTool.swift | — | Core/Text | S | TypeToolTests |
 | `TextAlignment` | Document/TypeTool.swift | — | Core/Text | S | indirect (TypeToolTests) |
+| `DocumentColorProfile` | Document/ColorProfile.swift (core section, Foundation only since 1.4.5) | — in the type; the `CGColorSpace` lookup is in the file's Apple layer | Core/Model as `ColorSpaceID`; lookup stays Platform/macOS | S | ColorProfileTests |
 
 ¹ Depends on the ID decision (architecture-questions.md Q1): with a stdlib-only Core, `UUID` becomes the Core's ID type.
 
@@ -89,7 +98,6 @@ They are destinations, not folders to create now.
 | `BlackWhiteSettings` | Document/ImageAdjustments.swift | same | same | S | ImageAdjustmentTests |
 | `ColorBalanceSettings` | Document/ImageAdjustments.swift | same | same | S | ImageAdjustmentTests, PSDExportTests |
 | `LayerAdjustment` | Document/LayerAdjustment.swift | `apply(CGImage)`; file imports Core Image, AppKit, SwiftUI | Core/Adjustments; `apply` → Rendering | M | AdjustmentLayerTests, ImageAdjustmentTests, GPUCanvasTests, PSDExportTests |
-| `DocumentColorProfile` | Document/ColorProfile.swift | `CGColorSpace` lookup in methods | Core/Model as `ColorSpaceID`; lookup → Platform/macOS | S | ColorProfileTests |
 | `LayerOrder` | Document/LayerGroups.swift | `NSLock` around a static cache | Core/Model, derived per snapshot (core-api §8) | S | indirect (GroupTests, GroupingSelectionTests) |
 | `ProjectManifest` | IO/ProjectStore.swift | `UUID`; members' CG geometry | Formats/Comp | M — format-critical | ProjectTests, ExportTests, GroupTests, ExternalChangeTests, … (7) |
 | `ProjectLayerRecord` | IO/ProjectStore.swift | `UUID`; members' CG geometry | Formats/Comp | M — format-critical | ProjectTests, ImageSizeTests, GroupTests, … (8) |
@@ -130,6 +138,7 @@ panel state. They move to Core operations (core-api §5) with the UI state left 
 | E5 | `NSAlert` asking *bake or unlink* inside `deleteWithLiveMaskChoice` (Document/LiveLayerMask.swift) | Delete takes a clip policy; the UI asks first |
 | E6 | UI helpers on model types: `AdjustmentKind.symbol`, `PaletteColor.nsColor` | UI extensions |
 | E7 | Model files importing SwiftUI/AppKit only for convenience (`EditorSession.swift`, `LayerAdjustment.swift`, `Filters.swift`, …) | Model files import nothing but the Core's own types |
+| E8 | `WorkingColorSpace` (Document/ColorProfile.swift): a process-wide current profile behind `NSLock`, read by buffer-making code on any thread | The document's `ColorSpaceID` passed to whatever makes pixels (core-api §9; architecture-questions Q25) |
 
 ## File-by-file migration plan
 
@@ -149,12 +158,13 @@ their order and dependencies are drawn in [migration-dependency-map.md](migratio
 - `HueSaturation.swift`, `ImageAdjustments.swift`, `LayerEffects.swift`, `ShapeTool.swift`, `TypeTool.swift`,
   `LayerAdjustment.swift` → split into settings/style types (no framework imports) and a `+Rendering.swift` extension
   holding `apply(CGImage)`, `path(in:)` and drawing.
-- `ColorProfile.swift` → the enum stays; the `CGColorSpace` lookup to `Rendering/DocumentColorProfile+CoreGraphics.swift`.
+- `ColorProfile.swift` — already split by 1.4.5 (3672e7f) into a Foundation-only core section and an Apple layer in
+  the same file; moving the Apple layer to its own file is optional.
 - Add a boundary check for the model files (like `check-core-boundaries.sh` on the spike branch) to CI.
 
 ### Step 2 — Core geometry (B types)
 - New `Document/CoreGeometry.swift`: `Scalar`, `CorePoint`, `CoreSize`, `CoreRect`, `CoreTransform`, `CoreColor`
-  (core-api §2) with conversions to and from CoreGraphics for the macOS side.
+  (core-api §2) with conversions to and from CoreGraphics for the macOS side. (These Swift types mirror the C++ Core's, so the differential tests compare like with like.)
 - Stored `CGFloat`/`CGPoint`/`CGSize` → Core types in `LayerTransform`, the six effects, `LayerShapeStyle`,
   `LayerTextStyle`, `LayerTextColorRun`, `PaletteColor`. Call sites convert at the edge (17 files outside
   Document/IO reference model types, ~94 lines).
@@ -162,7 +172,8 @@ their order and dependencies are drawn in [migration-dependency-map.md](migratio
 
 ### Step 3 — Identity and small platform types
 - The ID decision (architecture-questions.md Q1); `.comp` keeps writing the same UUID strings either way.
-- `LayerOrder`: drop the static cache/`NSLock` (E4). `DocumentColorProfile` → `ColorSpaceID`.
+- `LayerOrder`: drop the static cache/`NSLock` (E4). `DocumentColorProfile` → `ColorSpaceID`; `WorkingColorSpace`
+  readers that the Core will replace take the color space as a parameter (E8).
 
 ### Step 4 — `ImageRef` (largest step; C types)
 - New `Document/ImageRef.swift`: the handle of core-api §7.4 (size, format, byte count, identity). macOS
@@ -179,10 +190,11 @@ their order and dependencies are drawn in [migration-dependency-map.md](migratio
   `DocumentHistory`, called by today's `EditorSession` methods, which keep only UI state (selection in the panel,
   collapsed folders, dialogs — E5).
 
-### Step 7 — Extract the Core (decision point)
-- The files from steps 1–6 form the Core. **Swift Core:** a local Swift package (`Core/`) the Xcode app depends on,
-  built by SwiftPM on Windows. **C++ Core:** port them; the macOS app calls them through C++ interop.
-- The snapshot/bulk API (core-api §8) and the C ABI (§12) are built here, whichever language.
+### Step 7 — Switch to the C++ Core (Wave 2)
+- The C++ Core (built beside the app from Wave 1) takes over the areas prepared by steps 1–6, one at a time, in the
+  dependency-map order. The macOS app calls it through the C ABI and a thin Swift wrapper (not Swift's C++ interop).
+- An area switches only when its differential tests show the Swift model and the Core agree; until its Swift code is
+  deleted, the switch can be undone.
 
 ### Not in this plan
 Tools and the editor session's interaction code, the canvas and GPU rendering, Vision features, and all UI.

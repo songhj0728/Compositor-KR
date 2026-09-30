@@ -1,7 +1,10 @@
 # Migration dependency map
 
 Which parts of the document model must reach the shared Core before which, for the plan in
-[document-model-inventory.md](document-model-inventory.md). A type can't move until every type it **stores** has
+[document-model-inventory.md](document-model-inventory.md). Baseline 1.4.5. The Core is C++20
+([windows-architecture.md](windows-architecture.md)); two tracks run side by side — the **macOS track** below prepares
+the Swift model (language-neutral seams), the **Core track** builds the C++ Core — and meet at the switch-over, area by
+area, gated by differential tests ([implementation-plan.md](implementation-plan.md)). A type can't move until every type it **stores** has
 moved, and until the foundations it needs (Core geometry, the ID policy, `ImageRef`, `CorePath`) exist. Edges below are
 the stored-property references found in the code (1.4.2), not guesses. Nothing here has been moved.
 
@@ -70,7 +73,8 @@ flowchart LR
   F5 --> CanvasDocument & DocumentHistory
 
   class LayerSampling,LayerBlendMode,LayerEffectKind,FilterKind,ColorRange,HueBand,RangeAdjustment,AdjustmentColor,LayerTextFontRun,TextAlignment A
-  class ExposureSettings,GrainSettings,BlackWhiteSettings,ColorBalanceSettings,DocumentColorProfile,LayerOrder B
+  class ExposureSettings,GrainSettings,BlackWhiteSettings,ColorBalanceSettings,LayerOrder B
+  class DocumentColorProfile A
 ```
 
 `F3 → ImportedImage`: the macOS implementation of `ImageRef` wraps `ImportedImage`, which stays in the platform
@@ -83,10 +87,10 @@ Each wave only needs earlier waves. Within a wave, items are independent and can
 | Wave | Contents | Needs | Plan step |
 |---|---|---|---|
 | 0 | F0 golden `.comp` tests | — | 0 |
-| 1 | File moves: all **A** types (`LayerSampling`, `LayerBlendMode`, `LayerEffectKind`, `FilterKind`, `HueSaturationSettings`, `ColorRange`, `HueBand`, `RangeAdjustment`, `AdjustmentColor`, `LayerTextFontRun`, `TextAlignment`); splitting `apply(CGImage)`/`path(in:)`/UI helpers out of model files (E6, E7), which frees the adjustment settings, `AdjustmentKind` and `LayerAdjustment` (they need no geometry) | — | 1 |
+| 1 | File moves: all **A** types (`DocumentColorProfile` — already Foundation-only since 1.4.5, `LayerSampling`, `LayerBlendMode`, `LayerEffectKind`, `FilterKind`, `HueSaturationSettings`, `ColorRange`, `HueBand`, `RangeAdjustment`, `AdjustmentColor`, `LayerTextFontRun`, `TextAlignment`); splitting `apply(CGImage)`/`path(in:)`/UI helpers out of model files (E6, E7), which frees the adjustment settings, `AdjustmentKind` and `LayerAdjustment` (they need no geometry) | — | 1 |
 | 2 | F1 Core geometry; then `PaletteColor` → `CoreColor`, `LayerTransform`, `LayerTextColorRun` | 1 | 2 |
 | 3 | The six effects, `LayerEffects`, `LayerShapeStyle`, `LayerTextStyle` (they store colors) | 2 | 2 |
-| 4 | F2 ID policy; `CanvasGuide`; `LayerOrder` (E4); `DocumentColorProfile` → `ColorSpaceID`; `ProjectLayerRecord`, `ProjectManifest` | 0, 3 | 3 |
+| 4 | F2 ID policy; `CanvasGuide`; `LayerOrder` (E4); `WorkingColorSpace` readers take the color space (E8); `ProjectLayerRecord`, `ProjectManifest` | 0, 3 | 3 |
 | 5 | F3 `ImageRef`; `LayerMask`, `LayerShape`, `LayerText` (E1), `ProjectSnapshot`, E2, E3 | 4 | 4 |
 | 6 | F4 `CorePath`; `DocumentSelection`, `ShapeKind` path building | 1 | 5 |
 | 7 | `ImageLayer`, `CanvasDocument`, `DocumentHistory` | 5, 6 | 4–5 |
@@ -105,3 +109,17 @@ operations — is the critical path. `CorePath` (wave 6) is off it and can go in
 | 5 | Undo memory (sharing must survive the handle); render caches keyed on image identity | HistoryTests, memory budget test, TiledLayerTests |
 | 6 | Selection edge cases (empty vs none, feathering, winding) | SelectionTests, SelectionFeatherTests, MagicWandTests |
 | 7–8 | Behavior of every layer command | The whole suite; new operation-level tests written first |
+
+## Core track (C++) and the switch-over
+
+| Core wave | Contents | Needs | Switches over (macOS) |
+|---|---|---|---|
+| C1 | Core types (core-api §2), IDs, status codes, C ABI v0, bindings, sanitizers, fuzzing | — | nothing (built beside the app) |
+| C2 | Layer tree, validation, operations without pixels, history, persistent snapshots, `changes(since:)` | C1 | layer-tree operations, after the macOS track's waves 1–4 and green differential tests |
+| C3 | Manifest codec (`.comp` records, version gating, validation) | C2 | project load/save metadata, after F0 semantic golden tests pass both ways |
+| C4 | `ImageRef` tiled storage, platform allocator hook, wrapping external buffers | C1 | layer and mask pixels (macOS track wave 5), undo memory tests green |
+| C5 | `CorePath`, selection | C1 | selection (macOS track wave 6) |
+| C6 | Remaining operations (masks, clipping with `ClipPolicy`, adjustments/effects/text/shape styles, canvas/image size) | C2–C5 | the rest; the Swift model is removed area by area |
+
+Every switch-over is reversible until the Swift code of that area is deleted. The Windows app uses the Core from C1
+onward; it never has a Swift model.

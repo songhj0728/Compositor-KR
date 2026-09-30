@@ -1,52 +1,45 @@
-# Windows: open decisions
+# Windows: decisions
 
-Phase 4 of [MULTIPLATFORM_MIGRATION.md](../../MULTIPLATFORM_MIGRATION.md) asks for these to be evaluated, not assumed.
-None is decided yet. Each lists the options, what they cost, and a suggestion; the project owner makes the call, and
-the answer is recorded here.
+Phase 4 of [MULTIPLATFORM_MIGRATION.md](../../MULTIPLATFORM_MIGRATION.md) asked for these to be evaluated, not
+assumed. They are now **decided** (2026-09-30, baseline 1.4.5); the full reasoning is in
+[windows-architecture.md](windows-architecture.md) and, question by question, in
+[architecture-questions.md](architecture-questions.md). This page keeps the short record, including where an earlier
+suggestion on this page was revised and why.
 
-## 1. What language the Windows app's shared logic is in
+## 1. The language of the shared logic — **C++20 Core, C11 kernels, C ABI**
 
-Most of Compositor's behavior — the document model, layers, masks, PSD and `.comp` reading and writing — is Swift.
+Earlier suggestion here: Swift on Windows, to reuse the Swift model. **Revised** after the spike
+([spike-findings.md](spike-findings.md)) was weighed against the project's priorities, Windows performance first:
+C++ has no runtime to ship, explicit allocation and copying, and first-class Windows tooling (MSVC, debugger, PIX,
+sanitizers, ARM64); Swift's advantages — memory safety and the existing model — are answered with fail-fast rules,
+hardened standard libraries, sanitizers, fuzzing, and differential tests against the Swift model during the port. The
+pixel kernels stay C; the macOS UI and renderer stay Swift. (windows-architecture §1, Q11)
 
-| Option | What it means | Cost |
-|---|---|---|
-| **A. Swift on Windows** | The Swift toolchain runs on Windows. The shared Swift code compiles for both; each platform adds its own UI and renderer. | Apple-only APIs (`CGImage`, Core Image, ImageIO) must move behind boundaries first — the steps in [inventory.md](inventory.md). Windows tooling for Swift is younger than Xcode. |
-| B. C++ Windows app | A C++ app that shares only the C pixel code. | The Swift document model, PSD and `.comp` code would be written a second time and kept in sync by hand — the "second copy" AGENTS.md rules out. |
-| C. One cross-platform UI for both | Qt, Flutter or similar, for macOS as well. | Replaces the working macOS UI, against the migration's rules. |
+## 2. The Windows UI toolkit — **WinUI 3 with a C# shell, confirmed by the Wave 1 prototype**
 
-**Suggestion: A.** It's the only option where one copy of the document semantics serves both apps.
+Stable Windows App SDK only, self-contained, component packages only. The canvas is native (Direct3D 11 in a
+`SwapChainPanel`), so the UI language doesn't limit canvas performance. Final once the Wave 1 prototype meets the
+canvas targets; the fallback is a Win32 host with C++/WinRT, with no Core or renderer change. (Q17, Q18, Q19)
 
-## 2. The Windows UI toolkit (with option A)
+## 3. The Windows GPU backend — **Direct3D 11.1 + Direct2D + DirectWrite + WIC**
 
-| Option | Notes |
-|---|---|
-| WinUI 3 through Swift/WinRT bindings | Native Windows look and input (pen, touch, high DPI). Bindings exist and have shipped in a large app (Arc for Windows), but are a smaller ecosystem. |
-| Win32 + a thin custom UI | Full control, most work. |
-| Qt, called from Swift through C++ interop | Mature widgets and tablet input; a large dependency; not native-looking. |
+Earlier suggestion here: Direct3D 12. **Revised**: the editor renders a few passes per frame on one queue, where D3D12's
+explicit memory and synchronization cost code without saving CPU, and Direct2D/DirectWrite interoperate natively only
+with D3D11. D3D11 has the compute shaders the filters and effects need. (windows-architecture §2.3, Q20)
 
-**Suggestion:** a small WinUI 3 prototype (open a `.comp`, show the canvas, pan/zoom) before committing.
+## 4. Replacing Core Image's filters — **HLSL compute/pixel shaders matched by golden images**
 
-## 3. The Windows GPU backend
-
-The macOS app uses Metal for the canvas, brush coverage, layer effects and warp, and Core Image for most filters.
-
-| Option | Notes |
-|---|---|
-| Direct3D 12 | Native, best drivers and debugging tools on Windows, compute shaders for filters. |
-| Vulkan | Portable, but macOS keeps Metal either way, so the portability buys little here. |
-| Direct3D 11 | Simpler; enough for a canvas, weaker for heavy compute. |
-
-**Suggestion:** Direct3D 12, decided once the renderer contract (`Rendering/API`) exists and shows what it needs.
-
-## 4. Replacing Core Image's filters
-
-About 75 uses of `CIFilter`/`CIImage` across 20 files have no Windows equivalent. Each filter the app uses needs a
-Windows implementation (compute shader or C), checked against the macOS output with golden tests and documented
-tolerances. This is the largest piece of Windows work and should be planned filter by filter.
+Each Core Image filter the app uses gets an HLSL implementation on Windows, checked against the macOS output (Wave 0
+reference images) with documented tolerances. Kernels that exist in the shared C code are used on both platforms
+instead of being duplicated. Compositing stays in the document's encoded color space, as macOS does it.
 
 ## 5. Features that rely on Apple frameworks
 
-- **Object Selection and subject removal** use Vision. Options: an ONNX segmentation model on Windows, or ship Windows
-  without them at first. A product decision.
-- **Updates** use Sparkle. Windows needs its own (WinSparkle, MSIX with App Installer, or similar).
-- **Packaging and signing:** MSIX or a classic installer; a code-signing certificate for Windows.
+| Feature | Windows |
+|---|---|
+| Object Selection, Subject Removal (Vision) | ONNX Runtime with DirectML (CPU fallback) and a permissively licensed model, behind a `SubjectSegmenter` interface; after editing parity; hidden until then (Q21) |
+| Updates (Sparkle) | WinSparkle with a per-architecture appcast on GitHub, MSI payloads, EdDSA-signed (windows-architecture §3.3) |
+| Packaging and signing | WiX MSI, per-machine, `MajorUpgrade`, UpgradeCode `15737362-8B12-4BF4-8314-16E529A0C200`; Authenticode through a cloud HSM from GitHub Actions (windows-architecture §3.2, §3.4) |
+| Color management (ColorSync) | LittleCMS 2 with the macOS ICC profiles shipped identically (Q10) |
+| Text (Core Text) | DirectWrite (Q9) |
+| Document packages (`.comp` folders) | Opened as folders; shell verb for `*.comp` folders; no format change (Q24) |

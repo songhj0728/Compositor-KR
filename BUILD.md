@@ -43,6 +43,10 @@ same sources with `PARALLEL_FOR_TESTING`, so the tests can compare threaded resu
 
 ## Windows app workflow (planned)
 
+Decided toolchain, packaging and release pipeline: [docs/multiplatform/windows-architecture.md](docs/multiplatform/windows-architecture.md)
+§3–§4 (MSVC C++20, CMake presets, static CRT, WiX MSI, WinSparkle, signing, `windows-release.yml`); order of work in
+[docs/multiplatform/implementation-plan.md](docs/multiplatform/implementation-plan.md).
+
 Windows support is not a reason to discard the current Xcode workflow.
 
 When Windows implementation begins, establish:
