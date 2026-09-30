@@ -9,7 +9,7 @@
       <sparkle:shortVersionString>1.4.5(A)</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
       <link>https://github.com/songhj0728/Compositor-KR/releases/tag/v1.4.5(A)</link>
-      <enclosure url="https://github.com/songhj0728/Compositor-KR/releases/download/v1.4.5(A)/Compositor-KR.dmg" sparkle:edSignature="xemJjo9iSd8uoHaGVGzxk3o+MAkmJ+49GicDwM3LBXgk1Zc6JQE58QvSZJJHxLo1zCDRsrnm7FJ9h0LX/6yGAQ==" length="11000720" type="application/octet-stream"/>
+      <enclosure url="https://github.com/songhj0728/Compositor-KR/releases/download/v1.4.5(A)/Compositor-KR.dmg" sparkle:edSignature="NFhLeiEmwcrv7fa6EVn+UDJFWl3k/mhztI1Ui46gXJapDYt5UWDBqB1oKygbF3/RVum/ICvNHzgCIsyab8+9Dg==" length="11005819" type="application/octet-stream"/>
     </item>
   </channel>
 </rss>
