@@ -30,6 +30,7 @@ jobs:
           python3 scripts/check-model-boundaries.py
           xcrun swiftc -typecheck Compositor/Document/FilterKind.swift
           xcrun swiftc -typecheck Compositor/Document/TextAlignment.swift
+          xcrun swiftc -typecheck Compositor/Core/*.swift
 
       - name: Resolve Swift packages
         run: >

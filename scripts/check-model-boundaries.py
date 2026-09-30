@@ -14,15 +14,19 @@ forbidden = re.compile(
     r"NS\w*|CG\w*|CI[A-Z]\w*|MTL\w*|WinUI|Windows|WinSDK|HWND|HRESULT|D3D\w*|ID3D\w*)\b"
 )
 failed = False
-for name in ("FilterKind", "TextAlignment"):
-    path = root / f"Compositor/Document/{name}.swift"
+paths = [root / f"Compositor/Document/{name}.swift" for name in ("FilterKind", "TextAlignment")]
+paths += sorted((root / "Compositor/Core").rglob("*.swift"))
+for path in paths:
     source = path.read_text(encoding="utf-8")
     # Ignore literal strings and comments so documentation and raw values are not dependencies.
     code = re.sub(r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*.*?\*/', "", source, flags=re.S)
+    if path.is_relative_to(root / "Compositor/Core"):
+        # UUID value semantics are the sole allowed framework dependency.
+        code = re.sub(r"(?m)^import Foundation\s*$", "", code)
     violations = sorted(set(forbidden.findall(code)))
     if violations:
         print(f"BOUNDARY: {path.relative_to(root)}: {', '.join(violations)}", file=sys.stderr)
         failed = True
     else:
-        print(f"{name} uses no imports or platform/UI names")
+        print(f"{path.relative_to(root)}: dependency boundary passed")
 sys.exit(1 if failed else 0)
