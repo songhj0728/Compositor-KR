@@ -25,6 +25,11 @@ jobs:
       - name: Select Xcode 26.6
         run: sudo xcode-select -s /Applications/Xcode_26.6.app
 
+      - name: Check model boundary
+        run: |
+          python3 scripts/check-model-boundaries.py
+          xcrun swiftc -typecheck Compositor/Document/FilterKind.swift
+
       - name: Resolve Swift packages
         run: >
           xcodebuild -resolvePackageDependencies

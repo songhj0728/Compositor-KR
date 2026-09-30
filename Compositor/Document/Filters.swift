@@ -3,56 +3,6 @@ import CoreImage
 import Observation
 import SwiftUI
 
-/// Filters from the Filter menu. Each runs on the active image layer, inside the selection if
-/// there is one, with a live preview and one undo step on OK.
-nonisolated enum FilterKind: String, CaseIterable, Sendable {
-    case gaussianBlur = "Gaussian Blur"
-    case motionBlur = "Motion Blur"
-    case addNoise = "Add Noise"
-    case vignette = "Vignette"
-    case bloomGlow = "Bloom / Glow"
-    case dither = "Dither"
-    case tonalContrast = "Tonal Contrast"
-    case lensCorrection = "Lens Correction"
-    case cameraRaw = "Camera Raw Filter"
-    case removeBackground = "Remove Background"
-    case contentAwareFill = "Content-Aware Fill"
-    case curves = "Curves"
-    case exposure = "Exposure"
-    case gradientMap = "Gradient Map"
-    case grain = "Grain"
-    case blackWhite = "Black & White"
-    case colorBalance = "Color Balance"
-    var isAutomatic: Bool { self == .contentAwareFill || self == .removeBackground }
-    /// Color adjustments: in the Image menu (and editable as adjustment layers), not under Filter.
-    var isImageAdjustment: Bool {
-        self == .curves || self == .exposure || self == .gradientMap || self == .grain
-            || self == .blackWhite || self == .colorBalance
-    }
-    /// `rawValue` as a localizable display name; `rawValue` itself stays the stable, unlocalized identifier.
-    var displayName: LocalizedStringKey {
-        switch self {
-        case .gaussianBlur: return "Gaussian Blur"
-        case .motionBlur: return "Motion Blur"
-        case .addNoise: return "Add Noise"
-        case .vignette: return "Vignette"
-        case .bloomGlow: return "Bloom / Glow"
-        case .dither: return "Dither"
-        case .tonalContrast: return "Tonal Contrast"
-        case .lensCorrection: return "Lens Correction"
-        case .cameraRaw: return "Camera Raw Filter"
-        case .removeBackground: return "Remove Background"
-        case .contentAwareFill: return "Content-Aware Fill"
-        case .curves: return "Curves"
-        case .exposure: return "Exposure"
-        case .gradientMap: return "Gradient Map"
-        case .grain: return "Grain"
-        case .blackWhite: return "Black & White"
-        case .colorBalance: return "Color Balance"
-        }
-    }
-}
-
 /// Remove Background's two ways of working: Apple's own subject mask on its own, or that mask refined against the
 /// layer's detail, which recovers hair and fur but takes longer.
 nonisolated enum BackgroundQuality: String, CaseIterable, Sendable {
