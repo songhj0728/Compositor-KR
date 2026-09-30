@@ -66,12 +66,15 @@ extension EditorSession {
         }
         colorPicker = picker
     }
-    /// What the Type bar's swatch shows and edits: the text being edited, otherwise the foreground color the next
-    /// text will use. A text layer that is only selected is not touched.
+    /// What the Type bar's swatch shows and edits: the text being edited, the text layer selected, otherwise the color
+    /// the next text will use — the last one text was given.
     /// With letters selected, it is the color of the first of them; with just a caret, the letter before it, the
     /// color typing there gives.
     var typeColor: PaletteColor {
-        guard let draft = textDraft else { return foregroundColor }
+        guard let draft = textDraft else {
+            if let style = activeLayer?.liveText?.style { return PaletteColor(red: style.red, green: style.green, blue: style.blue) }
+            return PaletteColor(red: textDefaults.red, green: textDefaults.green, blue: textDefaults.blue)
+        }
         let selection = draft.selection
         return draft.style.color(at: selection.length > 0 ? selection.location : max(0, selection.location - 1))
     }
@@ -115,6 +118,8 @@ extension EditorSession {
                         else if let edited = colorPicker.editedText { restoreDraftTextColors(edited.style) }
                     } else if commit {
                         textDefaults.red = color.red; textDefaults.green = color.green; textDefaults.blue = color.blue
+                        // A text layer selected in the Layers panel takes the color too, and stays editable text.
+                        if let id = activeLayerID, activeLayer?.liveText != nil { recolorText(id, to: color, name: "Text Color") }
                     }
                     // The text color is the foreground color: picking one in the Type bar moves the swatch too.
                     if commit, !isMaskSelected { foregroundColor = color }
@@ -132,6 +137,8 @@ extension EditorSession {
             case .dialog:
                 dialogColorChange?(commit ? colorPicker.color : colorPicker.original)
                 dialogColorChange = nil
+            case .shape(let stroke):
+                if commit { stroke ? setShapeStroke(colorPicker.color) : setShapeFill(colorPicker.color) }
             }
         }
         colorPicker = nil
@@ -267,6 +274,8 @@ enum ColorPickerTarget: Equatable {
     case text(draftID: UUID?)
     /// A dialog's own color, such as Export JPEG's background for transparency. The dialog is told as it changes.
     case dialog(title: String)
+    /// The Shape tool's fill or outline, and the selected shape's.
+    case shape(stroke: Bool)
     var title: String {
         switch self {
         case .text: return "Color Picker (Text Color)"
@@ -276,6 +285,7 @@ enum ColorPickerTarget: Equatable {
         case .vignette: return "Color Picker (Vignette Color)"
         case .dither(let light): return light ? "Color Picker (Dither Light Color)" : "Color Picker (Dither Dark Color)"
         case .dialog(let title): return "Color Picker (\(title))"
+        case .shape(let stroke): return stroke ? "Color Picker (Shape Stroke)" : "Color Picker (Shape Fill)"
         }
     }
 }

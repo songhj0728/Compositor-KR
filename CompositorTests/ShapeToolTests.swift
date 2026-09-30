@@ -9,6 +9,7 @@ struct ShapeToolTests {
         session.createDocument(width: 100, height: 80, emptyLayer: true)
         session.selectTool(.shape)
         session.foregroundColor = PaletteColor(red: 1, green: 0, blue: 0)
+        session.shapeFillColor = PaletteColor(red: 1, green: 0, blue: 0)
         return session
     }
     private func drag(_ session: EditorSession, from start: CGPoint, to end: CGPoint, square: Bool = false, fromCenter: Bool = false) {
@@ -101,5 +102,55 @@ struct ShapeToolTests {
         session.beginShape(at: CGPoint(x: 5, y: 5))
         #expect(session.shapeDraft?.cornerRadius == 0, "ellipses take no radius")
         session.cancelShape()
+    }
+
+    /// A click asks for a size: From Center puts the shape in the middle of the canvas, otherwise around the click.
+    @Test func aClickAsksForASizeAndPlacesTheShape() {
+        let session = makeSession()
+        session.beginShape(at: CGPoint(x: 20, y: 30))
+        session.finishShape()
+        #expect(session.shapeSizeRequest?.point == CGPoint(x: 20, y: 30))
+        #expect(session.document?.layers.count == 1)
+        session.finishShapeSize(width: 10, height: 6, fromCenter: false)
+        #expect(session.shapeSizeRequest == nil)
+        #expect(session.activeLayer?.transform.origin == CGPoint(x: 15, y: 27)
+                && session.activeLayer?.transform.size == CGSize(width: 10, height: 6))
+
+        session.beginShape(at: CGPoint(x: 5, y: 5))
+        session.finishShape()
+        session.finishShapeSize(width: 20, height: 20, fromCenter: true)
+        #expect(session.activeLayer?.transform.origin == CGPoint(x: 40, y: 30))
+        #expect(session.shapeSizeWidth == 20 && session.shapeSizeFromCenter)
+
+        session.beginShape(at: CGPoint(x: 5, y: 5))
+        session.finishShape()
+        session.cancelShapeSize()
+        #expect(session.document?.layers.count == 3)
+    }
+
+    /// A shape picked in the Layers panel takes the Shape tool's new fill and outline, and the tool keeps them.
+    @Test func changingTheFillOrStrokeRecolorsTheSelectedShape() async throws {
+        let session = makeSession()
+        drag(session, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 40, y: 40))
+        let count = session.history.undoCount
+        session.setShapeFill(PaletteColor(red: 0, green: 0, blue: 1))
+        #expect(session.activeShape?.style.color == PaletteColor(red: 0, green: 0, blue: 1))
+        #expect(session.history.undoCount == count + 1)
+        session.setShapeStroke(PaletteColor(red: 1, green: 0, blue: 0))
+        session.setShapeStrokeWidth(4)
+        #expect(session.activeShape?.style.strokeSize == 4)
+        var pixel = try await pixels(session)
+        #expect(pixel(11, 11) == (255, 255), "the outline, just inside the edge")
+        #expect(pixel(25, 25) == (0, 255), "the new fill")
+        session.setShapeFills(false)
+        pixel = try await pixels(session)
+        #expect(pixel(25, 25).alpha == 0 && pixel(11, 25) == (255, 255))
+
+        // The next shape is made the same way.
+        drag(session, from: CGPoint(x: 50, y: 10), to: CGPoint(x: 80, y: 40))
+        #expect(session.activeShape?.style.fills == false && session.activeShape?.style.strokeSize == 4)
+        session.undo()
+        session.undo()
+        #expect(session.activeShape?.style.fills == true)
     }
 }

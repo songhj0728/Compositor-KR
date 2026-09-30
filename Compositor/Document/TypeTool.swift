@@ -253,10 +253,7 @@ extension EditorSession {
             style.content = ""
             style.colorRuns = nil
             style.fontRuns = nil
-            // New text starts in the foreground color, the same as every other tool that lays down color.
-            if !isMaskSelected {
-                style.red = foregroundColor.red; style.green = foregroundColor.green; style.blue = foregroundColor.blue
-            }
+            // New text keeps the color the last text was given (textDefaults), as its font and size.
             // A click makes point text: no box of its own, so what is typed decides how big the layer is. Dragging
             // a box out instead (beginText(in:)) sets boxSize, and so does resizing one by its handles.
             style.boxSize = nil
@@ -352,7 +349,7 @@ extension EditorSession {
     /// Paints a text layer's letters in `color`, keeping it editable text. Used by Fill with Foreground/Background;
     /// false when the layer isn't live text or its pixels couldn't be redrawn, so the caller fills as usual.
     @discardableResult
-    func recolorText(_ id: UUID, to color: PaletteColor) -> Bool {
+    func recolorText(_ id: UUID, to color: PaletteColor, name: String = "Fill Text") -> Bool {
         guard canEditLayers, let index = document?.layers.firstIndex(where: { $0.id == id }),
               let layer = document?.layers[index], let text = layer.liveText, let asset = layer.asset else { return false }
         var style = text.style
@@ -360,7 +357,7 @@ extension EditorSession {
         style.setColor(color, in: NSRange(location: 0, length: 0))
         guard style.isValid, let image = try? Self.textImage(style), let thumbnail = try? PixelInvert.thumbnail(of: image) else { return false }
         finishOpacityEdit()
-        beginEdit("Fill Text")
+        beginEdit(name)
         document?.layers[index].asset = ImportedImage(image: image, thumbnail: thumbnail, name: asset.name)
         document?.layers[index].text = LayerText(style: style, image: image)
         endEdit()
