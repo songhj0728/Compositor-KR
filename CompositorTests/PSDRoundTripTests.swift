@@ -700,9 +700,13 @@ struct PSDRoundTripTests {
         #expect(imported.conversions.contains { $0.message == PSDText.missingFontNote("DefinitelyMissingFontXYZ") })
     }
 
+    /// Photoshop's matrix is row-vector style (its angle is atan2(xy, xx)): a 90° clockwise turn sends text's x axis
+    /// straight down, (xx, xy) = (0, 1); the opposite matrix turns it counterclockwise.
     @Test func rotatedPhotoshopTextKeepsItsAngle() {
-        let parsed = PSDText.parse(extra: ["TySh": PSDFixture.tySh(text: "Hello", xx: 0, xy: -1, yx: 1, yy: 0)])
+        let parsed = PSDText.parse(extra: ["TySh": PSDFixture.tySh(text: "Hello", xx: 0, xy: 1, yx: -1, yy: 0)])
         #expect(abs((parsed?.rotation ?? 0) - 90) < 0.01)
         #expect(parsed?.flipY == false)
+        let opposite = PSDText.parse(extra: ["TySh": PSDFixture.tySh(text: "Hello", xx: 0, xy: -1, yx: 1, yy: 0)])
+        #expect(abs((opposite?.rotation ?? 0) + 90) < 0.01)
     }
 }
