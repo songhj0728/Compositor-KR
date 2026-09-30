@@ -1,125 +1,95 @@
-# Migration dependency map
+# Migration dependency map — semantic boundaries first
 
-Which parts of the document model must reach the shared Core before which, for the plan in
-[document-model-inventory.md](document-model-inventory.md). Baseline 1.4.5. The Core is C++20
-([windows-architecture.md](windows-architecture.md)); two tracks run side by side — the **macOS track** below prepares
-the Swift model (language-neutral seams), the **Core track** builds the C++ Core — and meet at the switch-over, area by
-area, gated by differential tests ([implementation-plan.md](implementation-plan.md)). A type can't move until every type it **stores** has
-moved, and until the foundations it needs (Core geometry, the ID policy, `ImageRef`, `CorePath`) exist. Edges below are
-the stored-property references found in the code (1.4.2), not guesses. Nothing here has been moved.
+Design only; stages below are future review units, not work performed in this task.
+Based on main-sync merge `db268a2b`, containing main `ccf062ed` and its v12 data in
+[repository-evidence.md](repository-evidence.md). Neither language nor GPU is
+selected. Follow [core-api.md](../core-api.md) and the corrected
+[type inventory](document-model-inventory.md).
 
-## Foundations
+## Dependency graph
 
-| Foundation | Defined in | Unblocks |
-|---|---|---|
-| **F0 Golden `.comp` tests** | inventory step 0 | every step that touches a saved type |
-| **F1 Core geometry** (`Scalar`, `CorePoint`, `CoreSize`, `CoreRect`, `CoreTransform`, `CoreColor`) | core-api §2, step 2 | `LayerTransform`, effects, shape/text styles, `PaletteColor` |
-| **F2 ID policy** | core-api §6, architecture-questions Q1, step 3 | `CanvasGuide`, `ImageLayer`, `CanvasDocument`, manifest types |
-| **F3 `ImageRef`** | core-api §7.4, step 4 | `ImageLayer`, `LayerMask`, `ProjectSnapshot`, `DocumentHistory`, `LayerShape`, `LayerText` |
-| **F4 `CorePath`** | core-api §2, step 5 | `DocumentSelection`, `ShapeKind` path building |
-| **F5 Operations out of `EditorSession`** | core-api §5, step 6 | the Core's public surface; the bulk/snapshot API |
-
-## Graph
-
-Arrows point from a type to what it needs first (so foundations sit on the right). Colors: A (move as is), B (platform types out first), C (adapter
-first), D (stays platform), F (foundation).
+Arrows mean **prerequisite → consumer**. Some parallel branches can be prepared
+independently; numerical order is not a demand to move all files in one patch.
 
 ```mermaid
-flowchart LR
-  classDef A fill:#d9f2d9,stroke:#3a7d3a,color:#000
-  classDef B fill:#fff1c2,stroke:#a07d00,color:#000
-  classDef C fill:#ffd9cc,stroke:#b34700,color:#000
-  classDef D fill:#e0e0e0,stroke:#666,color:#000
-  classDef F fill:#dbe8ff,stroke:#2f5fb3,color:#000
-
-  F0[F0 golden .comp tests]:::F
-  F1[F1 Core geometry]:::F
-  F2[F2 ID policy]:::F
-  F3[F3 ImageRef]:::F
-  F4[F4 CorePath]:::F
-  F5[F5 operations out of EditorSession]:::F
-
-  CanvasDocument:::C --> ImageLayer & DocumentSelection & CanvasGuide & DocumentColorProfile & LayerOrder & F2
-  ImageLayer:::C --> LayerTransform & LayerBlendMode & LayerMask & LayerAdjustment & LayerEffects & LayerShape & LayerText & F3 & F2
-  DocumentHistory:::C --> CanvasDocument & F3
-  ProjectSnapshot:::C --> ProjectManifest & F3
-  ProjectManifest:::B --> ProjectLayerRecord & CanvasGuide & F0 & F2
-  ProjectLayerRecord:::B --> LayerTransform & LayerBlendMode & LayerAdjustment & LayerEffects & LayerShapeStyle & LayerTextStyle & F0
-  DocumentSelection:::C --> F4
-  LayerMask:::C --> LayerTransform & F3
-  LayerShape:::C --> LayerShapeStyle & F3
-  LayerText:::C --> LayerTextStyle & F3
-  LayerTransform:::B --> LayerSampling & F1
-  LayerAdjustment:::B --> AdjustmentKind & HueSaturationSettings & ExposureSettings & GradientMapSettings & GrainSettings & BlackWhiteSettings & ColorBalanceSettings
-  AdjustmentKind:::B --> FilterKind
-  GradientMapSettings:::B --> AdjustmentColor
-  HueSaturationSettings:::A --> ColorRange & HueBand & RangeAdjustment
-  LayerEffects:::B --> StrokeEffect & ShadowEffect & ColorOverlayEffect & InnerShadowEffect & OuterGlowEffect & InnerGlowEffect & LayerEffectKind
-  StrokeEffect:::B --> PaletteColor
-  ShadowEffect:::B --> PaletteColor
-  ColorOverlayEffect:::B --> PaletteColor
-  InnerShadowEffect:::B --> PaletteColor
-  OuterGlowEffect:::B --> PaletteColor
-  InnerGlowEffect:::B --> PaletteColor
-  LayerShapeStyle:::B --> ShapeKind & PaletteColor
-  ShapeKind:::B --> F4
-  LayerTextStyle:::B --> LayerTextColorRun & LayerTextFontRun & TextAlignment & PaletteColor
-  LayerTextColorRun:::B --> F1
-  PaletteColor:::B --> F1
-  CanvasGuide:::A --> F2
-  F3 --> ImportedImage:::D
-  ImportedImage --> RasterSnapshot:::D
-  RasterSnapshot --> BrushPatch:::D
-  F5 --> CanvasDocument & DocumentHistory
-
-  class LayerSampling,LayerBlendMode,LayerEffectKind,FilterKind,ColorRange,HueBand,RangeAdjustment,AdjustmentColor,LayerTextFontRun,TextAlignment A
-  class ExposureSettings,GrainSettings,BlackWhiteSettings,ColorBalanceSettings,LayerOrder B
-  class DocumentColorProfile A
+flowchart TD
+  S0[S0 reference fixtures and source baseline] --> S1[S1 isolate data from UI helpers]
+  S0 --> S2[S2 geometry and identity adapters]
+  S1 --> S3[S3 settings and style values]
+  S2 --> S3
+  S2 --> S4[S4 image and path boundaries]
+  S1 --> S4
+  S3 --> S5[S5 layers document and hierarchy]
+  S4 --> S5
+  S5 --> S6[S6 history and semantic operations]
+  S3 --> S7[S7 format records and serialization adapters]
+  S5 --> S7
+  S6 --> S8[S8 immutable bulk read and renderer projections]
+  S7 --> S8
+  S8 --> S9[S9 host bindings and language evidence]
 ```
 
-`F3 → ImportedImage`: the macOS implementation of `ImageRef` wraps `ImportedImage`, which stays in the platform
-layer (D) with `RasterSnapshot` and `BrushPatch`.
+This is an integration map, not a claim that image storage depends on the manifest
+codec. `ImageRef` and `CorePath` can be designed/prototyped before record migration;
+a format record can be separated before pixels are moved. Snapshot semantics are
+defined now and constrain S4–S7; a renderer projection is integrated at S8, not
+invented after all operations. No Windows UI or renderer implementation is a stage
+of this documentation task.
 
-## Waves
+## Actual type dependency examples
 
-Each wave only needs earlier waves. Within a wave, items are independent and can be separate reviewable changes.
+- `LayerTransform` stores geometry + `LayerSampling`; its affine helper currently
+  calls `BrushRaster`, which must be an adapter/numerical seam.
+- `LayerTextStyle` stores `LayerTextColorRun`, `LayerTextFontRun`, `TextAlignment`
+  and geometry; `PaletteColor` is a convenience-method dependency, not a stored
+  field in every effect/style.
+- `EffectContour`/`EffectPattern`, `BevelEffect.Style/Technique` and blend data
+  precede Bevel/Satin/PatternOverlay and extended legacy effects. These precede
+  LayerEffects, its presence-based format gate and render projections. Numerical
+  pattern origin/contour behavior constrains adapters, not a Core/GPU choice.
+- `LayerAdjustment` stores `LevelsSettings`, `CurvesSettings`, HSV and other
+  settings. Levels requires `LevelRange`/`LevelsChannel`; Curves requires
+  `CurvePoint`/`LevelsChannel`. These were missing from the previous graph.
+- `ImageLayer` stores placement, blend, mask, content, adjustment, effects and
+  shape/text wrappers. `CanvasDocument` stores layers, guides, profile and selection.
+- `DocumentHistory.Snapshot` stores optional document + active layer + state UUID;
+  its accounting traverses `ImportedImage.image/thumbnail`.
+- `ProjectManifest` stores `ProjectLayerRecord` + guides. `ProjectSnapshot` adds
+  image/mask dictionaries; it is not the complete UI/renderer snapshot contract.
+- `LayerHierarchy` currently consumes format records and returns entries containing
+  those records. Separate minimal hierarchy data to avoid a shared model → Formats
+  → shared model dependency cycle.
+- `ImportedImage → RasterSnapshot → BrushPatch` are existing Mac storage references.
+  They stay behind the Mac adapter. Shared `ImageRef` does **not** depend on those
+  concrete classes; only the adapter implementing it does.
 
-| Wave | Contents | Needs | Plan step |
-|---|---|---|---|
-| 0 | F0 golden `.comp` tests | — | 0 |
-| 1 | File moves: all **A** types (`DocumentColorProfile` — already Foundation-only since 1.4.5, `LayerSampling`, `LayerBlendMode`, `LayerEffectKind`, `FilterKind`, `HueSaturationSettings`, `ColorRange`, `HueBand`, `RangeAdjustment`, `AdjustmentColor`, `LayerTextFontRun`, `TextAlignment`); splitting `apply(CGImage)`/`path(in:)`/UI helpers out of model files (E6, E7), which frees the adjustment settings, `AdjustmentKind` and `LayerAdjustment` (they need no geometry) | — | 1 |
-| 2 | F1 Core geometry; then `PaletteColor` → `CoreColor`, `LayerTransform`, `LayerTextColorRun` | 1 | 2 |
-| 3 | The six effects, `LayerEffects`, `LayerShapeStyle`, `LayerTextStyle` (they store colors) | 2 | 2 |
-| 4 | F2 ID policy; `CanvasGuide`; `LayerOrder` (E4); `WorkingColorSpace` readers take the color space (E8); `ProjectLayerRecord`, `ProjectManifest` | 0, 3 | 3 |
-| 5 | F3 `ImageRef`; `LayerMask`, `LayerShape`, `LayerText` (E1), `ProjectSnapshot`, E2, E3 | 4 | 4 |
-| 6 | F4 `CorePath`; `DocumentSelection`, `ShapeKind` path building | 1 | 5 |
-| 7 | `ImageLayer`, `CanvasDocument`, `DocumentHistory` | 5, 6 | 4–5 |
-| 8 | F5 operations out of `EditorSession` (E5); then the snapshot/bulk API and C ABI | 7 | 6–7 |
+## Stages, tests and rollback
 
-The longest chain — geometry → effects/styles → manifest records → `ImageRef` → `ImageLayer` → `CanvasDocument` →
-operations — is the critical path. `CorePath` (wave 6) is off it and can go in parallel with waves 2–5.
+| Stage | Files/types involved | Prerequisite | Expected Mac impact | Windows benefit | Required evidence/tests | Rollback point |
+|---|---|---|---|---|---|---|
+| S0 | ProjectStore, HistoryTests, GroupingSelectionTests, LayerStyleTests, existing C references; sync ledger | Pin synchronized db268a2b/main ccf062ed | No migration; characterize imported reference results | Comparable semantics, no toy-model assumptions | `.comp` v1–12 records/pixels, save11/12 presence gate, no-op/undo/save-preview races, style duplicate/paste/group coverage | Fixtures only; production untouched |
+| S1 | FilterKind first; later LayerSampling/BlendMode/EffectKind/ColorRange/TextAlignment display/renderer helpers | S0 tests for each chosen slice | Mechanical declaration/extension separation, same module and raw values | Makes real data independently compilable | Existing filter/adjustment tests + full verify.yml; imports/type boundary review | Rejoin one enum and helpers in original file |
+| S2 | CoreScalar/Point/Size/Rect/Transform candidates; LayerTransform numerical functions; UUID adapter | Geometry/ID contract and S0 | Conversions at existing call sites, preserve degree/rounding/flip semantics | No CoreGraphics coordinates or spike UInt64 assumption | Transform/MaskTransform/Distort/Crop tests; UUID/filename and typed-number fixtures | Keep old stored fields until each adapter proves parity |
+| S3 | A/B settings; nine effects, Contour/Pattern/Bevel enums and Fill Opacity; shape/text styles; Levels/Curves | S1; S2 where geometry required; style enum dependencies before records | Split rendering methods without changing values/defaults/optional presence | Portable complete v12 settings | Existing adjustment/text/shape tests + LayerStyleTests/PSDExportTests; nil/explicit-default and disabled effects | One type family's facade routes back to original implementation |
+| S4 | ImageRef/CorePath adapters; ImportedImage/RasterSnapshot/BrushPatch remain Mac; LayerMask and selection coverage | Ownership/thread rules; S2 geometry | Adapter adds lifetime boundary; pixel/raster algorithms stay | Images/paths can cross platform without Apple objects | TiledLayer/RasterSnapshot/History, mask/feather/selection/holes tests; retained resource counts and close-with-snapshot | Existing asset/path fields retained behind facade; no storage replacement required |
+| S5 | ImageLayer, CanvasDocument, CanvasGuide, profile, LayerOrder/Hierarchy/Opacity/LiveMaskGraph | S3 values + S4 resources; S2 identities | Isolate state/derived hierarchy, including hidden lower clipping base; retain UI edit context | Shared document meaning and stable IDs | Group/GroupingSelection/LiveMask/LayerAppearance tests, invalid graphs/duplicate IDs, lower vs external/upper live mask visibility | Keep current EditorSession-backed facade; one operation area at a time |
+| S6 | DocumentHistory; EditorSession begin/end/restore; style commit; duplicate/delete/move/group | S5 complete state; partial-import/batch policy; Q16 preview/save characterization | Preserve sharing, active layer, saved state, one style OK step/Cancel restore; dialog pages stay UI | Atomic operations and full-style undo | History/LayerStyleTests, new v12 duplicate/paste/group evidence, no-op redo, nested/failed/stale operations, preview-save-cancel traces | Existing history/command path remains selectable until equivalent |
+| S7 | ProjectManifest/LayerRecord/Snapshot; EditorSession+Projects; ProjectStore/Controller; PSD style/text service | S3/S5 records and validated state; image codec adapter when pixels involved | Keep actor/filesystem/PNG/atomic write and current presence-based 11/12 policy; no schema extension | Same v1–12 records and explicit PSD fallback policy | Project/Export/ExternalChange/ImageSize/LayerStyle/PSDExport tests; malformed versions/assets, disabled/default v12 fields, editable vs flattened PSD | Old ProjectStore/mapping remain reference; no file conversion |
+| S8 | Bulk snapshot, layer-table/render facade; nine styles, Fill Opacity, pattern origin | S5/S6 stable lifetime/state tokens; S7 save projection checked; style field completeness | Retained immutable reads; legacy Metal/new CPU style paths and caches stay Mac | One linear bulk boundary with complete v12 description | Same-generation UI/render/save, stale/close cases, 500/2k/10k measurements, mask/style order/fill/tiled pattern parity | Adapter returns existing state snapshots; keep renderer implementations |
+| S9 | Candidate host bindings, build/test harness and actual extracted slice | S8 semantic evidence; resolve relevant Q1–Q16 | No model replacement until separate review/parity evidence | Language comparison against identical boundary | C#/C++/Swift host lifetime/error tests, Windows/macOS CI, deployment closure, no pixel copies | Experimental target remains unlinked to product; preserve original spike |
 
-## Risk by wave
+The C pixel layer already has its own independent shared-C build; it does not wait
+for the model chain. New reference coverage may be a separate test-only change.
+S0–S9 remains valid after this sync; v12 expands the payload and tests at existing
+stages rather than adding an earlier rewrite. Main synchronization is a recurring
+maintenance lane before each affected migration, not a one-time completed stage.
+Future syncs must preserve platform work and review incoming semantics separately.
 
-| Wave | Risk | Guard |
-|---|---|---|
-| 1 | Low: moves and splits only | Build + all tests; boundary check on model files |
-| 2–3 | `.comp` numbers written differently (e.g. float formatting) | F0 golden tests byte for byte |
-| 4 | ID encoding changes (case, format) | F0 golden tests; IDs in file names |
-| 5 | Undo memory (sharing must survive the handle); render caches keyed on image identity | HistoryTests, memory budget test, TiledLayerTests |
-| 6 | Selection edge cases (empty vs none, feathering, winding) | SelectionTests, SelectionFeatherTests, MagicWandTests |
-| 7–8 | Behavior of every layer command | The whole suite; new operation-level tests written first |
+## Smallest first migration, if separately requested
 
-## Core track (C++) and the switch-over
-
-| Core wave | Contents | Needs | Switches over (macOS) |
-|---|---|---|---|
-| C1 | Core types (core-api §2), IDs, status codes, C ABI v0, bindings, sanitizers, fuzzing | — | nothing (built beside the app) |
-| C2 | Layer tree, validation, operations without pixels, history, persistent snapshots, `changes(since:)` | C1 | layer-tree operations, after the macOS track's waves 1–4 and green differential tests |
-| C3 | Manifest codec (`.comp` records, version gating, validation) | C2 | project load/save metadata, after F0 semantic golden tests pass both ways |
-| C4 | `ImageRef` tiled storage, platform allocator hook, wrapping external buffers | C1 | layer and mask pixels (macOS track wave 5), undo memory tests green |
-| C5 | `CorePath`, selection | C1 | selection (macOS track wave 6) |
-| C6 | Remaining operations (masks, clipping with `ClipPolicy`, adjustments/effects/text/shape styles, canvas/image size) | C2–C5 | the rest; the Swift model is removed area by area |
-
-Every switch-over is reversible until the Swift code of that area is deleted. The Windows app uses the Core from C1
-onward; it never has a Swift model.
+After reference checks, isolate **FilterKind's enum data** from `Filters.swift`,
+put its `LocalizedStringKey displayName` helper in a Mac UI extension, and keep
+raw values, call sites and module membership identical. This is smaller than moving
+`CanvasDocument`/`ImageLayer`, changes no format, and selects neither Core language.
+Run the existing affected filter/adjustment tests and full Mac workflow; roll back
+by rejoining that one declaration/helper. This task does not perform that move.

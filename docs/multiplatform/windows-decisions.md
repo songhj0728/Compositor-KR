@@ -1,45 +1,21 @@
-# Windows: decisions
+# Windows decision status
 
-Phase 4 of [MULTIPLATFORM_MIGRATION.md](../../MULTIPLATFORM_MIGRATION.md) asked for these to be evaluated, not
-assumed. They are now **decided** (2026-09-30, baseline 1.4.5); the full reasoning is in
-[windows-architecture.md](windows-architecture.md) and, question by question, in
-[architecture-questions.md](architecture-questions.md). This page keeps the short record, including where an earlier
-suggestion on this page was revised and why.
+The current task settles semantic boundaries only. **Swift/C++ and GPU API remain
+open.** WinUI 3 is a successful experiment with either Core, not a finalized product
+UI. No product migration is started by these documents.
 
-## 1. The language of the shared logic — **C++20 Core, C11 kernels, C ABI**
+The final-choice wording introduced by `841d09c` is superseded at the owner's
+request, with the original proposal retained in Git history. See
+[Windows boundary](windows-architecture.md), [Core contract](../core-api.md),
+[open questions](architecture-questions.md) and [repository evidence](repository-evidence.md).
 
-Earlier suggestion here: Swift on Windows, to reuse the Swift model. **Revised** after the spike
-([spike-findings.md](spike-findings.md)) was weighed against the project's priorities, Windows performance first:
-C++ has no runtime to ship, explicit allocation and copying, and first-class Windows tooling (MSVC, debugger, PIX,
-sanitizers, ARM64); Swift's advantages — memory safety and the existing model — are answered with fail-fast rules,
-hardened standard libraries, sanitizers, fuzzing, and differential tests against the Swift model during the port. The
-pixel kernels stay C; the macOS UI and renderer stay Swift. (windows-architecture §1, Q11)
-
-## 2. The Windows UI toolkit — **WinUI 3 with a C# shell, confirmed by the Wave 1 prototype**
-
-Stable Windows App SDK only, self-contained, component packages only. The canvas is native (Direct3D 11 in a
-`SwapChainPanel`), so the UI language doesn't limit canvas performance. Final once the Wave 1 prototype meets the
-canvas targets; the fallback is a Win32 host with C++/WinRT, with no Core or renderer change. (Q17, Q18, Q19)
-
-## 3. The Windows GPU backend — **Direct3D 11.1 + Direct2D + DirectWrite + WIC**
-
-Earlier suggestion here: Direct3D 12. **Revised**: the editor renders a few passes per frame on one queue, where D3D12's
-explicit memory and synchronization cost code without saving CPU, and Direct2D/DirectWrite interoperate natively only
-with D3D11. D3D11 has the compute shaders the filters and effects need. (windows-architecture §2.3, Q20)
-
-## 4. Replacing Core Image's filters — **HLSL compute/pixel shaders matched by golden images**
-
-Each Core Image filter the app uses gets an HLSL implementation on Windows, checked against the macOS output (Wave 0
-reference images) with documented tolerances. Kernels that exist in the shared C code are used on both platforms
-instead of being duplicated. Compositing stays in the document's encoded color space, as macOS does it.
-
-## 5. Features that rely on Apple frameworks
-
-| Feature | Windows |
+| Area | Current status |
 |---|---|
-| Object Selection, Subject Removal (Vision) | ONNX Runtime with DirectML (CPU fallback) and a permissively licensed model, behind a `SubjectSegmenter` interface; after editing parity; hidden until then (Q21) |
-| Updates (Sparkle) | WinSparkle with a per-architecture appcast on GitHub, MSI payloads, EdDSA-signed (windows-architecture §3.3) |
-| Packaging and signing | WiX MSI, per-machine, `MajorUpgrade`, UpgradeCode `15737362-8B12-4BF4-8314-16E529A0C200`; Authenticode through a cloud HSM from GitHub Actions (windows-architecture §3.2, §3.4) |
-| Color management (ColorSync) | LittleCMS 2 with the macOS ICC profiles shipped identically (Q10) |
-| Text (Core Text) | DirectWrite (Q9) |
-| Document packages (`.comp` folders) | Opened as folders; shell verb for `*.comp` folders; no format change (Q24) |
+| C kernels | Existing shared implementation and tests; preserve it |
+| Swift/C++ model Core | Both viable experiments; compare actual extracted data and the same bulk boundary before deciding |
+| C ABI | Proven experimental host route; product signatures, ownership binding and error/version layout not fixed |
+| UI | WinUI 3/C# spike works; real canvas/input/accessibility evidence still needed |
+| GPU | Platform renderer boundary defined; no DirectX/Vulkan choice or implementation |
+| Text/color | Core holds semantic data; native services behind adapters; engines/tolerances open |
+| Packaging/update/recovery | Platform responsibilities; previous concrete plans are unimplemented proposals |
+| `.comp` | Main synchronized: reader 1–12, presence-based save11/12. No independent format extension or migration |

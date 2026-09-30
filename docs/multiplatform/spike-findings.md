@@ -8,7 +8,7 @@ change, no Swift/C++ decision.** Full reports on that branch: `Spikes/CoreModel/
 ## What was built
 
 Two small Cores with the same model (document, layers, groups, transform, undo/redo) — one in Swift, one in C++ —
-behind one C header, driven by C++, C# and a WinUI 3 window (Windows App SDK 2.5.1, .NET 10). Everything passed on
+behind one C header, driven by C++, C# and a WinUI 3 window (Windows App SDK 2.5.1, .NET 10). The stored reports describe passing checks on
 Windows and macOS, locally and in CI.
 
 ## Findings that the Core contract must answer
@@ -24,10 +24,10 @@ Windows and macOS, locally and in CI.
 
    500 layers: Swift ~20 ms, C++ ~2 ms. Adding 2,000 layers one undo step at a time: 50–105 ms in either. The
    difference between the Cores here is value copying in the rebuild, not the language; one bulk call removes the
-   rebuild for both. → core-api.md §8 (bulk-first).
+   rebuild for both. → core-api.md §6 (bulk-first).
 3. **Duplicate-ID bug in both Cores.** `group([a, a])` wasn't rejected. It ended the host process: Swift at a bounds
    check (`0xC000001D`, before corrupting anything), C++ with heap corruption (`0xC0000374`). C# could not catch
-   either. Fixed in the spike with tests. → core-api.md §6 (ID rules), §10 (validation at the boundary).
+   either. Fixed in the spike with tests. → core-api.md §4 (ID rules), §9 (validation at the boundary).
 4. **Ownership and memory safety across the boundary.** Found or confirmed:
    - A fault inside an in-process Core ends the whole app; exceptions and traps don't cross the C boundary.
    - C++ exceptions reaching Swift terminate the process; C++ methods returning references or interior pointers
@@ -35,7 +35,7 @@ Windows and macOS, locally and in CI.
    - Strings crossing the boundary need an explicit owner and encoding (UTF-8 bytes, cut on character boundaries).
    - Handles were retained objects freed by an explicit destroy call (`SafeHandle` on the C# side).
    - Neither Core locked; one document used from two threads at once was left undefined.
-   → core-api.md §7 (ownership), §9 (threading), §10 (errors).
+   → core-api.md §5 (ownership), §8 (threading), §9 (errors).
 5. **WinUI XAML compiler and long paths.** The XAML compiler is a .NET Framework tool and failed under a working
    folder whose real path exceeded 260 characters. Short paths (as on CI) work. → keep Windows project paths short.
 6. **Self-contained Windows App SDK specifics.**
@@ -48,19 +48,22 @@ Windows and macOS, locally and in CI.
      `swiftCore.dll` (5.8 MB). The app still needs the .NET 10 runtime unless .NET is published self-contained.
 7. **Swift on Windows without Foundation.** `CGFloat`/`CGPoint`/`CGSize`/`CGRect` exist only in full Foundation
    (with ICU, ~63 MB runtime); `CGAffineTransform`, `CGPath`, `CGImage` don't exist. `FoundationEssentials` (13.5 MB,
-   no ICU) has `UUID`, `Data` and JSON. → core-api.md §2 (Core types).
+   no ICU) has `UUID`, `Data` and JSON. → core-api.md §7 (Core types).
 
-## What the findings decided (2026-09-30)
+## Status after this contract review
 
-- **Core language: C++20** (with the C kernels kept and a C ABI) — findings 2, 4 and 7 weighed against the project's
-  priorities, Windows performance first; the safety gap shown by finding 3 is closed by fail-fast rules, sanitizers,
-  fuzzing and differential tests. [windows-architecture.md](windows-architecture.md) §1.
-- **Bulk-first reads** (finding 1–2) are in core-api.md §8; **policies instead of dialogs** in §11.1.
-- **Windows App SDK** self-contained with component packages only (finding 6); .NET self-contained; static CRT, so no
-  VC++ runtime files ship.
-- **Keep Windows project paths short** (finding 5) — the repository layout and CI already do.
+The language and GPU choices asserted by the later `841d09c` documentation are
+superseded, not implementation evidence. Swift and C++ remain candidates; the
+performance results above diagnose the repeated-outline boundary, not a winner.
+Use the current [Core contract](../core-api.md) and
+[decision criteria](architecture-questions.md) before any migration.
 
-Merging 1.4.5 added one more finding: its Scanlines dither brought back Clang blocks and GCD in shared C code — caught
-at once because the shared code is built with MSVC in CI. Syncing after every `main` release (Q22) keeps such fixes
-small.
+The success claims above are retained reports from the spike, not fresh CI results
+for current main. The [evidence ledger](repository-evidence.md) records inspected
+SHAs, workflow/run links, local checks and the live API access limitation.
 
+Additional source observations: background WinUI testing creates a separate Core
+instance; no same-instance concurrency is tested. Both C exports use raw retained
+pointers, not checked generation handles. C++ allocation/undo/query paths are not
+uniformly guarded against exceptions. Product error/lifetime safety therefore needs
+new evidence; no spike code or result is edited to hide those limitations.

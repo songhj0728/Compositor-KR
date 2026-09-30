@@ -2,14 +2,14 @@
 
 Phase 1 of [MULTIPLATFORM_MIGRATION.md](../../MULTIPLATFORM_MIGRATION.md): what the code is today, what it depends on,
 and which parts can be shared with a Windows build. Taken from Compositor-KR 1.4.1 on the `Compositor-Multiplatform`
-branch. Counts are lines of source, including comments.
+branch. Counts are historical lines of source, including comments; they are not a current complete model count. The corrected [type inventory](document-model-inventory.md) and [branch evidence](repository-evidence.md) take precedence for this review.
 
 ## Summary
 
 | Area | Size | Platform dependencies | Shareable today? |
 |---|---|---|---|
 | C pixel algorithms (`Compositor/Rendering/*.c`, `*.h`) | ~3,100 lines, 12 source files | None: C11 and the C library. Threads go through `ParallelFor.h` | **Yes.** Built for Windows and macOS by `CMakeLists.txt`, tested by `Tests/Pixels` |
-| Swift, geometry and logic only | ~1,400 lines, 10 files | Foundation and CoreGraphics *geometry* (`CGRect`, `CGPoint`), which Swift on Windows also has | Yes, if Windows uses Swift (see [windows-decisions.md](windows-decisions.md)) |
+| Swift, geometry and logic only | ~1,400 lines, 10 files | Foundation and CoreGraphics *geometry* (`CGRect`, `CGPoint`), available only through full Foundation in the recorded Windows Swift spike | Candidates after dependency review; no Core language selected (see [windows-decisions.md](windows-decisions.md)) |
 | Swift, CoreGraphics images | ~3,600 lines, 14 files (PSD, masks, tiled renderer, resizers, history, guides) | `CGImage`, `CGContext`, `CGColorSpace` — Apple only | After an image-buffer boundary |
 | Document model (`CanvasDocument`, `ImageLayer`) | in `EditorSession.swift` (1,008 lines) | The file imports SwiftUI; layers hold `CGImage`s | After it moves out and gets its own image type |
 | Core Image filters and effects | 20 files, ~5,500 lines, 75 `CIFilter`/`CIImage` uses | Core Image — no Windows equivalent | Needs a renderer boundary and a Windows implementation |
@@ -54,8 +54,7 @@ These import only Foundation, CoreGraphics geometry, or Observation, and use no 
 ## Main couplings to untangle
 
 1. **The document model lives with the UI.** `CanvasDocument` and `ImageLayer` are in `EditorSession.swift`, which
-   imports SwiftUI; layers carry `CGImage`s. Moving the model into its own file with no UI imports is the first Swift
-   boundary worth making, with no change in behavior.
+   imports SwiftUI; layers carry `CGImage`s. Separating data from UI helpers is a useful boundary, but removing one file import does not remove the stored Apple types. The dependency map starts with a smaller enum/helper seam before the document types.
 2. **Pixels are `CGImage`s everywhere.** Masks, PSD coding, the tiled renderer and the resizers read and write through
    `CGContext`. A small image-buffer type (width, height, row bytes, premultiplied RGBA) that the C code already
    speaks would let this logic run without CoreGraphics; the macOS side converts at the edge.

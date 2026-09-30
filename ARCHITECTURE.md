@@ -4,11 +4,15 @@
 
 This document describes the target architecture and the migration strategy. It is intentionally compatible with the current macOS-first implementation and does not claim that all target layers already exist.
 
+The current review selects neither Swift nor C++ for the shared Core. The semantic
+contract is [docs/core-api.md](docs/core-api.md); earlier final implementation choices
+from commit `841d09c` are superseded, with history preserved.
+
 ## Current state
 
 Compositor-KR is currently a macOS application using Swift, SwiftUI, AppKit, Metal/Core Image, and native pixel-processing code. The existing application is the reference implementation.
 
-The repository also contains established document/project concepts and a versioned .comp project format. The current documented project format is version 11.
+The repository also contains established document/project concepts and a versioned .comp project format. This checkout is synchronized with main `ccf062ed` via merge `db268a2b` and reads versions 1–12; saves select 11 or 12 from stored Layer Style fields. See [repository evidence](docs/multiplatform/repository-evidence.md) for imported behavior and validation limits. This synchronization introduces no independent format extension or Core migration.
 
 ## Target structure
 
@@ -59,9 +63,7 @@ Mac:
 - Metal/Core Image as appropriate.
 
 Windows:
-- DirectX 12 and/or Vulkan after evaluating the actual rendering requirements.
-  **Evaluated and decided (2026-09-30): Direct3D 11.1 with Direct2D, DirectWrite and WIC** — see
-  [docs/multiplatform/windows-architecture.md](docs/multiplatform/windows-architecture.md) §2.3.
+- GPU API remains undecided. Define the immutable renderer-facing snapshot first; no DirectX/Vulkan implementation is part of this documentation task. See [Windows boundary](docs/multiplatform/windows-architecture.md).
 
 Do not choose a Windows GPU API solely for theoretical portability. Evaluate canvas compositing, filters, effects, masks, brush operations, compute workloads, texture formats, synchronization, memory management, and tablet/input requirements.
 

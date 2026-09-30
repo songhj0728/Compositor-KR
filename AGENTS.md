@@ -8,8 +8,8 @@ If you've been asked to make or change an image in a `.comp` project, you don't 
 
 ## Working on the app itself
 
-- Build: open `Compositor.xcodeproj` and run the **Compositor** scheme, or
-  `xcodebuild -project Compositor.xcodeproj -scheme Compositor -destination 'platform=macOS' build`.
+- Build: open `Compositor-KR.xcodeproj` and run the **Compositor** scheme, or
+  `xcodebuild -project Compositor-KR.xcodeproj -scheme Compositor -destination 'platform=macOS' build`.
 - Tests: `CompositorTests` target (`xcodebuild ... test -only-testing:CompositorTests`). CI runs on every push.
 - The C pixel code in `Compositor/Rendering` is shared with Windows: `CMakeLists.txt` builds and tests it there too
   (see [BUILD.md](BUILD.md)). Keep it plain C11 — no blocks or Grand Central Dispatch; use `ParallelFor.h`.
