@@ -52,3 +52,15 @@ When bringing this main patch into `Compositor-Multiplatform`, inspect its exist
 CMake/shared C tests and platform boundaries first. Preserve Windows pixel/build
 work, reconcile shared semantics and format 13 validation, and run macOS plus
 Windows tests. Synchronizing that branch is a separate operation.
+
+## Responsive bevel previews
+
+- Canvas bevel previews first use a maximum side of 768 pixels, still within the
+  existing per-layer memory budget. After that result, 350 ms without a superseding
+  request allows refinement to the existing preview limit (up to 1536 pixels).
+- Only refined results enter the undo/redo result cache. Export is unchanged and
+  always renders at full resolution. No saved preference or format field is added.
+- Superseded work cooperatively cancels between distance-transform lines and bevel
+  shading rows so it releases the single worker for newer requests. Cancellation
+  is passed as a callback; the shared geometry contains no platform scheduling API.
+- Distance-transform line buffers are reused; the Euclidean geometry is unchanged.

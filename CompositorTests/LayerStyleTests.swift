@@ -15,6 +15,51 @@ struct LayerStyleTests {
         return try #require(context.makeImage())
     }
 
+    @Test func bevelPreviewRefinesAfterQuickFeedback() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 900, height: 900)
+        let image = try square(size: 900, inner: 500)
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Preview"))
+        let id = try #require(session.activeLayerID)
+        session.setEffects(LayerEffects(bevel: BevelEffect()), on: id)
+        let layer = try #require(session.document?.layers.first { $0.id == id })
+        let cache = EffectsPreviewCache()
+        cache.prepare(layers: [layer])
+        defer { cache.prepare(layers: []) }
+        var widths: [Int] = []
+        _ = cache.preview(for: layer, mask: nil, transform: layer.transform, maskPlacement: nil) {
+            if let result = cache.rendered(id) { widths.append(result.image.width) }
+        }
+        let deadline = ContinuousClock.now + .seconds(30)
+        while widths.count < 2 && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(widths.count == 2, "The quick preview must be followed by a refined result")
+        if widths.count == 2 {
+            #expect(widths[0] <= 768)
+            #expect(widths[1] > widths[0])
+            let expected = try LayerEffectsRenderer.render(image, mask: nil, effects: try #require(layer.effects))
+            #expect(widths[1] == expected.image.width, "Refinement restores the existing preview quality")
+            let actualData = try #require(cache.rendered(id)?.image.dataProvider?.data) as Data
+            let expectedData = try #require(expected.image.dataProvider?.data) as Data
+            #expect(actualData == expectedData, "The refined pixels must equal a direct render")
+        }
+    }
+
+    @Test func cancelledStyleRenderingDoesNotReturnAnImage() throws {
+        let image = try square()
+        var checks = 0
+        do {
+            _ = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: BevelEffect()), isCancelled: {
+                checks += 1
+                return checks >= 4
+            })
+            Issue.record("Cancelled rendering returned a completed image")
+        } catch is CancellationError {
+            #expect(checks == 4)
+        }
+    }
+
     /// The pixel's straight (not premultiplied) RGBA, 0–255.
     private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> (red: Int, green: Int, blue: Int, alpha: Int) {
         let context = try BrushRaster.copy(image)

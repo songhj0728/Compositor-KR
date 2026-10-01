@@ -108,23 +108,46 @@ final class EffectsPreviewCache {
         } ?? seeds[layer.id]
         entries[layer.id] = Entry(request: request, result: previous)
         let layerID = layer.id
+        let quickSide = min(768, request.sideLimit)
+        let paddedSide = CGFloat(max(image.width, image.height)) + 2 * LayerEffectsRenderer.margin(for: effects)
+        let quickLimit = effects.bevel != nil && paddedSide > CGFloat(quickSide - 8)
+            ? quickSide : request.sideLimit
         Self.worker.asyncAfter(deadline: .now() + 0.06) { [weak self] in
             guard !request.isCancelled else { return }
-            let result = autoreleasepool { try? Self.render(request) }
+            let result = autoreleasepool { try? Self.render(request, sideLimit: quickLimit) }
             guard !request.isCancelled else { return }
             Task { @MainActor [weak self] in
                 guard let self, self.entries[layerID]?.request.id == request.id else { return }
-                self.entries[layerID]?.result = result
-                if let result {
-                    self.seeds.removeValue(forKey: layerID)
-                    var kept = (self.recent[layerID] ?? []).filter { !$0.request.matches(request) }
-                    kept.append(Entry(request: request, result: result))
-                    self.recent[layerID] = Array(kept.suffix(Self.recentPerLayer))
-                }
+                self.publish(result, request: request, layerID: layerID, final: quickLimit == request.sideLimit)
                 completion()
+                guard quickLimit < request.sideLimit else { return }
+                // Give further input a chance to supersede this request before refining.
+                Self.worker.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                    guard !request.isCancelled else { return }
+                    let refined = autoreleasepool { try? Self.render(request) }
+                    guard !request.isCancelled else { return }
+                    Task { @MainActor [weak self] in
+                        guard let self, self.entries[layerID]?.request.id == request.id else { return }
+                        // A failed refinement should leave the successful quick preview visible.
+                        guard refined != nil else { return }
+                        self.publish(refined, request: request, layerID: layerID, final: true)
+                        completion()
+                    }
+                }
             }
         }
         return previous.map { ($0.image, $0.inset, $0.placement) }
+    }
+
+    private func publish(_ result: Result?, request: Request, layerID: UUID, final: Bool) {
+        entries[layerID]?.result = result
+        guard let result else { return }
+        seeds.removeValue(forKey: layerID)
+        // Only full-quality results may satisfy an undo/redo cache hit.
+        guard final else { return }
+        var kept = (recent[layerID] ?? []).filter { !$0.request.matches(request) }
+        kept.append(Entry(request: request, result: result))
+        recent[layerID] = Array(kept.suffix(Self.recentPerLayer))
     }
 
     /// Renders effects straight away, at the preview size: text being typed is small, and its effects shouldn't lag
@@ -135,11 +158,11 @@ final class EffectsPreviewCache {
         return (try? Self.render(request)).map { ($0.image, $0.inset) }
     }
 
-    nonisolated private static func render(_ request: Request) throws -> Result {
+    nonisolated private static func render(_ request: Request, sideLimit: Int? = nil) throws -> Result {
         let image = request.image
         let margin = LayerEffectsRenderer.margin(for: request.effects)
         // Include stroke/shadow margins in the budget; even a 500px stroke stays bounded.
-        let factor = min(1, CGFloat(request.sideLimit - 8) / (CGFloat(max(image.width, image.height)) + 2 * margin))
+        let factor = min(1, CGFloat((sideLimit ?? request.sideLimit) - 8) / (CGFloat(max(image.width, image.height)) + 2 * margin))
         let width = max(1, Int((CGFloat(image.width) * factor).rounded()))
         let height = max(1, Int((CGFloat(image.height) * factor).rounded()))
         func resized(_ source: CGImage, mask: Bool) throws -> CGImage {
@@ -155,7 +178,7 @@ final class EffectsPreviewCache {
         let pixels = factor == 1 ? image : try resized(image, mask: false)
         let mask = try request.mask.map { factor == 1 ? $0 : try resized($0, mask: true) }
         let effects = request.effects.scaled(by: factor)
-        let rendered = try LayerEffectsRenderer.render(pixels, mask: mask, effects: effects)
+        let rendered = try LayerEffectsRenderer.render(pixels, mask: mask, effects: effects, isCancelled: { request.isCancelled })
         return Result(image: rendered.image, inset: rendered.inset)
     }
 }
