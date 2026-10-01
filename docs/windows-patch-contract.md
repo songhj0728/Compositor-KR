@@ -95,6 +95,10 @@ Windows tests. Synchronizing that branch is a separate operation.
   an inner bevel into transparency. These are independently authored approximations
   of Adobe's documented controls, not claims of pixel-identical Photoshop output:
   https://helpx.adobe.com/africa/photoshop/desktop/create-manage-layers/apply-layer-effects/layer-style-effects-and-options-overview.html
+- For Smooth, filter signed silhouette distances before constructing height
+  (sigma min(4, max(1, size/4))). Keep original alpha for clipping. Normalize
+  highlight by 1-flat and shadow by 1+flat, where flat is sin(altitude); shadow
+  must retain gradation when a normal faces below the horizon rather than clipping.
 - Windows can implement the same worker and region contract with its existing image
   adapter. No Metal or Apple scheduler is required by the height/lighting core.
   Measure interactive performance in an optimized build, not a Swift -Onone build.

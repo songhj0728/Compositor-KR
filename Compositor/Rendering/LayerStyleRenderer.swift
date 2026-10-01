@@ -158,11 +158,17 @@ nonisolated enum LayerStyleRenderer {
         // Distance from the actual silhouette keeps the bevel at the edge. Blurring alpha here would
         // let opposite edges pull each other's slopes into the middle of a small shape.
         let distances = try BevelGeometry.edgeDistances(shape, width: width, height: height, isCancelled: isCancelled)
+        var signedDistances = shape.indices.map { (shape[$0] >= 0.5 ? 1 : Float(-1)) * distances[$0] }
+        // Filter the geometry before clipping it into a height profile. Filtering
+        // the clipped height alone leaves staircase normals deep within a wide bevel.
+        if bevel.technique == .smooth {
+            signedDistances = planes.gaussian(signedDistances, sigma: min(4, max(1, size / 4)))
+        }
         var heights = [Float](repeating: 0, count: count)
         let range = max(0.01, Float(bevel.contourRange) / 100)
         for i in heights.indices {
             if i % width == 0 && isCancelled() { throw CancellationError() }
-            let distance = (shape[i] >= 0.5 ? 1 : -1) * distances[i]
+            let distance = signedDistances[i]
             let profile: BevelGeometry.Profile
             switch bevel.style {
             case .innerBevel: profile = .inner
@@ -207,11 +213,9 @@ nonisolated enum LayerStyleRenderer {
                 let left = heights[y * width + max(0, x - 1)], right = heights[y * width + min(width - 1, x + 1)]
                 let up = heights[max(0, y - 1) * width + x], down = heights[min(height - 1, y + 1) * width + x]
                 let lit = BevelGeometry.lighting(slopeX: (right - left) / 2, slopeY: (down - up) / 2, light: light)
-                if lit > flat, flat < 1 {
-                    highlight[i] = bevel.gloss.value((lit - flat) / (1 - flat))
-                } else if lit < flat, flat > 0.001 {
-                    shadow[i] = bevel.gloss.value((flat - lit) / flat)
-                }
+                let shade = BevelGeometry.shading(lit: lit, flat: flat)
+                if shade.highlight > 0 { highlight[i] = bevel.gloss.value(shade.highlight) }
+                if shade.shadow > 0 { shadow[i] = bevel.gloss.value(shade.shadow) }
             }
         }
         // Soften acts on the lighting result, not the height/width of the bevel.
