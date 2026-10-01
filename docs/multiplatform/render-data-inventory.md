@@ -302,3 +302,17 @@ CI. Local C++/transport/sanitizer tests pass. Hidden dependency nodes are retain
 reorder classification never mutates source links; Fill Opacity stays independent.
 No app renderer input/path changes or pixel parity claims are made. Resource
 ownership, complete render descriptors and publication lifecycle remain blockers.
+
+## Resource ownership follow-up (baseline f6ce057)
+
+See [publication owner and resource ownership](render-resource-ownership.md). The owner candidate is
+now narrowed to EditorSession, with history supplying committed StateID and
+session-owned Generation covering accepted draft/cancel/commit publications.
+An independent synthetic experiment validates immutable shared leases and
+version/provenance rejection; native resource adapters and publication capture
+remain unvalidated. No product lifecycle owner or renderer API is implemented.
+Main has advanced to 0db97a3 (v13 locking, bevel and sparse/progressive preview
+changes); it was inspected, not merged. S0–S9 ordering is unchanged; this
+evidence does not complete S8 or authorize a renderer migration. Resolve sparse
+color/fill freezing, draft capture, native lifetime and cache quality provenance
+before the production adapter. Earlier CI statements retain their original scope.

@@ -157,3 +157,17 @@ model fixture tests/experiment CI await results. Local semantic/transport and
 ASan/UBSan checks pass. S0–S9 prerequisites remain unchanged; S8 renderer integration
 is not complete. No product geometry, resources, history or renderer was migrated.
 Rollback removes the spike, test-only adapter and its CI/boundary additions.
+
+## Resource ownership follow-up (baseline f6ce057)
+
+See [publication owner and resource ownership](render-resource-ownership.md). The owner candidate is
+now narrowed to EditorSession, with history supplying committed StateID and
+session-owned Generation covering accepted draft/cancel/commit publications.
+An independent synthetic experiment validates immutable shared leases and
+version/provenance rejection; native resource adapters and publication capture
+remain unvalidated. No product lifecycle owner or renderer API is implemented.
+Main has advanced to 0db97a3 (v13 locking, bevel and sparse/progressive preview
+changes); it was inspected, not merged. S0–S9 ordering is unchanged; this
+evidence does not complete S8 or authorize a renderer migration. Resolve sparse
+color/fill freezing, draft capture, native lifetime and cache quality provenance
+before the production adapter. Earlier CI statements retain their original scope.

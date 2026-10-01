@@ -493,3 +493,17 @@ confirmed baseline Verify #59 succeeds; this supersedes the earlier inaccessible
 Mac-gate status, but does not validate new prototype code or identify its run SHA.
 Explicit tokens do not prove a production publisher exists. Resource payloads,
 styles/masks/adjustment execution and final render extents remain unvalidated.
+
+## Resource ownership follow-up (baseline f6ce057)
+
+See [publication owner and resource ownership](multiplatform/render-resource-ownership.md). The owner candidate is
+now narrowed to EditorSession, with history supplying committed StateID and
+session-owned Generation covering accepted draft/cancel/commit publications.
+An independent synthetic experiment validates immutable shared leases and
+version/provenance rejection; native resource adapters and publication capture
+remain unvalidated. No product lifecycle owner or renderer API is implemented.
+Main has advanced to 0db97a3 (v13 locking, bevel and sparse/progressive preview
+changes); it was inspected, not merged. S0–S9 ordering is unchanged; this
+evidence does not complete S8 or authorize a renderer migration. Resolve sparse
+color/fill freezing, draft capture, native lifetime and cache quality provenance
+before the production adapter. Earlier CI statements retain their original scope.
