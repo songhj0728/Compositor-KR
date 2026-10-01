@@ -137,30 +137,34 @@ extension EditorSession {
     }
 }
 
-
 extension EditorSession {
     func layerIsLocked(_ id: UUID) -> Bool {
         guard let document else { return false }
         let layers = Dictionary(uniqueKeysWithValues: document.layers.map { ($0.id, $0) })
-        var current: UUID? = id
-        for _ in 0..<64 {
-            guard let key = current, let layer = layers[key] else { return false }
-            if layer.isLocked { return true }
-            current = layer.parentID
-        }
-        return false
+        return LayerLockRules.isLocked(id) { key in layers[key].map { ($0.isLocked, $0.parentID) } }
     }
     var selectionContainsLockedLayers: Bool {
         guard let document else { return false }
-        return document.layers.contains { layer in
-            (selectedLayerIDs.contains(layer.id) || groupTransformMembers.contains { $0.id == layer.id })
-                && layerIsLocked(layer.id)
+        let layers = Dictionary(uniqueKeysWithValues: document.layers.map { ($0.id, $0) })
+        let targets = selectedLayerIDs.union(groupTransformMembers.map(\.id))
+        return targets.contains { id in
+            LayerLockRules.isLocked(id) { key in layers[key].map { ($0.isLocked, $0.parentID) } }
+        }
+    }
+    var canToggleSelectedLayerLock: Bool {
+        guard canSelectLayers, let document, !selectedLayerIDs.isEmpty else { return false }
+        let layers = Dictionary(uniqueKeysWithValues: document.layers.map { ($0.id, $0) })
+        return selectedLayerIDs.allSatisfy { id in
+            guard let parent = layers[id]?.parentID else { return true }
+            return !LayerLockRules.isLocked(parent) { key in
+                layers[key].map { ($0.isLocked && !selectedLayerIDs.contains(key), $0.parentID) }
+            }
         }
     }
     func toggleSelectedLayerLock() {
-        guard canSelectLayers, let document, !selectedLayerIDs.isEmpty else { return }
+        guard canToggleSelectedLayerLock, let document else { return }
         let indices = document.layers.indices.filter { selectedLayerIDs.contains(document.layers[$0].id) }
-        let lock = !indices.allSatisfy { document.layers[$0].isLocked }
+        let lock = LayerLockRules.toggledValue(indices.map { document.layers[$0].isLocked })
         finishOpacityEdit()
         beginEdit("Layer Lock")
         for index in indices { self.document?.layers[index].isLocked = lock }

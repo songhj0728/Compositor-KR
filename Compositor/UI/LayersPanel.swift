@@ -25,7 +25,7 @@ struct LayersPanel: View {
                 .buttonStyle(.borderless)
                 .help("Lock or unlock selected layers")
                 .accessibilityLabel("Lock or unlock selected layers")
-                .disabled(!session.canSelectLayers || session.selectedLayerIDs.isEmpty)
+                .disabled(!session.canToggleSelectedLayerLock)
                 Spacer()
             }.padding(.horizontal, 12).padding(.bottom, 8)
             Divider()
@@ -98,4 +98,3 @@ extension View {
             .contentShape(Rectangle())
     }
 }
-

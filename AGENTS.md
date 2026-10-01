@@ -13,3 +13,9 @@ If you've been asked to make or change an image in a `.comp` project, you don't 
 - Match the surrounding code: its naming, its comment style and density.
 - American spelling in code, comments and UI ("color", not "colour").
 - The project file format is described in [docs/project-format.md](docs/project-format.md). A change to what's saved means a format version bump there and in `ProjectManifest.current`.
+
+## Windows portability
+
+- Keep new document rules and pixel algorithms independent of AppKit, SwiftUI, Core Graphics, Metal and Windows UI/GPU APIs whenever practical. `Compositor/Core` holds small pure algorithms; existing platform sessions/renderers adapt them.
+- Keep macOS working. Do not rewrite the app or choose a Windows UI/GPU/Core language as part of an unrelated feature patch.
+- Document shared behavior and project-format changes with tests that a Windows implementation can reproduce. Preserve work on `Compositor-Multiplatform` when synchronizing it; inspect conflicts before merging.

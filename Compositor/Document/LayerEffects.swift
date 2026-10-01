@@ -275,7 +275,9 @@ nonisolated struct BevelEffect: Codable, Equatable, Sendable {
     /// How far outside the layer's edge the bevel reaches.
     var outerReach: CGFloat { style == .innerBevel ? 0 : size + soften * 2 + 2 }
     /// Leave a flat center even on small layers; opposite edge slopes must not meet in the middle.
-    func size(clampedTo layer: CGSize) -> CGFloat { min(size, max(1, min(layer.width, layer.height) / 4)) }
+    func size(clampedTo layer: CGSize) -> CGFloat {
+        CGFloat(BevelGeometry.clampedSize(Double(size), width: Double(layer.width), height: Double(layer.height)))
+    }
     var isValid: Bool {
         [depth, size, soften, angle, altitude, contourRange, textureScale, textureDepth].allSatisfy(\.isFinite)
             && (1...1000).contains(depth) && (0...250).contains(size) && (0...16).contains(soften)

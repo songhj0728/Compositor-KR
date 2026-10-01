@@ -208,6 +208,26 @@ struct LayerStyleTests {
         #expect(reopened.canEditLayers)
     }
 
+    @Test func lockedFolderProtectsChildrenUntilTheFolderIsUnlocked() throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60)
+        let image = try square()
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Square"))
+        let child = try #require(session.activeLayerID)
+        session.groupSelectedLayers()
+        let folder = try #require(session.activeLayerID)
+        session.toggleSelectedLayerLock()
+        session.selectLayer(child)
+        #expect(session.layerIsLocked(child))
+        #expect(!session.canToggleSelectedLayerLock && !session.canEditLayers)
+        session.toggleSelectedLayerLock()
+        #expect(session.activeLayer?.isLocked == false)
+        session.selectLayer(folder)
+        session.toggleSelectedLayerLock()
+        session.selectLayer(child)
+        #expect(session.canToggleSelectedLayerLock && session.canEditLayers)
+    }
+
     @Test func satinAndPatternDrawOnlyInsideTheShape() throws {
         let image = try square()
         var effects = LayerEffects(satin: SatinEffect())

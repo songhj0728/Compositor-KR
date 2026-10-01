@@ -1,0 +1,29 @@
+// Compile with Compositor/Core/*.swift. This harness uses only the Swift standard library.
+let locks: [Int: (locked: Bool, parent: Int?)] = [
+    1: (true, nil), 2: (false, 1), 3: (false, 2), 4: (false, nil)
+]
+precondition(LayerLockRules.isLocked(3) { locks[$0] })
+precondition(!LayerLockRules.isLocked(4) { locks[$0] })
+precondition(LayerLockRules.isLocked(1) { id in (false, id) })
+precondition(LayerLockRules.toggledValue([false, true]))
+precondition(!LayerLockRules.toggledValue([true, true]))
+precondition(BevelGeometry.clampedSize(250, width: 24, height: 24) == 6)
+precondition(BevelGeometry.clampedSize(0, width: 24, height: 24) == 0)
+precondition(BevelGeometry.clampedSize(2, width: 24, height: 24) == 2)
+let square: [Float] = [
+    0, 0, 0, 0, 0,
+    0, 1, 1, 1, 0,
+    0, 1, 1, 1, 0,
+    0, 1, 1, 1, 0,
+    0, 0, 0, 0, 0
+]
+let distances = BevelGeometry.edgeDistances(square, width: 5, height: 5)
+precondition(distances[12] == 1.5)
+precondition(distances[6] == 0.5 && distances[0] == 1.5)
+for y in 0..<5 {
+    for x in 0..<5 {
+        precondition(distances[y * 5 + x] == distances[y * 5 + 4 - x])
+        precondition(distances[y * 5 + x] == distances[(4 - y) * 5 + x])
+    }
+}
+print("Portable core tests passed: inherited locks, cycles, toggles, bevel limits and silhouette symmetry")
