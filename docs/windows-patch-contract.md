@@ -86,7 +86,8 @@ Windows tests. Synchronizing that branch is a separate operation.
   effects into the committed canvas. On commit, finish pending live work before
   handing its result to the normal preview cache.
 - The standard-library core defines four height profiles and diffuse lighting.
-  Smooth uses a slight height-transition blur (sigma 0.75); Chisel Hard uses a
+  Smooth rounds normalized height with h*h*(3-2*h), then filters pixel-scale
+  distance fluctuations with sigma min(2, max(0.75, size/6)); Chisel Hard uses a
   straight distance ramp; Chisel Soft blurs the ramp (sigma 1.5). Depth scales
   height before normals, and gloss maps lit/shaded intensity after lighting.
 - Soften blurs highlight/shadow planes (sigma = soften / 2), then clips them to the

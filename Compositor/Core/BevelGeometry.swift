@@ -6,6 +6,13 @@ nonisolated enum BevelGeometry {
 
     enum Profile: Sendable { case inner, outer, emboss, pillow }
 
+    /// A rounded shoulder and foot keep lighting continuous at both ends of a
+    /// smooth bevel, without moving either end of its distance-defined width.
+    static func roundedHeight(_ height: Float) -> Float {
+        let h = min(1, max(0, height))
+        return h * h * (3 - 2 * h)
+    }
+
     /// Unit height before contour, technique smoothing and depth. Kept independent
     /// of platform image APIs so display, export and Windows use the same surface.
     static func height(distance: Float, size: Float, profile: Profile) -> Float {
