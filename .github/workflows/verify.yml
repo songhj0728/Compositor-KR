@@ -35,6 +35,9 @@ jobs:
       - name: Check render projection experiment
         run: CXX=clang++ SANITIZE=1 bash Spikes/RenderSnapshot/run.sh
 
+      - name: Check render resource ownership experiment
+        run: CXX=clang++ SANITIZE=1 bash Spikes/RenderResources/run.sh
+
       - name: Resolve Swift packages
         run: >
           xcodebuild -resolvePackageDependencies

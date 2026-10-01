@@ -17,6 +17,7 @@ failed = False
 paths = [root / f"Compositor/Document/{name}.swift" for name in ("FilterKind", "TextAlignment")]
 paths += sorted((root / "Compositor/Core").rglob("*.swift"))
 paths.append(root / "Spikes/RenderSnapshot/projection.hpp")
+paths.append(root / "Spikes/RenderResources/resources.hpp")
 for path in paths:
     source = path.read_text(encoding="utf-8")
     # Ignore literal strings and comments so documentation and raw values are not dependencies.
