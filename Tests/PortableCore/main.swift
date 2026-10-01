@@ -60,3 +60,13 @@ do {
 let narrow = BevelGeometry.edgeDistances([0, 1, 1, 0], width: 1, height: 4)
 precondition(narrow == [0.5, 0.5, 0.5, 0.5])
 print("Cooperative cancellation and single-column geometry passed")
+
+precondition(BevelGeometry.height(distance: -2, size: 4, profile: .inner) == 0)
+precondition(BevelGeometry.height(distance: 2, size: 4, profile: .inner) == 0.5)
+precondition(BevelGeometry.height(distance: 8, size: 4, profile: .inner) == 1)
+precondition(BevelGeometry.height(distance: -2, size: 4, profile: .outer) == 0.5)
+precondition(BevelGeometry.height(distance: 0, size: 4, profile: .emboss) == 0.5)
+precondition(BevelGeometry.height(distance: -2, size: 4, profile: .pillow)
+    == BevelGeometry.height(distance: 2, size: 4, profile: .pillow))
+precondition(BevelGeometry.lighting(slopeX: 0, slopeY: 0, light: SIMD3(0, 0, 1)) == 1)
+print("Shared bevel profiles and flat-surface lighting passed")

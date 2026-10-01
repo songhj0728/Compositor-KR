@@ -122,6 +122,99 @@ struct LayerStyleTests {
         #expect(try pixel(hidden, hidden.width / 2, hidden.height / 2).alpha == 0)
     }
 
+    @Test func liveBevelUpdatesBeforeMouseUpAndCoalescesToLatestMask() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 900, height: 900)
+        let image = try square(size: 900, inner: 800)
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Live bevel"))
+        let id = try #require(session.activeLayerID)
+        var bevel = BevelEffect()
+        bevel.size = 8
+        bevel.soften = 2
+        let effects = LayerEffects(bevel: bevel)
+        session.setEffects(effects, on: id)
+        session.addLayerMask()
+        session.selectTool(.brush)
+        session.maskPaintWhite = false
+        session.brushSettings.diameter = 60
+        let seed = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        var completions = 0
+        let surface = try #require(LayerEffectsSurface(layerID: id, effects: effects,
+            grid: CGSize(width: 900, height: 900), sourceRect: CGRect(x: 0, y: 0, width: 900, height: 900),
+            seed: seed, completion: { completions += 1 }))
+        session.beginBrush(at: CGPoint(x: 350, y: 400))
+        let stroke = try #require(session.brushStroke)
+        func update() {
+            let patches = stroke.patches
+            surface.update(base: image, patches: [], mask: nil,
+                maskStroke: .init(patches: patches, toGrid: .identity) { region in
+                    guard let context = try? BrushRaster.context(width: Int(region.width), height: Int(region.height), mask: true) else { return nil }
+                    context.setFillColor(gray: 1, alpha: 1)
+                    context.fill(CGRect(origin: .zero, size: region.size))
+                    context.translateBy(x: -region.minX, y: -region.minY)
+                    for patch in patches { BrushRaster.draw(patch.image, in: patch.rect, mask: true, context: context) }
+                    return context.makeImage()
+                })
+        }
+        let first = ContinuousClock.now
+        update()
+        let deadline = ContinuousClock.now + .seconds(30)
+        while completions == 0 && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        #expect(completions > 0 && session.brushStroke === stroke, "Effects must update while the stroke is still active")
+        print("Live bevel first region: \(first.duration(to: .now))")
+        let submit = ContinuousClock.now
+        for x in stride(from: 370, through: 690, by: 40) {
+            session.continueBrush(at: CGPoint(x: x, y: 400))
+            update()
+        }
+        print("Live bevel 9 pointer samples submitted: \(submit.duration(to: .now))")
+        while surface.isRendering && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        #expect(!surface.isRendering)
+        let region = try #require(surface.lastRenderedRegion)
+        #expect(region.width * region.height < 900 * 900 / 2, "A small stroke must not rebuild the whole layer")
+        #expect(session.finishBrushImmediately())
+        let mask = try #require(session.activeLayer?.mask?.enabledImage)
+        let expected = try LayerEffectsRenderer.render(image, mask: mask, effects: effects)
+        let actual = try #require(surface.image)
+        let actualData = try #require(actual.dataProvider?.data) as Data
+        let expectedData = try #require(expected.image.dataProvider?.data) as Data
+        #expect(actualData.count == expectedData.count)
+        let differences = zip(actualData, expectedData).map { abs(Int($0) - Int($1)) }
+        #expect(differences.max()! <= 2, "Live regions must match the latest full-resolution mask effects")
+    }
+
+    @Test func softenBlursShadingWithoutExpandingInnerBevelCoverage() throws {
+        let image = try square(size: 100, inner: 70)
+        var bevel = BevelEffect()
+        bevel.size = 12
+        bevel.soften = 8
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
+        #expect(try pixel(result.image, 3, 3).alpha == 0)
+        #expect(try pixel(result.image, Int(result.inset) + 50, Int(result.inset) + 50).red == 255)
+    }
+
+    @Test func roundHoleBevelKeepsItsSilhouette() throws {
+        let source = try BrushRaster.context(width: 300, height: 200, mask: false)
+        source.setFillColor(CGColor(srgbRed: 0.1, green: 0.55, blue: 1, alpha: 1))
+        source.addPath(CGPath(roundedRect: CGRect(x: 20, y: 20, width: 260, height: 160), cornerWidth: 30, cornerHeight: 30, transform: nil))
+        source.addEllipse(in: CGRect(x: 105, y: 55, width: 90, height: 90))
+        source.fillPath(using: .evenOdd)
+        var bevel = BevelEffect()
+        bevel.size = 24
+        bevel.depth = 150
+        bevel.soften = 2
+        let rendered = try LayerEffectsRenderer.render(try #require(source.makeImage()), mask: nil, effects: LayerEffects(bevel: bevel))
+        #expect(try pixel(rendered.image, Int(rendered.inset) + 150, Int(rendered.inset) + 100).alpha == 0)
+        let png = try #require(NSBitmapImageRep(cgImage: rendered.image).representation(using: .png, properties: [:]))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("compositor-round-bevel-qa.png")
+        try png.write(to: url)
+        print("Bevel visual QA: \(url.path)")
+    }
+
     @Test func cancelledStyleRenderingDoesNotReturnAnImage() throws {
         let image = try square()
         var checks = 0
