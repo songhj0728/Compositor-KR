@@ -4,41 +4,59 @@ nonisolated enum BevelGeometry {
         min(requested, max(1, min(width, height) / 4))
     }
 
-    /// An eight-neighbor distance to the silhouette, in two linear passes. Boundary pixels start
-    /// half a pixel from the edge, including partially covered pixels on an antialiased outline.
+    /// Exact Euclidean distances to opposite coverage, with a half-pixel edge correction.
+    /// Separable lower envelopes of parabolas keep the work linear in the pixel count.
     static func edgeDistances(_ shape: [Float], width: Int, height: Int) -> [Float] {
         precondition(width > 0 && height > 0 && shape.count == width * height)
-        let diagonal: Float = Float(2).squareRoot()
-        var distances = [Float](repeating: Float(width + height), count: shape.count)
-        for y in 0..<height {
+        let limit = Double(width) * Double(width) + Double(height) * Double(height) + 1
+        func transform(_ input: [Double]) -> [Double] {
+            let count = input.count
+            var sites = [Int](repeating: 0, count: count)
+            var cuts = [Double](repeating: 0, count: count + 1)
+            var last = 0
+            cuts[0] = -.infinity
+            cuts[1] = .infinity
+            for q in 1..<count {
+                var crossing: Double
+                repeat {
+                    let v = sites[last]
+                    crossing = ((input[q] + Double(q) * Double(q))
+                        - (input[v] + Double(v) * Double(v))) / Double(2 * (q - v))
+                    if crossing > cuts[last] { break }
+                    last -= 1
+                } while last >= 0
+                last += 1
+                sites[last] = q
+                cuts[last] = crossing
+                cuts[last + 1] = .infinity
+            }
+            var result = [Double](repeating: 0, count: count)
+            last = 0
+            for q in 0..<count {
+                while cuts[last + 1] < Double(q) { last += 1 }
+                let delta = Double(q - sites[last])
+                result[q] = delta * delta + input[sites[last]]
+            }
+            return result
+        }
+        func squaredDistances(toInside: Bool) -> [Double] {
+            var field = shape.map { ($0 >= 0.5) == toInside ? 0.0 : limit }
+            for y in 0..<height {
+                let row = transform(Array(field[(y * width)..<((y + 1) * width)]))
+                field.replaceSubrange((y * width)..<((y + 1) * width), with: row)
+            }
             for x in 0..<width {
-                let i = y * width + x, inside = shape[i] >= 0.5
-                if (x > 0 && (shape[i - 1] >= 0.5) != inside)
-                    || (x + 1 < width && (shape[i + 1] >= 0.5) != inside)
-                    || (y > 0 && (shape[i - width] >= 0.5) != inside)
-                    || (y + 1 < height && (shape[i + width] >= 0.5) != inside) {
-                    distances[i] = max(0.01, abs(shape[i] - 0.5))
-                }
-                if x > 0 { distances[i] = min(distances[i], distances[i - 1] + 1) }
-                if y > 0 {
-                    distances[i] = min(distances[i], distances[i - width] + 1)
-                    if x > 0 { distances[i] = min(distances[i], distances[i - width - 1] + diagonal) }
-                    if x + 1 < width { distances[i] = min(distances[i], distances[i - width + 1] + diagonal) }
-                }
+                let column = transform((0..<height).map { field[$0 * width + x] })
+                for y in 0..<height { field[y * width + x] = column[y] }
             }
+            return field
         }
-        for y in stride(from: height - 1, through: 0, by: -1) {
-            for x in stride(from: width - 1, through: 0, by: -1) {
-                let i = y * width + x
-                if x + 1 < width { distances[i] = min(distances[i], distances[i + 1] + 1) }
-                if y + 1 < height {
-                    distances[i] = min(distances[i], distances[i + width] + 1)
-                    if x > 0 { distances[i] = min(distances[i], distances[i + width - 1] + diagonal) }
-                    if x + 1 < width { distances[i] = min(distances[i], distances[i + width + 1] + diagonal) }
-                }
-            }
+        let toInside = squaredDistances(toInside: true)
+        let toOutside = squaredDistances(toInside: false)
+        return shape.indices.map { i in
+            let squared = shape[i] >= 0.5 ? toOutside[i] : toInside[i]
+            // Antialiased boundary coverage shifts the edge within its pixel.
+            return max(0.01, Float(squared.squareRoot()) - 1 + abs(shape[i] - 0.5))
         }
-        return distances
     }
-
 }
