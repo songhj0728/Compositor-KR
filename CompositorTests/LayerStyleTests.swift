@@ -228,6 +228,21 @@ struct LayerStyleTests {
         #expect(session.canToggleSelectedLayerLock && session.canEditLayers)
     }
 
+    @Test func lockedLayerDoesNotBlockCreatingAnotherLayer() throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60, emptyLayer: true)
+        let locked = try #require(session.activeLayerID)
+        session.toggleSelectedLayerLock()
+        session.addBlankLayer()
+        #expect(session.document?.layers.count == 2)
+        #expect(session.activeLayerID != locked && session.canEditLayers)
+        session.selectLayer(locked)
+        session.addAdjustment(.invert)
+        #expect(session.document?.layers.count == 3)
+        #expect(session.activeLayer?.adjustment?.kind == .invert)
+        #expect(session.layerIsLocked(locked))
+    }
+
     @Test func satinAndPatternDrawOnlyInsideTheShape() throws {
         let image = try square()
         var effects = LayerEffects(satin: SatinEffect())

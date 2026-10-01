@@ -9017,6 +9017,26 @@
           }
         }
       }
+    },
+    "New %@ Adjustment" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 조정 레이어 만들기"
+          }
+        }
+      }
+    },
+    "Edit %@ Adjustment" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 조정 레이어 편집"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

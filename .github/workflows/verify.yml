@@ -25,6 +25,11 @@ jobs:
       - name: Select Xcode 26.6
         run: sudo xcode-select -s /Applications/Xcode_26.6.app
 
+      - name: Test portable core rules
+        run: |
+          swiftc Compositor/Core/BevelGeometry.swift Compositor/Core/LayerLockRules.swift Tests/PortableCore/main.swift -o "$RUNNER_TEMP/compositor-core-tests"
+          "$RUNNER_TEMP/compositor-core-tests"
+
       - name: Resolve Swift packages
         run: >
           xcodebuild -resolvePackageDependencies
