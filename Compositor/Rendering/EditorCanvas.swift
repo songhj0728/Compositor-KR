@@ -1285,8 +1285,10 @@ final class CanvasView: NSView {
         defer { snapshotting = false }
         super.cacheDisplay(in: rect, to: bitmapImageRep)
     }
+    // Bevel mask edits show coverage during the stroke; the preview worker rebuilds effects after commit.
     private func strokeSurface(layer: ImageLayer, stroke: BrushStroke, mask: CGImage?) -> LayerEffectsSurface? {
-        guard let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid else { return nil }
+        guard let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid,
+              !(stroke.isMask && effects.bevel != nil) else { return nil }
         let grid = CGSize(width: stroke.width, height: stroke.height)
         if strokeSurface?.matches(layerID: layer.id, effects: effects, grid: grid, sourceRect: stroke.sourceRect) != true {
             strokeSurface = LayerEffectsSurface(layerID: layer.id, effects: effects, grid: grid, sourceRect: stroke.sourceRect)
@@ -1316,7 +1318,8 @@ final class CanvasView: NSView {
     /// The effects surface for a mask on its own placement being painted. Its stroke paints in the mask's grid; the
     /// surface stays in the layer's, and takes the mask from `preview`, the stroke's mask resampled into that grid.
     private func placedMaskSurface(layer: ImageLayer, stroke: BrushStroke, placement: LayerTransform, preview: CGImage) -> LayerEffectsSurface? {
-        guard let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid, let base = stroke.layer.asset?.image else { return nil }
+        guard let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid, effects.bevel == nil,
+              let base = stroke.layer.asset?.image else { return nil }
         let grid = CGSize(width: base.width, height: base.height)
         let full = CGRect(origin: .zero, size: grid)
         if strokeSurface?.matches(layerID: layer.id, effects: effects, grid: grid, sourceRect: full) != true {
@@ -1673,12 +1676,13 @@ final class CanvasView: NSView {
     }
 
     /// The layer a press that misses the transform handles drags, and whether it was picked from under
-    /// the pointer. Command flips Auto Select while it's held, as in Photoshop: with Auto Select off it picks
-    /// the layer under the pointer; with it on, it keeps the active layer. Otherwise the active layer, unless
-    /// auto-select finds another layer there — including one stacked above a selected background that also
-    /// contains the press. A press on empty canvas still drags the active layer: it need not land inside the layer's bounds.
+    /// the pointer. Command flips Auto Select while it's held, as in Photoshop: with Auto Select on it picks
+    /// the layer under the pointer — including one stacked above a selected background that also contains the
+    /// press — and a press that lands on none at all clears the selection instead. With Auto Select off, a press
+    /// keeps dragging the active layer wherever it lands, empty canvas included, so it need not land inside the
+    /// layer's own bounds. Nil when nothing is selected and the press found nothing to select either.
     private func transformPressLayer(at pixel: CGPoint, flags: NSEvent.ModifierFlags) -> (id: UUID, picked: Bool)? {
-        guard session.canEditLayers || session.transformEdit != nil, let document = session.document else { return nil }
+        guard session.canSelectLayers || session.transformEdit != nil, let document = session.document else { return nil }
         let underPointer = document.renderLayers.reversed().first { $0.asset != nil && $0.transform.contains(pixel) }?.id
         let active = session.activeLayer.flatMap { layer in
             layer.asset != nil && !layer.isGroup && document.effectiveVisibleIDs.contains(layer.id) ? layer : nil
@@ -1693,7 +1697,7 @@ final class CanvasView: NSView {
         // unless auto-select finds a layer there.
         if session.transformsAsGroup, let id = session.activeLayerID {
             let box = session.transformEdit?.draft ?? session.groupTransformBox
-            if box?.contains(pixel) == true || !(picks && autoSelect) || underPointer == nil { return (id, false) }
+            if box?.contains(pixel) == true || !(picks && autoSelect) { return (id, false) }
         }
         if let active, session.editedTransform(for: active).contains(pixel) {
             // `renderLayers` is bottom to top, so a later index is painted above. Prefer that layer
@@ -1708,6 +1712,10 @@ final class CanvasView: NSView {
             return (active.id, false)
         }
         if picks, autoSelect, let underPointer { return (underPointer, true) }
+        // With Auto Select on (or Command flipping it on for this click) and nothing at all under the pointer, the
+        // click clears the selection instead of falling back to whatever was active — a press on empty canvas no
+        // longer silently drags a layer it didn't land anywhere near.
+        if picks, autoSelect { return nil }
         return active.map { ($0.id, false) }
     }
     /// Right-drag with a brush tool: left and right resize the brush from its size at the press, or with Shift
@@ -2532,18 +2540,24 @@ final class CanvasView: NSView {
     }
 
     private func beginTransformDrag(at point: CGPoint, modifiers: NSEvent.ModifierFlags) {
-        guard session.canEditLayers || session.transformEdit != nil, let document = session.document else { return }
+        guard session.canSelectLayers || session.transformEdit != nil, let document = session.document else { return }
         let pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
         var mode = transformOverlay.geometry?.hit(point)
-        if mode == nil, let target = transformPressLayer(at: pixel, flags: modifiers) {
-            // Cmd-Shift-click adds the layer under the pointer to the selection (and takes it out again); Cmd-click
-            // on its own selects just that one.
-            if target.picked, modifiers.contains(.command), modifiers.contains(.shift) {
-                session.extendSelection(with: target.id)
-            } else if target.picked {
-                session.selectLayer(target.id)
+        if mode == nil {
+            if let target = transformPressLayer(at: pixel, flags: modifiers) {
+                // Cmd-Shift-click adds the layer under the pointer to the selection (and takes it out again); Cmd-click
+                // on its own selects just that one.
+                if target.picked, modifiers.contains(.command), modifiers.contains(.shift) {
+                    session.extendSelection(with: target.id)
+                } else if target.picked {
+                    session.selectLayer(target.id)
+                }
+                mode = .move
+            } else {
+                // Nothing under the pointer and nothing to fall back to (see `transformPressLayer`): the click
+                // deselects rather than leaving a layer selected that it neither hit nor picked.
+                session.selectLayer(nil)
             }
-            mode = .move
         }
         guard var mode else { return }
         if case .move = mode { duplicatesTransformOnDrag = modifiers.contains(.option) }

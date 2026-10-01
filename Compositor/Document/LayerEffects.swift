@@ -274,6 +274,10 @@ nonisolated struct BevelEffect: Codable, Equatable, Sendable {
     var hasTexture: Bool { usesTexture ?? false }
     /// How far outside the layer's edge the bevel reaches.
     var outerReach: CGFloat { style == .innerBevel ? 0 : size + soften * 2 + 2 }
+    /// Leave a flat center even on small layers; opposite edge slopes must not meet in the middle.
+    func size(clampedTo layer: CGSize) -> CGFloat {
+        CGFloat(BevelGeometry.clampedSize(Double(size), width: Double(layer.width), height: Double(layer.height)))
+    }
     var isValid: Bool {
         [depth, size, soften, angle, altitude, contourRange, textureScale, textureDepth].allSatisfy(\.isFinite)
             && (1...1000).contains(depth) && (0...250).contains(size) && (0...16).contains(soften)
@@ -876,7 +880,8 @@ nonisolated enum LayerEffectsRenderer {
             let padded = try BrushRaster.context(width: width, height: height, mask: false)
             BrushRaster.draw(shown, in: placed, mask: false, context: padded)
             guard let room = padded.makeImage() else { throw ExportError.render }
-            return (try LayerStyleRenderer.render(room, effects: effects, origin: CGPoint(x: -inset, y: -inset)), inset)
+            return (try LayerStyleRenderer.render(room, effects: effects, origin: CGPoint(x: -inset, y: -inset),
+                                                  fullSize: CGSize(width: image.width, height: image.height)), inset)
         }
         if let metal = MetalLayerEffects.shared {
             // The pixels with room around them, then the stroke and shadow drawn on the GPU.

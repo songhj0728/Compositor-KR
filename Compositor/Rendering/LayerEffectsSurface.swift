@@ -94,7 +94,8 @@ import CoreImage
         // Photoshop's Layer Style past the GPU pass's reach, drawn in floating point; a pattern keeps its place.
         let styled = effects.needsStyleRenderer
             ? try? LayerStyleRenderer.render(pixels, effects: effects,
-                                             origin: CGPoint(x: outer.minX - sourceRect.minX, y: outer.minY - sourceRect.minY))
+                                             origin: CGPoint(x: outer.minX - sourceRect.minX, y: outer.minY - sourceRect.minY),
+                                             fullSize: sourceRect.size)
             : nil
         // In one pass on the GPU when it is available: the outline's reach and the shadow's blur are what cost.
         if let built = styled ?? (effects.needsStyleRenderer ? nil : MetalLayerEffects.shared.flatMap({ try? $0.render(pixels, effects: effects) })) {
