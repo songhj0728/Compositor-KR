@@ -70,3 +70,12 @@ precondition(BevelGeometry.height(distance: -2, size: 4, profile: .pillow)
     == BevelGeometry.height(distance: 2, size: 4, profile: .pillow))
 precondition(BevelGeometry.lighting(slopeX: 0, slopeY: 0, light: SIMD3(0, 0, 1)) == 1)
 print("Shared bevel profiles and flat-surface lighting passed")
+
+precondition(BevelGeometry.roundedHeight(0) == 0)
+precondition(BevelGeometry.roundedHeight(1) == 1)
+precondition(BevelGeometry.roundedHeight(0.5) == 0.5)
+let shoulderSlope = BevelGeometry.roundedHeight(0.01) / 0.01
+let middleSlope = (BevelGeometry.roundedHeight(0.51) - BevelGeometry.roundedHeight(0.49)) / 0.02
+precondition(shoulderSlope < 0.04 && middleSlope > 1.4)
+precondition(abs((1 - BevelGeometry.roundedHeight(0.99)) / 0.01 - shoulderSlope) < 0.0001)
+print("Smooth bevel endpoints and tapered slopes passed")

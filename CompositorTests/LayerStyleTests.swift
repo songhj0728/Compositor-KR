@@ -187,6 +187,22 @@ struct LayerStyleTests {
         #expect(differences.max()! <= 2, "Live regions must match the latest full-resolution mask effects")
     }
 
+    @Test func smoothBevelLightingTapersAtBothEndsOfItsWidth() throws {
+        let width = 160, height = 80
+        let shape: [Float] = (0..<(width * height)).map { ($0 % width >= 20 && $0 % width < 140) ? 1 : 0 }
+        var bevel = BevelEffect()
+        bevel.size = 24
+        bevel.angle = 180
+        bevel.altitude = 30
+        let planes = LayerStyleRenderer.Planes(width: width, height: height)
+        let shading = try LayerStyleRenderer.bevelShading(bevel, shape: shape, planes: planes, origin: .zero, fullSize: CGSize(width: width, height: height))
+        let middle = 40 * width
+        #expect(shading.highlight[middle + 22] < shading.highlight[middle + 31])
+        #expect(shading.highlight[middle + 42] < shading.highlight[middle + 31])
+        #expect(shading.highlight[middle + 10] == 0)
+        #expect(shading.highlight[middle + 70] == 0)
+    }
+
     @Test func softenBlursShadingWithoutExpandingInnerBevelCoverage() throws {
         let image = try square(size: 100, inner: 70)
         var bevel = BevelEffect()

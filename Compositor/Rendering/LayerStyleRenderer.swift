@@ -171,11 +171,13 @@ nonisolated enum LayerStyleRenderer {
             case .pillowEmboss: profile = .pillow
             }
             var h = BevelGeometry.height(distance: distance, size: size, profile: profile)
+            if bevel.technique == .smooth { h = BevelGeometry.roundedHeight(h) }
             if bevel.hasContour { h = bevel.contour.value(min(1, h / (2 * range))) }
             heights[i] = h
         }
-        // Smooth rounds the matte transition; Chisel Hard retains the straight ramp.
-        if bevel.technique == .smooth { heights = planes.gaussian(heights, sigma: 0.75) }
+        // Smooth rounds the profile and filters pixel-scale distance fluctuations
+        // before normals; otherwise curved edges produce radial lighting bands.
+        if bevel.technique == .smooth { heights = planes.gaussian(heights, sigma: min(2, max(0.75, size / 6))) }
         if bevel.technique == .chiselSoft { heights = planes.gaussian(heights, sigma: 1.5) }
         let lift = size * Float(bevel.depth) / 100 * (bevel.up ? 1 : -1)
         let textureScale = Float(bevel.textureScale) / 100, textureLift = 2 * Float(bevel.textureDepth) / 100 * (bevel.up ? 1 : -1)
