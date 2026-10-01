@@ -67,3 +67,16 @@ complete hierarchy/effective-property projection and renderer parity fixtures.
 This metadata-only surface validates none of those renderer responsibilities.
 Rollback removes the new files and guard/workflow additions; no existing runtime
 call site or stored data requires conversion. Stop here.
+
+## Subsequent publication/render source audit
+
+[Inventory](render-data-inventory.md) confirms app/test synchronized-group membership
+without exclusions and test-only adapter call sites at cd4a58a. Mac build, full
+tests, CoreSnapshotTests, FilterKindTests, TextAlignmentTests and CI boundary results
+remain unverified (Actions Forbidden); local lexical guard passes. No product
+read-path runtime validation is added by this audit.
+
+The snapshot still carries own flags/opacity in stored order. Effective hierarchy,
+clipping, masks, full style/fill, preview provenance and render resources require a
+separate semantic projection. Lifecycle and render responsibility candidates are
+now documented, not implemented. Existing product files remain unchanged.

@@ -120,3 +120,21 @@ validation. Foundation UUID is the only framework dependency in the new Core fil
 future module/toolchain portability needs compilation evidence. Parent visibility,
 clipping and effective opacity are deliberately absent from the minimal rows, so
 this snapshot must not become a renderer contract by accident.
+
+## Publication and renderer inventory follow-up
+
+See [audit](render-data-inventory.md) for source-backed lifecycle, field matrix and
+parity checklist. Q1/Q15 need an open-session epoch distinct from tab/persistent
+document UUID: undoable canvas replacement differs from project replacement.
+Q16 includes opacity gestures, Layer Style live previews, cancellation and
+preview-save/reload gating; history alone cannot own visible Generation.
+Q5/Q6 need immutable content plus hidden-source dependency closure, not just visible
+metadata rows. Q25 remains blocked by front-tab WorkingColorSpace state.
+Q26 needs full semantic style order/fill/pattern origin plus actual backend evidence.
+
+Additional open distinctions: document publication vs viewport render request;
+exact new-generation output vs seeded/previous cache presentation; accepted frozen
+draft output vs render-time mutable preparation (gradient/pixel move). GPU tests
+can return early without a device and mostly compare opaque RGB canvas output, so
+suite success alone is not transparent-alpha or complete backend execution proof.
+No questions are closed by unexecuted Mac tests or by this source analysis.

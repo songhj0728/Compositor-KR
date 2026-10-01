@@ -133,3 +133,17 @@ source and dependency checks passed, actual model tests authored but Mac executi
 unverified. Remaining gate: Mac CI, token lifecycle owner and actual resource/history
 semantics. Rollback removes the additive types/adapter/tests and guard additions;
 existing Mac call sites and persisted data need no changes. No next migration starts.
+
+## Publication/render audit gate
+
+[Inventory and lifecycle](render-data-inventory.md) now identify S6/S8 prerequisites:
+session instance epoch and publication coordinator, committed/preview envelope,
+clipping/dependency closure, ancestor masks, document-specific color and immutable
+resource ownership. S0–S9 ordering remains valid. Model metadata does not become a
+render description by adding cached GPU values. A render request handles scale/view/
+purpose independently of Generation; cache result provenance needs separate rules.
+
+Mac target membership is statically confirmed; runtime CI remains unverified.
+A separately scoped unlinked semantic projection prototype may use placeholders;
+product renderer linkage still needs publication/resource and Mac parity evidence.
+No mutation, renderer or GPU implementation starts here.

@@ -454,3 +454,26 @@ the live app as publishing versioned snapshots. **Not yet validated:** publicati
 ownership, closed-instance lifecycle, atomic writes, preview/history mapping and
 image/path/renderer data. Generation advancement refuses overflow; the future
 publisher must define exhaustion handling and advance on every observable change.
+
+## 15. Publication and render projection audit (design only)
+
+[Lifecycle and render inventory](multiplatform/render-data-inventory.md) distinguishes
+current history UUIDs from the proposed session publication owner. No-op data edits
+retain tokens, but removal of a preview or changed active/shared save context can
+be a genuine publication even with identical pixels. Cancel/undo/redo never rewind
+Generation. Opening/replacing a project changes its instance epoch; undoable canvas
+replacement may change persistent document UUID within that same session. Same-project
+reload is a candidate in-place newer generation/history epoch, not implemented.
+
+CoreDocumentSnapshot remains minimal own-property metadata. A future render projection
+needs hierarchy-resolved order/effective values, clipping stack semantics and hidden
+source closure, ancestor masks, Fill Opacity, semantic style/adjustment descriptions,
+immutable content and document-specific color meaning. It must explicitly identify
+committed versus preview data. Resource ownership remains unresolved. Viewport/output
+scale/purpose belong to a separate render request; cache completion is result
+provenance, not a fresh domain Generation. No renderer type/API is introduced.
+
+Source audit reveals preview-save/reload gating gaps and render-time mutable draft
+preparation. They require characterization before production publication integration.
+Xcode synchronized-group membership is confirmed statically; Mac build and all
+new/read/enum test results remain unverified because Actions access is Forbidden.
