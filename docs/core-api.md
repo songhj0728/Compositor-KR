@@ -477,3 +477,19 @@ Source audit reveals preview-save/reload gating gaps and render-time mutable dra
 preparation. They require characterization before production publication integration.
 Xcode synchronized-group membership is confirmed statically; Mac build and all
 new/read/enum test results remain unverified because Actions access is Forbidden.
+
+## 16. Render semantic projection prototype
+
+[RenderSnapshot experiment](../Spikes/RenderSnapshot/README.md) projects ordered
+metadata, own/effective visibility and opacity, independent Fill Opacity, numeric
+placement/bounds and explicit hierarchy/clipping dependencies. It is outside the
+app target; actual CanvasDocument input is provided by a test-only Mac adapter.
+CoreDocumentSnapshot and existing renderer paths remain unchanged. No language,
+Renderer API, resource ownership or GPU choice follows.
+
+Validated locally: C++ scalar/graph/lifetime/error cases and bulk measurements.
+Actual-model semantic parity tests are authored and await new Mac execution. User
+confirmed baseline Verify #59 succeeds; this supersedes the earlier inaccessible
+Mac-gate status, but does not validate new prototype code or identify its run SHA.
+Explicit tokens do not prove a production publisher exists. Resource payloads,
+styles/masks/adjustment execution and final render extents remain unvalidated.

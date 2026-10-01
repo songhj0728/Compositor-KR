@@ -287,3 +287,18 @@ resource placeholders and actual-model semantic fixtures is reasonable after thi
 analysis. Product RenderSnapshot linkage should wait for Mac evidence, publication
 and ownership prerequisites above. No renderer, mutation or GPU implementation is
 started by this audit.
+
+## RenderSnapshot prototype follow-up
+
+User directly confirmed Mac Verify #59 succeeded (boundary, package resolve, build,
+unit/window tests and job). Treat the baseline verification gate as passed; earlier
+unverified statements above describe the source-audit checkpoint. Exact run SHA
+was not supplied and API lookup remains Forbidden.
+
+The [prototype](../../Spikes/RenderSnapshot/README.md) implements pure numeric flat
+nodes plus hierarchy/dependency metadata. Twelve actual CanvasDocument fixtures
+are fed by a test-only adapter, with reference-helper parity tests pending new Mac
+CI. Local C++/transport/sanitizer tests pass. Hidden dependency nodes are retained;
+reorder classification never mutates source links; Fill Opacity stays independent.
+No app renderer input/path changes or pixel parity claims are made. Resource
+ownership, complete render descriptors and publication lifecycle remain blockers.

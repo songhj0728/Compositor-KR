@@ -80,3 +80,11 @@ The snapshot still carries own flags/opacity in stored order. Effective hierarch
 clipping, masks, full style/fill, preview provenance and render resources require a
 separate semantic projection. Lifecycle and render responsibility candidates are
 now documented, not implemented. Existing product files remain unchanged.
+
+## Verification update from the user
+
+The user directly confirmed Verify #59 passed Xcode selection, boundary, package
+resolve, build-for-testing, unit/window tests and the entire Verify job. The prior
+Mac baseline gate is now treated as passed. Exact run SHA remains unavailable via
+the Forbidden API. New RenderSnapshot prototype tests are a later change and still
+require their own Mac result; see [experiment](../../Spikes/RenderSnapshot/README.md).

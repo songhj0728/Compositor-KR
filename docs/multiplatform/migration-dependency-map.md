@@ -147,3 +147,13 @@ Mac target membership is statically confirmed; runtime CI remains unverified.
 A separately scoped unlinked semantic projection prototype may use placeholders;
 product renderer linkage still needs publication/resource and Mac parity evidence.
 No mutation, renderer or GPU implementation starts here.
+
+## Independent RenderSnapshot semantic prototype
+
+[Experiment](../../Spikes/RenderSnapshot/README.md) supplies early S8 evidence for
+ordered metadata, effective values, explicit clipping closure and neutral numeric
+geometry. Baseline Mac gate passed per user's Verify #59 confirmation; new actual
+model fixture tests/experiment CI await results. Local semantic/transport and
+ASan/UBSan checks pass. S0–S9 prerequisites remain unchanged; S8 renderer integration
+is not complete. No product geometry, resources, history or renderer was migrated.
+Rollback removes the spike, test-only adapter and its CI/boundary additions.

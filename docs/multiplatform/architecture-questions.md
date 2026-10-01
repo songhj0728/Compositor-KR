@@ -138,3 +138,18 @@ draft output vs render-time mutable preparation (gradient/pixel move). GPU tests
 can return early without a device and mostly compare opaque RGB canvas output, so
 suite success alone is not transparent-alpha or complete backend execution proof.
 No questions are closed by unexecuted Mac tests or by this source analysis.
+
+## RenderSnapshot prototype evidence
+
+[Results](../../Spikes/RenderSnapshot/README.md) partially exercise Q6/Q26 with flat
+ordered nodes + depth/ancestor/source edges, separate effective values/fill and a
+numeric unit-square transform. The code classifies contiguous stacks versus
+independent live-alpha links and retains hidden source nodes. Local tests pass;
+actual Mac reference-helper fixture tests await execution. Verify #59 was confirmed
+by the user for the preceding baseline, not the new prototype.
+
+Q5 resource lifetime/format/alpha, Q15/Q16 authoritative publication, Q25 document
+color isolation, full styles/adjustments and padded output bounds remain unresolved.
+Allocation counters show linear metadata allocation growth with significant churn;
+no latency budget or language conclusion follows. Renderer API finalization and
+Windows GPU work still require complete resource/projection and pixel parity gates.
