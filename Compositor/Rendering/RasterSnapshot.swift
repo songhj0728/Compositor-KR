@@ -92,7 +92,7 @@ nonisolated final class RasterSnapshot: @unchecked Sendable {
     }
 
     /// Draw only the requested source pixels, used when allocating a brush tile.
-    func draw(in rect: CGRect, context: CGContext) {
+    func draw(in rect: CGRect, context: CGContext, interpolation: CGInterpolationQuality = .none) {
         context.saveGState()
         context.clip(to: rect)
         context.setShouldAntialias(false)
@@ -117,12 +117,12 @@ nonisolated final class RasterSnapshot: @unchecked Sendable {
                     let destination = CGRect(x: target.minX + crop.minX / CGFloat(base.width) * target.width,
                         y: target.minY + crop.minY / CGFloat(base.height) * target.height,
                         width: crop.width / CGFloat(base.width) * target.width, height: crop.height / CGFloat(base.height) * target.height)
-                    BrushRaster.draw(image, in: destination, mask: isMask, context: context)
+                    BrushRaster.draw(image, in: destination, mask: isMask, context: context, interpolation: interpolation)
                 }
             }
         }
         for patch in patches where mapped(patch.rect).intersects(visible) {
-            BrushRaster.draw(patch.image, in: mapped(patch.rect), mask: isMask, context: context)
+            BrushRaster.draw(patch.image, in: mapped(patch.rect), mask: isMask, context: context, interpolation: interpolation)
         }
         context.restoreGState()
     }
@@ -168,6 +168,15 @@ nonisolated final class RasterSnapshot: @unchecked Sendable {
         draw(in: CGRect(x: 0, y: 0, width: width, height: height), context: context)
         materialized = context
         return context.data
+    }
+
+    /// A bounded preview assembled directly from immutable tiles, never through the
+    /// full-resolution CGImage provider. Used by effects after a mask stroke commits.
+    func preview(width: Int, height: Int) throws -> CGImage {
+        let context = try BrushRaster.context(width: width, height: height, mask: isMask)
+        draw(in: CGRect(x: 0, y: 0, width: width, height: height), context: context, interpolation: .high)
+        guard let image = context.makeImage() else { throw ExportError.render }
+        return image
     }
 
     func thumbnail() throws -> CGImage {

@@ -9,14 +9,18 @@ final class EffectsPreviewCache {
         let image: CGImage
         let mask: CGImage?
         let maskSource: CGImage?
+        let maskRaster: RasterSnapshot?
+        let maskThumbnail: CGImage?
+        let usesOwnedMask: Bool
         let placement: LayerTransform?
         let transform: LayerTransform
         let effects: LayerEffects
         let sideLimit: Int
         private let lock = NSLock()
         private var cancelled = false
-        init(image: CGImage, mask: CGImage?, maskSource: CGImage?, placement: LayerTransform?, transform: LayerTransform, effects: LayerEffects, sideLimit: Int) {
+        init(image: CGImage, mask: CGImage?, maskSource: CGImage?, placement: LayerTransform?, transform: LayerTransform, effects: LayerEffects, sideLimit: Int, maskRaster: RasterSnapshot? = nil, maskThumbnail: CGImage? = nil, usesOwnedMask: Bool = false) {
             self.image = image; self.mask = mask; self.maskSource = maskSource
+            self.maskRaster = maskRaster; self.maskThumbnail = maskThumbnail; self.usesOwnedMask = usesOwnedMask
             self.placement = placement; self.transform = transform; self.effects = effects; self.sideLimit = sideLimit
         }
         func cancel() { lock.lock(); cancelled = true; lock.unlock() }
@@ -29,6 +33,7 @@ final class EffectsPreviewCache {
                 || (placement == nil && other.placement == nil)
                 || (placement == other.placement && transform == other.transform)
             return image === other.image && maskSource === other.maskSource && sameMaskGeometry
+                && usesOwnedMask == other.usesOwnedMask && (usesOwnedMask || mask === other.mask)
                 && effects == other.effects && sideLimit == other.sideLimit
         }
     }
@@ -78,14 +83,16 @@ final class EffectsPreviewCache {
         sideLimit = min(1536, max(32, Int(sqrt(Double(16_777_216) / Double(max(1, ids.count))))))
     }
 
-    func preview(for layer: ImageLayer, mask: CGImage?, transform: LayerTransform, maskPlacement: LayerTransform?,
+    func preview(for layer: ImageLayer, mask: CGImage?, transform: LayerTransform, maskPlacement: LayerTransform?, usesOwnedMask: Bool = false,
                  completion: @escaping @MainActor @Sendable () -> Void) -> (image: CGImage, inset: CGFloat, placement: LayerTransform?)? {
         guard let image = layer.asset?.image, let effects = layer.effects?.visible, !effects.isEmpty, effects.isValid else {
             entries.removeValue(forKey: layer.id)?.request.cancel()
             return nil
         }
         let request = Request(image: image, mask: mask, maskSource: layer.mask?.enabledImage,
-                              placement: maskPlacement, transform: transform, effects: effects, sideLimit: sideLimit)
+                              placement: maskPlacement, transform: transform, effects: effects, sideLimit: sideLimit,
+                              maskRaster: layer.mask?.isEnabled == true ? layer.mask?.asset.raster : nil,
+                              maskThumbnail: layer.mask?.asset.thumbnail, usesOwnedMask: usesOwnedMask)
         if let entry = entries[layer.id], entry.request.matches(request) {
             return entry.result.map { ($0.image, $0.inset, $0.placement) }
         }
@@ -108,7 +115,7 @@ final class EffectsPreviewCache {
         } ?? seeds[layer.id]
         entries[layer.id] = Entry(request: request, result: previous)
         let layerID = layer.id
-        let quickSide = min(768, request.sideLimit)
+        let quickSide = min(request.maskSource == nil ? 768 : 512, request.sideLimit)
         let paddedSide = CGFloat(max(image.width, image.height)) + 2 * LayerEffectsRenderer.margin(for: effects)
         let quickLimit = effects.bevel != nil && paddedSide > CGFloat(quickSide - 8)
             ? quickSide : request.sideLimit
@@ -176,7 +183,27 @@ final class EffectsPreviewCache {
             return result
         }
         let pixels = factor == 1 ? image : try resized(image, mask: false)
-        let mask = try request.mask.map { factor == 1 ? $0 : try resized($0, mask: true) }
+        let sourceMask = request.usesOwnedMask ? request.maskSource : request.mask
+        let mask: CGImage?
+        if let sourceMask {
+            let sparse = sourceMask === request.maskSource ? request.maskRaster : nil
+            if request.usesOwnedMask, let placement = request.placement,
+               !placement.samePlacement(as: request.transform) {
+                // Resample placement only at the target preview size, on this worker.
+                mask = try LayerMask.placed(width: width, height: height, layer: request.transform,
+                    placement: placement, maskWidth: sourceMask.width, maskHeight: sourceMask.height,
+                    background: request.maskThumbnail.map(LayerMask.background) ?? 1) { context in
+                        let bounds = CGRect(x: 0, y: 0, width: sourceMask.width, height: sourceMask.height)
+                        if let sparse { sparse.draw(in: bounds, context: context, interpolation: .high) }
+                        else { LayerMask.drawSmooth(sourceMask, in: bounds, context: context) }
+                    }
+            } else if let sparse {
+                mask = try sparse.preview(width: width, height: height)
+            } else {
+                mask = factor == 1 ? sourceMask : try resized(sourceMask, mask: true)
+            }
+        } else { mask = nil }
+        if request.isCancelled { throw CancellationError() }
         let effects = request.effects.scaled(by: factor)
         let rendered = try LayerEffectsRenderer.render(pixels, mask: mask, effects: effects, isCancelled: { request.isCancelled })
         return Result(image: rendered.image, inset: rendered.inset)
