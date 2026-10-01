@@ -4,6 +4,26 @@ nonisolated enum BevelGeometry {
         min(requested, max(1, min(width, height) / 4))
     }
 
+    enum Profile: Sendable { case inner, outer, emboss, pillow }
+
+    /// Unit height before contour, technique smoothing and depth. Kept independent
+    /// of platform image APIs so display, export and Windows use the same surface.
+    static func height(distance: Float, size: Float, profile: Profile) -> Float {
+        let size = max(0.01, size)
+        switch profile {
+        case .inner: return min(1, max(0, distance / size))
+        case .outer: return min(1, max(0, 1 + distance / size))
+        case .emboss: return min(1, max(0, 0.5 + distance / (2 * size)))
+        case .pillow: return min(1, abs(distance) / size)
+        }
+    }
+
+    /// Diffuse lighting of a height field, with downward-positive image rows.
+    static func lighting(slopeX: Float, slopeY: Float, light: SIMD3<Float>) -> Float {
+        let length = (slopeX * slopeX + slopeY * slopeY + 1).squareRoot()
+        return (-slopeX * light.x - slopeY * light.y + light.z) / length
+    }
+
     /// Exact Euclidean distances to opposite coverage, with a half-pixel edge correction.
     /// Separable lower envelopes of parabolas keep the work linear in the pixel count.
     enum CalculationError: Error { case cancelled }

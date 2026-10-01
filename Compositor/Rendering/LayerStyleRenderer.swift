@@ -163,19 +163,20 @@ nonisolated enum LayerStyleRenderer {
         for i in heights.indices {
             if i % width == 0 && isCancelled() { throw CancellationError() }
             let distance = (shape[i] >= 0.5 ? 1 : -1) * distances[i]
-            var h: Float
+            let profile: BevelGeometry.Profile
             switch bevel.style {
-            case .innerBevel: h = min(1, max(0, distance / size))
-            case .outerBevel: h = min(1, max(0, 1 + distance / size))
-            case .emboss: h = min(1, max(0, 0.5 + distance / (2 * size)))
-            case .pillowEmboss: h = min(1, abs(distance) / size)
+            case .innerBevel: profile = .inner
+            case .outerBevel: profile = .outer
+            case .emboss: profile = .emboss
+            case .pillowEmboss: profile = .pillow
             }
-            if bevel.technique == .smooth { h = h * h * (3 - 2 * h) }
+            var h = BevelGeometry.height(distance: distance, size: size, profile: profile)
             if bevel.hasContour { h = bevel.contour.value(min(1, h / (2 * range))) }
             heights[i] = h
         }
+        // Smooth rounds the matte transition; Chisel Hard retains the straight ramp.
+        if bevel.technique == .smooth { heights = planes.gaussian(heights, sigma: 0.75) }
         if bevel.technique == .chiselSoft { heights = planes.gaussian(heights, sigma: 1.5) }
-        if bevel.soften > 0 { heights = planes.gaussian(heights, sigma: Float(bevel.soften) / 2) }
         let lift = size * Float(bevel.depth) / 100 * (bevel.up ? 1 : -1)
         let textureScale = Float(bevel.textureScale) / 100, textureLift = 2 * Float(bevel.textureDepth) / 100 * (bevel.up ? 1 : -1)
         for y in 0..<height {
@@ -201,24 +202,30 @@ nonisolated enum LayerStyleRenderer {
             if isCancelled() { throw CancellationError() }
             for x in 0..<width {
                 let i = y * width + x
-                let region: Float
-                switch bevel.style {
-                case .innerBevel: region = shape[i]
-                case .outerBevel: region = 1 - shape[i]
-                case .emboss, .pillowEmboss: region = 1
-                }
-                guard region > 0 else { continue }
                 let left = heights[y * width + max(0, x - 1)], right = heights[y * width + min(width - 1, x + 1)]
                 let up = heights[max(0, y - 1) * width + x], down = heights[min(height - 1, y + 1) * width + x]
-                let slope = SIMD3<Float>(-(right - left) / 2, -(down - up) / 2, 1)
-                let normal = slope / (slope * slope).sum().squareRoot()
-                let lit = (normal * light).sum()
+                let lit = BevelGeometry.lighting(slopeX: (right - left) / 2, slopeY: (down - up) / 2, light: light)
                 if lit > flat, flat < 1 {
-                    highlight[i] = bevel.gloss.value((lit - flat) / (1 - flat)) * region
+                    highlight[i] = bevel.gloss.value((lit - flat) / (1 - flat))
                 } else if lit < flat, flat > 0.001 {
-                    shadow[i] = bevel.gloss.value((flat - lit) / flat) * region
+                    shadow[i] = bevel.gloss.value((flat - lit) / flat)
                 }
             }
+        }
+        // Soften acts on the lighting result, not the height/width of the bevel.
+        if bevel.soften > 0 {
+            highlight = planes.gaussian(highlight, sigma: Float(bevel.soften) / 2)
+            shadow = planes.gaussian(shadow, sigma: Float(bevel.soften) / 2)
+        }
+        for i in shape.indices {
+            let region: Float
+            switch bevel.style {
+            case .innerBevel: region = shape[i]
+            case .outerBevel: region = 1 - shape[i]
+            case .emboss, .pillowEmboss: region = 1
+            }
+            highlight[i] *= region
+            shadow[i] *= region
         }
         return (highlight, shadow)
     }

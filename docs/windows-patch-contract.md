@@ -71,3 +71,29 @@ Windows tests. Synchronizing that branch is a separate operation.
   black exterior coverage; live distortion coverage remains a separate input.
 - Both preview stages must leave the original sparse mask unmaterialized. Only an
   operation that actually needs full-resolution bytes (such as export) assembles it.
+
+## Live bevel rendering and appearance
+
+- Mask paint with Bevel & Emboss uses live region updates, not a mouse-up-only
+  rebuild. A serial effect worker completes one snapshot while newer pointer
+  samples replace a single pending snapshot. It must not cancel every sample:
+  continuous input would otherwise prevent any result from reaching the screen.
+- Compare changed immutable tile identities against the last rendered snapshot.
+  Expand the output region by the effect reach, then expand the input window again
+  for neighboring coverage. Reuse unaffected pixels from the current effects
+  preview. Publish immutable results; never share a mutable render buffer with UI.
+- Separate strokes own separate surfaces. Cancelled strokes must not seed painted
+  effects into the committed canvas. On commit, finish pending live work before
+  handing its result to the normal preview cache.
+- The standard-library core defines four height profiles and diffuse lighting.
+  Smooth uses a slight height-transition blur (sigma 0.75); Chisel Hard uses a
+  straight distance ramp; Chisel Soft blurs the ramp (sigma 1.5). Depth scales
+  height before normals, and gloss maps lit/shaded intensity after lighting.
+- Soften blurs highlight/shadow planes (sigma = soften / 2), then clips them to the
+  style's inside/outside coverage. It must not alter the height profile or expand
+  an inner bevel into transparency. These are independently authored approximations
+  of Adobe's documented controls, not claims of pixel-identical Photoshop output:
+  https://helpx.adobe.com/africa/photoshop/desktop/create-manage-layers/apply-layer-effects/layer-style-effects-and-options-overview.html
+- Windows can implement the same worker and region contract with its existing image
+  adapter. No Metal or Apple scheduler is required by the height/lighting core.
+  Measure interactive performance in an optimized build, not a Swift -Onone build.
