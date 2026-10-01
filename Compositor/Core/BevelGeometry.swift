@@ -31,6 +31,14 @@ nonisolated enum BevelGeometry {
         return (-slopeX * light.x - slopeY * light.y + light.z) / length
     }
 
+    /// Normalize each side against its available diffuse range. Dividing shadow
+    /// by the flat intensity alone clips every below-horizon normal to solid dark.
+    static func shading(lit: Float, flat: Float) -> (highlight: Float, shadow: Float) {
+        let highlight = flat < 0.9999 ? max(0, (lit - flat) / (1 - flat)) : 0
+        let shadow = max(0, (flat - lit) / (1 + flat))
+        return (min(1, highlight), min(1, shadow))
+    }
+
     /// Exact Euclidean distances to opposite coverage, with a half-pixel edge correction.
     /// Separable lower envelopes of parabolas keep the work linear in the pixel count.
     enum CalculationError: Error { case cancelled }

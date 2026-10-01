@@ -203,6 +203,54 @@ struct LayerStyleTests {
         #expect(shading.highlight[middle + 70] == 0)
     }
 
+    @Test func circularBevelHasContinuousAngularShading() throws {
+        let width = 200, height = 200
+        let shape: [Float] = (0..<(width * height)).map {
+            let x = Float($0 % width) - 100, y = Float($0 / width) - 100
+            return x * x + y * y >= 40 * 40 ? 1 : 0
+        }
+        var bevel = BevelEffect()
+        bevel.size = 24
+        let shade = try LayerStyleRenderer.bevelShading(bevel, shape: shape,
+            planes: LayerStyleRenderer.Planes(width: width, height: height), origin: .zero,
+            fullSize: CGSize(width: width, height: height))
+        func sample(_ plane: [Float], _ angle: Float) -> Float {
+            let x = 100 + 52 * cos(angle), y = 100 + 52 * sin(angle)
+            let ix = Int(x), iy = Int(y), fx = x - Float(ix), fy = y - Float(iy)
+            let a = plane[iy * width + ix] * (1 - fx) + plane[iy * width + ix + 1] * fx
+            let b = plane[(iy + 1) * width + ix] * (1 - fx) + plane[(iy + 1) * width + ix + 1] * fx
+            return a * (1 - fy) + b * fy
+        }
+        for plane in [shade.highlight, shade.shadow] {
+            let samples = (0..<360).map { sample(plane, Float($0) * .pi / 180) }
+            let largestStep = samples.indices.map { abs(samples[$0] - samples[($0 + 1) % 360]) }.max()!
+            #expect(largestStep < 0.035, "Circular shading must change gradually rather than in radial bands: \(largestStep)")
+        }
+    }
+
+    @Test func erasedPixelsAndLayerMaskProduceTheSameBevel() throws {
+        let base = try square(size: 180, inner: 140)
+        let hole = CGRect(x: 60, y: 60, width: 60, height: 60)
+        let erased = try BrushRaster.copy(base)
+        erased.setBlendMode(.clear)
+        erased.fillEllipse(in: hole)
+        let mask = try BrushRaster.context(width: 180, height: 180, mask: true)
+        mask.setFillColor(gray: 1, alpha: 1)
+        mask.fill(CGRect(x: 0, y: 0, width: 180, height: 180))
+        mask.setFillColor(gray: 0, alpha: 1)
+        mask.fillEllipse(in: hole)
+        var bevel = BevelEffect()
+        bevel.size = 24
+        let effects = LayerEffects(bevel: bevel)
+        let direct = try LayerEffectsRenderer.render(try #require(erased.makeImage()), mask: nil, effects: effects)
+        let masked = try LayerEffectsRenderer.render(base, mask: try #require(mask.makeImage()), effects: effects)
+        let a = try BrushRaster.copy(direct.image), b = try BrushRaster.copy(masked.image)
+        let count = a.bytesPerRow * a.height
+        let ap = try #require(a.data).assumingMemoryBound(to: UInt8.self)
+        let bp = try #require(b.data).assumingMemoryBound(to: UInt8.self)
+        #expect((0..<count).map { abs(Int(ap[$0]) - Int(bp[$0])) }.max()! <= 2)
+    }
+
     @Test func softenBlursShadingWithoutExpandingInnerBevelCoverage() throws {
         let image = try square(size: 100, inner: 70)
         var bevel = BevelEffect()
