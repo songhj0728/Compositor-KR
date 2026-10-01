@@ -32,6 +32,9 @@ jobs:
           xcrun swiftc -typecheck Compositor/Document/TextAlignment.swift
           xcrun swiftc -typecheck Compositor/Core/*.swift
 
+      - name: Check render projection experiment
+        run: CXX=clang++ SANITIZE=1 bash Spikes/RenderSnapshot/run.sh
+
       - name: Resolve Swift packages
         run: >
           xcodebuild -resolvePackageDependencies
