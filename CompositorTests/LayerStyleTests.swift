@@ -46,6 +46,82 @@ struct LayerStyleTests {
         }
     }
 
+    @Test(arguments: [false, true]) func paintedMaskPreviewDoesNotFlattenItsFullRaster(placed: Bool) async throws {
+        let session = EditorSession()
+        session.createDocument(width: 900, height: 900)
+        let image = try square(size: 900, inner: 500)
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Masked bevel"))
+        let id = try #require(session.activeLayerID)
+        session.setEffects(LayerEffects(bevel: BevelEffect()), on: id)
+        session.addLayerMask()
+        if placed, let index = session.document?.layers.firstIndex(where: { $0.id == id }) {
+            var placement = session.document!.layers[index].transform
+            placement.origin.x += 40
+            placement.rotation = 12
+            session.document!.layers[index].mask?.placement = placement
+            session.document!.layers[index].mask?.isLinked = false
+        }
+        session.selectTool(.brush)
+        session.maskPaintWhite = false
+        session.brushSettings.diameter = 120
+        session.beginBrush(at: CGPoint(x: 450, y: 450))
+        session.continueBrush(at: CGPoint(x: 550, y: 450))
+        #expect(session.finishBrushImmediately())
+        let layer = try #require(session.activeLayer)
+        let raster = try #require(layer.mask?.asset.raster)
+        #expect(!raster.hasMaterializedPixels)
+        let cache = EffectsPreviewCache()
+        cache.prepare(layers: [layer])
+        defer { cache.prepare(layers: []) }
+        var completions = 0
+        let start = ContinuousClock.now
+        _ = cache.preview(for: layer, mask: nil, transform: layer.transform, maskPlacement: layer.mask?.placement, usesOwnedMask: true) {
+            completions += 1
+            if completions == 1 { print("Mask stroke first preview (placed=\(placed)): \(start.duration(to: .now))") }
+        }
+        let deadline = ContinuousClock.now + .seconds(30)
+        while completions < 2 && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(completions == 2)
+        #expect(!raster.hasMaterializedPixels, "Neither preview pass may assemble the original-size painted mask")
+        let mask = layer.mask?.clipImage(placement: layer.mask?.placement, over: layer.transform,
+            width: image.width, height: image.height)
+        let expected = try LayerEffectsRenderer.render(image, mask: mask, effects: try #require(layer.effects))
+        let actual = try #require(cache.rendered(id)?.image)
+        #expect(actual.width == expected.image.width && actual.height == expected.image.height)
+        let actualData = try #require(actual.dataProvider?.data) as Data
+        let expectedData = try #require(expected.image.dataProvider?.data) as Data
+        #expect(actualData.count == expectedData.count)
+        // Independent tile interpolation can differ slightly at tile edges after rotation.
+        let differences = zip(actualData, expectedData).map { abs(Int($0) - Int($1)) }
+        #expect(Double(differences.reduce(0, +)) / Double(differences.count) < 0.5)
+    }
+
+    @Test func changingSuppliedMaskInvalidatesTheEffectsPreview() async throws {
+        let image = try square()
+        var layer = ImageLayer(asset: ImportedImage(image: image, thumbnail: image, name: "Mask preview"), origin: .zero)
+        layer.effects = LayerEffects(bevel: BevelEffect())
+        let cache = EffectsPreviewCache()
+        cache.prepare(layers: [layer])
+        defer { cache.prepare(layers: []) }
+        var completions = 0
+        for revealing in [true, false] {
+            let mask = try #require(LayerMask.solid(revealing: revealing))
+            let target = completions + 1
+            _ = cache.preview(for: layer, mask: mask.asset.image, transform: layer.transform, maskPlacement: nil) {
+                completions += 1
+            }
+            let deadline = ContinuousClock.now + .seconds(10)
+            while completions < target && ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            #expect(completions == target)
+        }
+        let hidden = try #require(cache.rendered(layer.id)?.image)
+        #expect(try pixel(hidden, hidden.width / 2, hidden.height / 2).alpha == 0)
+    }
+
     @Test func cancelledStyleRenderingDoesNotReturnAnImage() throws {
         let image = try square()
         var checks = 0

@@ -1046,7 +1046,7 @@ final class CanvasView: NSView {
                 ?? session.displayedTransform(for: layer)
             // A mask placed apart from its layer is resampled into the grid the layer draws in (at most 2048 pixels
             // across while something moves, else about the size it's drawn).
-            let mask: CGImage? = {
+            func currentMask() -> CGImage? {
                 guard let owned = layer.mask else { return nil }
                 if let distorted = session.maskDistortPreview(for: layer) { return distorted }
                 guard let placement = session.displayedMaskPlacement(for: layer) else { return owned.enabledImage }
@@ -1058,11 +1058,13 @@ final class CanvasView: NSView {
                     width: owner.asset?.image.width ?? Int(base.size.width.rounded()),
                     height: owner.asset?.image.height ?? Int(base.size.height.rounded()),
                     limit: session.transformEdit != nil ? min(2048, steady) : steady)
-            }()
+            }
+            // Resample ordinary masks on the preview worker; a live distortion already supplies coverage.
+            let distortedMask = session.maskDistortPreview(for: layer)
             // A stroke or drop shadow is drawn around the layer's pixels, on a canvas grown to hold it.
             if stroke == nil, layer.asset != nil,
-               let effects = session.effectsPreviews.preview(for: layer, mask: mask, transform: transform,
-                    maskPlacement: session.displayedMaskPlacement(for: layer), completion: { [weak self] in
+               let effects = session.effectsPreviews.preview(for: layer, mask: distortedMask, transform: transform,
+                    maskPlacement: session.displayedMaskPlacement(for: layer), usesOwnedMask: distortedMask == nil, completion: { [weak self] in
                         self?.needsDisplay = true
                     }) {
                 // A seeded preview carries the place it belongs; everything else is the layer's box plus its margin.
@@ -1071,6 +1073,7 @@ final class CanvasView: NSView {
                     opacity: opacity, blendMode: blendMode(of: layer), mask: nil, in: context)
                 return
             }
+            let mask = currentMask()
             if stroke == nil, let shaped = session.shapeTransformPreview(for: layer, transform: transform) {
                 LayerRenderer.draw(shaped, transform: transform, center: center(transform.center), scale: scale,
                     opacity: opacity, blendMode: blendMode(of: layer), mask: mask, in: context)
@@ -2993,7 +2996,7 @@ extension CanvasView {
             }
             let transform = session.displayedTransform(for: layer)
             // A mask placed apart from its layer is resampled into the layer's grid, as the Core Graphics canvas does.
-            let mask: CGImage? = {
+            func currentMask() -> CGImage? {
                 guard let owned = layer.mask else { return nil }
                 if let distorted = session.maskDistortPreview(for: layer) { return distorted }
                 guard let maskPlacement = session.displayedMaskPlacement(for: layer) else { return owned.enabledImage }
@@ -3003,16 +3006,18 @@ extension CanvasView {
                     width: layer.asset?.image.width ?? Int(transform.size.width.rounded()),
                     height: layer.asset?.image.height ?? Int(transform.size.height.rounded()),
                     limit: session.transformEdit != nil ? min(2048, steady) : steady)
-            }()
+            }
+            let distortedMask = session.maskDistortPreview(for: layer)
             if layer.asset != nil,
-               let effects = session.effectsPreviews.preview(for: layer, mask: mask, transform: transform,
-                    maskPlacement: session.displayedMaskPlacement(for: layer), completion: { [weak self] in
+               let effects = session.effectsPreviews.preview(for: layer, mask: distortedMask, transform: transform,
+                    maskPlacement: session.displayedMaskPlacement(for: layer), usesOwnedMask: distortedMask == nil, completion: { [weak self] in
                         self?.needsDisplay = true
                     }) {
                 let grown = effects.placement ?? LayerEffectsRenderer.placed(transform, image: effects.image, inset: effects.inset)
                 guard let image = placement.place(effects.image, transform: grown) else { unsupported = true; return nil }
                 return GPUBlend.faded(image, opacity)
             }
+            let mask = currentMask()
             let placed: CIImage?
             if let shaped = session.shapeTransformPreview(for: layer, transform: transform) {
                 placed = placement.place(shaped, transform: transform)
