@@ -136,3 +136,34 @@ extension EditorSession {
         endEdit()
     }
 }
+
+
+extension EditorSession {
+    func layerIsLocked(_ id: UUID) -> Bool {
+        guard let document else { return false }
+        let layers = Dictionary(uniqueKeysWithValues: document.layers.map { ($0.id, $0) })
+        var current: UUID? = id
+        for _ in 0..<64 {
+            guard let key = current, let layer = layers[key] else { return false }
+            if layer.isLocked { return true }
+            current = layer.parentID
+        }
+        return false
+    }
+    var selectionContainsLockedLayers: Bool {
+        guard let document else { return false }
+        return document.layers.contains { layer in
+            (selectedLayerIDs.contains(layer.id) || groupTransformMembers.contains { $0.id == layer.id })
+                && layerIsLocked(layer.id)
+        }
+    }
+    func toggleSelectedLayerLock() {
+        guard canSelectLayers, let document, !selectedLayerIDs.isEmpty else { return }
+        let indices = document.layers.indices.filter { selectedLayerIDs.contains(document.layers[$0].id) }
+        let lock = !indices.allSatisfy { document.layers[$0].isLocked }
+        finishOpacityEdit()
+        beginEdit("Layer Lock")
+        for index in indices { self.document?.layers[index].isLocked = lock }
+        endEdit()
+    }
+}

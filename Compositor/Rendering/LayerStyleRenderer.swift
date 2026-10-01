@@ -14,10 +14,15 @@ nonisolated enum LayerStyleRenderer {
     /// `pixels` — the layer as it's shown, with room around it for the effects — with `effects` drawn over and
     /// around it, the same size. `origin` is where the image's top-left pixel sits in the layer's own pixels, so a
     /// pattern stays put however much room there is around it, or whichever piece of the layer is being redrawn.
-    static func render(_ pixels: CGImage, effects: LayerEffects, origin: CGPoint = .zero) throws -> CGImage {
+    /// `fullSize` is the layer's own true size, not this call's (`pixels` may be only the window a paint stroke
+    /// just touched, padded by its reach) — Bevel & Emboss keys its size to it, so a layer redrawn a window at a
+    /// time bevels exactly as it would whole, and a bevel too big for a small layer eases off short of its middle
+    /// rather than warping it.
+    static func render(_ pixels: CGImage, effects: LayerEffects, origin: CGPoint = .zero, fullSize: CGSize? = nil) throws -> CGImage {
         let effects = effects.visible
         guard effects.isValid else { throw ProjectError.invalid }
         let width = pixels.width, height = pixels.height, count = width * height
+        let fullSize = fullSize ?? CGSize(width: width, height: height)
         guard count > 0, count <= 80_000_000 else { throw ExportError.tooLarge }
         let source = try BrushRaster.context(width: width, height: height, mask: false)
         BrushRaster.draw(pixels, in: CGRect(x: 0, y: 0, width: width, height: height), mask: false, context: source)
@@ -133,7 +138,7 @@ nonisolated enum LayerStyleRenderer {
         }
         if let stroke, stroke.inside || stroke.centered == true { drawStroke(stroke) }
         if let bevel = effects.bevel, bevel.size > 0 || bevel.hasTexture {
-            let shading = Self.bevelShading(bevel, shape: shape, planes: planes, origin: origin)
+            let shading = Self.bevelShading(bevel, shape: shape, planes: planes, origin: origin, fullSize: fullSize)
             canvas.draw(shading.shadow, opacity: Float(bevel.shadowOpacity), color: bevel.shadowColor, mode: bevel.shadowMode)
             canvas.draw(shading.highlight, opacity: Float(bevel.highlightOpacity), color: bevel.highlightColor, mode: bevel.highlightMode)
         }
@@ -141,35 +146,30 @@ nonisolated enum LayerStyleRenderer {
     }
 
     /// A bevel's light and shade: the layer's shape turned into a height map by its style and technique, bent by its
-    /// contour, pressed with its texture, then lit from its angle and altitude.
-    static func bevelShading(_ bevel: BevelEffect, shape: [Float], planes: Planes, origin: CGPoint) -> (highlight: [Float], shadow: [Float]) {
+    /// contour, pressed with its texture, then lit from its angle and altitude. `fullSize` is the layer's true size
+    /// (see `render`); size leaves a flat middle rather than letting opposite edges meet, regardless of how big a window is actually being drawn right now.
+    static func bevelShading(_ bevel: BevelEffect, shape: [Float], planes: Planes, origin: CGPoint, fullSize: CGSize) -> (highlight: [Float], shadow: [Float]) {
         let width = planes.width, height = planes.height, count = shape.count
-        let size = max(1, Float(bevel.size))
-        // How far into (and out of) the edge the slope runs, 0 outside to 1 inside, 0.5 on the edge.
-        let ramp: [Float]
-        switch bevel.technique {
-        case .smooth:
-            ramp = planes.gaussian(shape, sigma: size / 2)
-        case .chiselHard:
-            ramp = planes.box(planes.box(shape, radius: Int(size.rounded()), horizontal: true), radius: Int(size.rounded()), horizontal: false)
-        case .chiselSoft:
-            let boxed = planes.box(planes.box(shape, radius: Int(size.rounded()), horizontal: true), radius: Int(size.rounded()), horizontal: false)
-            ramp = planes.gaussian(boxed, sigma: 1.5)
-        }
+        let size = max(1, Float(bevel.size(clampedTo: fullSize)))
+        // Distance from the actual silhouette keeps the bevel at the edge. Blurring alpha here would
+        // let opposite edges pull each other's slopes into the middle of a small shape.
+        let distances = planes.edgeDistances(shape)
         var heights = [Float](repeating: 0, count: count)
         let range = max(0.01, Float(bevel.contourRange) / 100)
         for i in heights.indices {
-            let b = ramp[i]
+            let distance = (shape[i] >= 0.5 ? 1 : -1) * distances[i]
             var h: Float
             switch bevel.style {
-            case .innerBevel: h = min(1, max(0, 2 * b - 1))
-            case .outerBevel: h = min(1, max(0, 2 * b))
-            case .emboss: h = b
-            case .pillowEmboss: h = abs(2 * b - 1)
+            case .innerBevel: h = min(1, max(0, distance / size))
+            case .outerBevel: h = min(1, max(0, 1 + distance / size))
+            case .emboss: h = min(1, max(0, 0.5 + distance / (2 * size)))
+            case .pillowEmboss: h = min(1, abs(distance) / size)
             }
+            if bevel.technique == .smooth { h = h * h * (3 - 2 * h) }
             if bevel.hasContour { h = bevel.contour.value(min(1, h / (2 * range))) }
             heights[i] = h
         }
+        if bevel.technique == .chiselSoft { heights = planes.gaussian(heights, sigma: 1.5) }
         if bevel.soften > 0 { heights = planes.gaussian(heights, sigma: Float(bevel.soften) / 2) }
         let lift = size * Float(bevel.depth) / 100 * (bevel.up ? 1 : -1)
         let textureScale = Float(bevel.textureScale) / 100, textureLift = 2 * Float(bevel.textureDepth) / 100 * (bevel.up ? 1 : -1)
@@ -221,6 +221,42 @@ nonisolated enum LayerStyleRenderer {
     struct Planes {
         let width: Int
         let height: Int
+
+        /// An eight-neighbor distance to the silhouette, in two linear passes. Boundary pixels start
+        /// half a pixel from the edge, including partially covered pixels on an antialiased outline.
+        func edgeDistances(_ shape: [Float]) -> [Float] {
+            let diagonal: Float = Float(2).squareRoot()
+            var distances = [Float](repeating: Float(width + height), count: shape.count)
+            for y in 0..<height {
+                for x in 0..<width {
+                    let i = y * width + x, inside = shape[i] >= 0.5
+                    if (x > 0 && (shape[i - 1] >= 0.5) != inside)
+                        || (x + 1 < width && (shape[i + 1] >= 0.5) != inside)
+                        || (y > 0 && (shape[i - width] >= 0.5) != inside)
+                        || (y + 1 < height && (shape[i + width] >= 0.5) != inside) {
+                        distances[i] = max(0.01, abs(shape[i] - 0.5))
+                    }
+                    if x > 0 { distances[i] = min(distances[i], distances[i - 1] + 1) }
+                    if y > 0 {
+                        distances[i] = min(distances[i], distances[i - width] + 1)
+                        if x > 0 { distances[i] = min(distances[i], distances[i - width - 1] + diagonal) }
+                        if x + 1 < width { distances[i] = min(distances[i], distances[i - width + 1] + diagonal) }
+                    }
+                }
+            }
+            for y in stride(from: height - 1, through: 0, by: -1) {
+                for x in stride(from: width - 1, through: 0, by: -1) {
+                    let i = y * width + x
+                    if x + 1 < width { distances[i] = min(distances[i], distances[i + 1] + 1) }
+                    if y + 1 < height {
+                        distances[i] = min(distances[i], distances[i + width] + 1)
+                        if x > 0 { distances[i] = min(distances[i], distances[i + width - 1] + diagonal) }
+                        if x + 1 < width { distances[i] = min(distances[i], distances[i + width + 1] + diagonal) }
+                    }
+                }
+            }
+            return distances
+        }
 
         /// A Gaussian blur, as three box blurs each way (within a few percent of a true Gaussian, at a cost that
         /// doesn't grow with the radius).

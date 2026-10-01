@@ -144,6 +144,7 @@ struct CursorTests {
         }
 
         session.selectTool(.move)
+        session.transformAutoSelect = false
         view.mouseMoved(with: mouse(at: spot(200, 150), in: window))
         #expect(NSCursor.current === CanvasView.moveCursor, "the move pointer where a press drags the layer")
         view.mouseMoved(with: mouse(at: spot(200, 150), flags: .option, in: window))

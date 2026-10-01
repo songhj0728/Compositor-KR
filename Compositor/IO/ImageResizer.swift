@@ -95,7 +95,7 @@ actor ImageResizer {
             manifest.layers.append(ProjectLayerRecord(id: layer.id, name: layer.name, isVisible: layer.isVisible,
                 transform: transform, imageFile: layer.imageFile, parentID: layer.parentID, isGroup: layer.isGroup, opacity: layer.opacity, blendMode: layer.blendMode, maskFile: layer.maskFile, maskEnabled: layer.maskEnabled, maskSourceID: layer.maskSourceID, adjustment: layer.adjustment,
                 maskPlacement: layer.maskPlacement.map { $0.placing($0.unitToDocument.concatenating(CGAffineTransform(scaleX: sx, y: sy))) },
-                maskLinked: layer.maskLinked))
+                maskLinked: layer.maskLinked, isLocked: layer.isLocked))
         }
         return ProjectSnapshot(manifest: manifest, images: images, masks: masks)
     }

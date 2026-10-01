@@ -54,7 +54,7 @@ struct LayerStyleTests {
         styled.bevel = BevelEffect()
         session.setEffects(styled, on: id)
         let new = try await saved()
-        #expect(new.onDisk == ProjectManifest.current)
+        #expect(new.onDisk == 12)
         #expect(new.loaded.manifest.layers.first { $0.id == id }?.effects?.bevel != nil)
 
         // Taking the style off again lets the project go back to the older version.
@@ -143,6 +143,69 @@ struct LayerStyleTests {
         let outer = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
         let outside = Int(outer.inset) + 13
         #expect(try pixel(outer.image, outside, Int(outer.inset) + 30).alpha > 0, "an outer bevel reaches outside")
+    }
+
+    @Test func oversizedBevelUsesTheLayerSizeWithoutEffectPadding() throws {
+        let image = try square(size: 20, inner: 20, color: PaletteColor(red: 0.5, green: 0.5, blue: 0.5))
+        var bevel = BevelEffect()
+        bevel.size = 80
+        bevel.style = .outerBevel
+        let effects = LayerEffects(bevel: bevel)
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        let context = try BrushRaster.context(width: result.image.width, height: result.image.height, mask: false)
+        BrushRaster.draw(image, in: CGRect(x: result.inset, y: result.inset, width: 20, height: 20),
+                         mask: false, context: context)
+        let padded = try #require(context.makeImage())
+        let expected = try LayerStyleRenderer.render(padded, effects: effects,
+            origin: CGPoint(x: -result.inset, y: -result.inset), fullSize: CGSize(width: 20, height: 20))
+        let actualPixels = try BrushRaster.copy(result.image)
+        let expectedPixels = try BrushRaster.copy(expected)
+        let actualData = try #require(actualPixels.data)
+        let expectedData = try #require(expectedPixels.data)
+        #expect(Data(bytes: actualData, count: actualPixels.bytesPerRow * actualPixels.height)
+            == Data(bytes: expectedData, count: expectedPixels.bytesPerRow * expectedPixels.height))
+    }
+
+    @Test(arguments: BevelEffect.Technique.allCases)
+    func smallShapeKeepsAFlatCenter(technique: BevelEffect.Technique) throws {
+        let image = try square(size: 24, inner: 24, color: PaletteColor(red: 0.5, green: 0.5, blue: 0.5))
+        var bevel = BevelEffect()
+        bevel.technique = technique
+        bevel.size = 250
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
+        let inset = Int(result.inset)
+        let middle = try pixel(result.image, inset + 12, inset + 12)
+        #expect(abs(middle.red - 128) <= 5)
+        #expect(middle.alpha == 255)
+    }
+
+    @Test func layerLockPreventsEditsAndSurvivesSaving() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60)
+        let image = try square()
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Square"))
+        let id = try #require(session.activeLayerID)
+        let original = try #require(session.activeLayer)
+        session.toggleSelectedLayerLock()
+        #expect(session.canSelectLayers && !session.canEditLayers)
+        session.nudgeLayer(dx: 10, dy: 10)
+        session.setLayerOpacity(0.2)
+        session.deleteSelectedLayers()
+        #expect(session.activeLayer?.transform == original.transform)
+        #expect(session.activeLayer?.opacity == original.opacity)
+        #expect(session.activeLayer?.id == id)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Locked-\(UUID()).comp")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await ProjectStore.shared.save(try #require(session.projectSnapshot()), to: url)
+        let loaded = try await ProjectStore.shared.load(from: url)
+        #expect(loaded.manifest.version == 13)
+        let reopened = EditorSession()
+        reopened.installProject(loaded, from: url)
+        #expect(reopened.activeLayer?.isLocked == true && !reopened.canEditLayers)
+        session.undo()
+        #expect(session.activeLayer?.isLocked == false && session.canEditLayers)
+        reopened.toggleSelectedLayerLock()
+        #expect(reopened.canEditLayers)
     }
 
     @Test func satinAndPatternDrawOnlyInsideTheShape() throws {

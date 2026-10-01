@@ -16,6 +16,18 @@ struct LayersPanel: View {
             }.padding(18)
             Divider()
             LayerAppearanceControls(session: session, layerID: session.activeLayerID).id(session.activeLayerID)
+            HStack {
+                Text("Lock").font(.caption)
+                Button { session.toggleSelectedLayerLock() } label: {
+                    Image(systemName: session.selectionContainsLockedLayers ? "lock.fill" : "lock.open")
+                        .frame(width: 28, height: 24)
+                }
+                .buttonStyle(.borderless)
+                .help("Lock or unlock selected layers")
+                .accessibilityLabel("Lock or unlock selected layers")
+                .disabled(!session.canSelectLayers || session.selectedLayerIDs.isEmpty)
+                Spacer()
+            }.padding(.horizontal, 12).padding(.bottom, 8)
             Divider()
             if let layers = session.document?.layers, !layers.isEmpty {
                 NativeLayerList(session: session)
