@@ -38,11 +38,11 @@ than copying the platform render/session code.
 - Bevel size is limited to one quarter of the true layer's shortest side, with a
   one-pixel minimum cap. Requested zero remains zero. Effect padding and dirty
   window size must not change that cap.
-- Height slopes follow silhouette distance. Coverage >= 0.5 is inside; boundary
-  distances use abs(coverage - 0.5), minimum 0.01. Two eight-neighbor passes use
-  costs 1 and sqrt(2). This is a chamfer approximation, not exact Euclidean distance.
-  The portable square fixture has edge distance 0.5, center 1.5 and reflection
-  symmetry. macOS image tests additionally check a small shape's center color.
+- Height slopes follow exact Euclidean distance to opposite coverage (coverage >=
+  0.5 is inside). Two separable squared-distance transforms run in linear time;
+  distance is sqrt(squaredDistance) - 1 + abs(coverage - 0.5), minimum 0.01.
+  This avoids directional facets around circular holes. The portable tests compare
+  every pixel of a circular hole against a brute-force Euclidean oracle.
 - Mask input on a bevel layer previews coverage without synchronous bevel work;
   effects rebuild after commit. Committed documents and exports retain all effects.
 - UI adapters own lock icons, clipping-arrow direction and localized terminology.

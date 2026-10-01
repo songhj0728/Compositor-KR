@@ -19,7 +19,7 @@ let square: [Float] = [
 ]
 let distances = BevelGeometry.edgeDistances(square, width: 5, height: 5)
 precondition(distances[12] == 1.5)
-precondition(distances[6] == 0.5 && distances[0] == 1.5)
+precondition(distances[6] == 0.5 && abs(distances[0] - (Float(2).squareRoot() - 0.5)) < 0.00001)
 for y in 0..<5 {
     for x in 0..<5 {
         precondition(distances[y * 5 + x] == distances[y * 5 + 4 - x])
@@ -27,3 +27,21 @@ for y in 0..<5 {
     }
 }
 print("Portable core tests passed: inherited locks, cycles, toggles, bevel limits and silhouette symmetry")
+
+// Compare against a brute-force Euclidean oracle, including a circular hole.
+let side = 41
+let disk: [Float] = (0..<(side * side)).map { i in
+    let x = i % side - 20, y = i / side - 20
+    return x * x + y * y <= 144 ? 0 : 1
+}
+let circular = BevelGeometry.edgeDistances(disk, width: side, height: side)
+for i in disk.indices {
+    var nearest = Float.infinity
+    for j in disk.indices where disk[j] != disk[i] {
+        let dx = i % side - j % side, dy = i / side - j / side
+        nearest = min(nearest, Float(dx * dx + dy * dy).squareRoot())
+    }
+    precondition(abs(circular[i] - (nearest - 0.5)) < 0.00001,
+                 "Circular bevel distances must be Euclidean at every angle")
+}
+print("Circular hole Euclidean oracle passed")
