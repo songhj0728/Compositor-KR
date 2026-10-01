@@ -3,7 +3,8 @@ import CoreGraphics
 import Testing
 @testable import Compositor
 
-/// Test-only bridge to the unlinked C++ experiment. No app call site uses it.
+/// Test-only bridge to the C++ experiment compiled in the hosted test target.
+/// No app call site uses it; no external process or runtime compilation is needed.
 @MainActor
 struct RenderSnapshotPrototypeTests {
     private struct Token {
@@ -15,26 +16,6 @@ struct RenderSnapshotPrototypeTests {
         let header: [String]
         let rows: [[String]]
         let drawn: [String]
-    }
-
-    private func compileHost() throws -> URL {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let host = directory.appendingPathComponent("projection-host")
-        let compiler = Process()
-        compiler.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-        compiler.arguments = ["clang++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-O2",
-            root.appendingPathComponent("Spikes/RenderSnapshot/host.cpp").path, "-o", host.path]
-        do {
-            try compiler.run()
-            compiler.waitUntilExit()
-            try #require(compiler.terminationStatus == 0, "Compile isolated projection host")
-        } catch {
-            try? FileManager.default.removeItem(at: directory)
-            throw error
-        }
-        return host
     }
 
     private func fixtureInput(_ document: CanvasDocument, token: Token, expected: Token? = nil) -> String {
@@ -56,21 +37,12 @@ struct RenderSnapshotPrototypeTests {
         return lines.joined(separator: "\n") + "\n"
     }
 
-    private func run(_ input: String, host: URL) throws -> String {
-        let process = Process(), stdin = Pipe(), stdout = Pipe()
-        process.executableURL = host
-        process.standardInput = stdin; process.standardOutput = stdout
-        try process.run()
-        stdin.fileHandleForWriting.write(Data(input.utf8))
-        try stdin.fileHandleForWriting.close()
-        let output = stdout.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        try #require(process.terminationStatus == 0)
-        return try #require(String(data: output, encoding: .utf8))
+    private func run(_ input: String) -> String {
+        RenderProjectionFixture.project(input)
     }
 
-    private func projection(_ document: CanvasDocument, token: Token, host: URL) throws -> Projection {
-        let lines = try run(fixtureInput(document, token: token), host: host)
+    private func projection(_ document: CanvasDocument, token: Token) throws -> Projection {
+        let lines = run(fixtureInput(document, token: token))
             .split(separator: "\n").map { String($0).components(separatedBy: "\t") }
         let header = try #require(lines.first)
         try #require(header.first == "H" && header.count == 7)
@@ -119,11 +91,9 @@ struct RenderSnapshotPrototypeTests {
     }
 
     @Test func actualModelFixturesMatchExistingRenderInterpretation() throws {
-        let host = try compileHost()
-        defer { try? FileManager.default.removeItem(at: host.deletingLastPathComponent()) }
         for (_, document) in fixtures() {
             let token = Token()
-            let snapshot = try projection(document, token: token, host: host)
+            let snapshot = try projection(document, token: token)
             #expect(snapshot.header[1] == token.instance.uuidString && snapshot.header[2] == token.state.uuidString)
             #expect(snapshot.header[3] == String(token.generation) && snapshot.header[4] == document.id.uuidString)
             #expect(snapshot.rows.map { $0[1] } == document.hierarchy.order.map(\.uuidString))
@@ -167,6 +137,10 @@ struct RenderSnapshotPrototypeTests {
                 for (value, field) in zip(expected, row[30...33]) {
                     #expect(abs(value - (try #require(Double(field)))) < 1e-9)
                 }
+                var ancestors: [String] = [], parent = layer.parentID
+                while let current = parent { ancestors.append(current.uuidString); parent = byID[current]?.parentID }
+                let orderedAncestors = ancestors.reversed()
+                #expect(row[34] == (ancestors.isEmpty ? "-" : orderedAncestors.joined(separator: ",")))
                 var chain: [String] = [], source = layer.maskSourceID
                 while let current = source { chain.append(current.uuidString); source = byID[current]?.maskSourceID }
                 #expect(row[36] == (chain.isEmpty ? "-" : chain.joined(separator: ",")))
@@ -175,15 +149,13 @@ struct RenderSnapshotPrototypeTests {
     }
 
     @Test func oldProjectionSurvivesActualSourceEdits() throws {
-        let host = try compileHost()
-        defer { try? FileManager.default.removeItem(at: host.deletingLastPathComponent()) }
         var document = CanvasDocument(width: 100, height: 80, layers: [layer("a"), layer("b")])
         var token = Token()
-        let before = try projection(document, token: token, host: host)
+        let before = try projection(document, token: token)
         let savedRows = before.rows
         document.layers[0].isVisible = false; document.layers[0].opacity = 0.25
         document.layers.reverse(); token.generation += 1
-        let after = try projection(document, token: token, host: host)
+        let after = try projection(document, token: token)
         #expect(before.rows == savedRows && before.header[3] == "7")
         #expect(before.rows[0][7] == "1" && before.rows[0][8] == "1")
         #expect(before.rows[0][1] == document.layers[1].id.uuidString)
@@ -192,8 +164,6 @@ struct RenderSnapshotPrototypeTests {
     }
 
     @Test func invalidActualGraphsAndStaleTokenReturnErrors() throws {
-        let host = try compileHost()
-        defer { try? FileManager.default.removeItem(at: host.deletingLastPathComponent()) }
         let a = layer("a")
         var missing = a; missing.parentID = UUID()
         var clipping = a; clipping.maskSourceID = UUID()
@@ -202,11 +172,11 @@ struct RenderSnapshotPrototypeTests {
         let token = Token()
         for (layers, code) in [([a, a], "duplicateID"), ([missing], "missingParent"),
             ([clipping], "invalidClippingBase"), ([group], "parentCycle"), ([cycle], "clippingCycle")] {
-            let output = try run(fixtureInput(CanvasDocument(width: 8, height: 8, layers: layers), token: token), host: host)
+            let output = run(fixtureInput(CanvasDocument(width: 8, height: 8, layers: layers), token: token))
             #expect(output.hasPrefix("E\t\(code)\t"))
         }
         var newer = token; newer.generation += 1
-        let output = try run(fixtureInput(CanvasDocument(width: 8, height: 8, layers: [a]), token: token, expected: newer), host: host)
+        let output = run(fixtureInput(CanvasDocument(width: 8, height: 8, layers: [a]), token: token, expected: newer))
         #expect(output.hasPrefix("E\tstalePublication\t"))
     }
 }
