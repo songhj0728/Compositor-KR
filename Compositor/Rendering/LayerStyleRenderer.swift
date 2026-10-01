@@ -18,7 +18,8 @@ nonisolated enum LayerStyleRenderer {
     /// just touched, padded by its reach) — Bevel & Emboss keys its size to it, so a layer redrawn a window at a
     /// time bevels exactly as it would whole, and a bevel too big for a small layer eases off short of its middle
     /// rather than warping it.
-    static func render(_ pixels: CGImage, effects: LayerEffects, origin: CGPoint = .zero, fullSize: CGSize? = nil) throws -> CGImage {
+    static func render(_ pixels: CGImage, effects: LayerEffects, origin: CGPoint = .zero, fullSize: CGSize? = nil, isCancelled: () -> Bool = { false }) throws -> CGImage {
+        if isCancelled() { throw CancellationError() }
         let effects = effects.visible
         guard effects.isValid else { throw ProjectError.invalid }
         let width = pixels.width, height = pixels.height, count = width * height
@@ -34,6 +35,7 @@ nonisolated enum LayerStyleRenderer {
         var layer = [SIMD4<Float>](repeating: .zero, count: count)
         var shape = [Float](repeating: 0, count: count)
         for y in 0..<height {
+            if isCancelled() { throw CancellationError() }
             for x in 0..<width {
                 let at = y * rowBytes + x * 4, index = y * width + x
                 let pixel = SIMD4<Float>(Float(bytes[at]), Float(bytes[at + 1]), Float(bytes[at + 2]), Float(bytes[at + 3])) / 255
@@ -138,25 +140,28 @@ nonisolated enum LayerStyleRenderer {
         }
         if let stroke, stroke.inside || stroke.centered == true { drawStroke(stroke) }
         if let bevel = effects.bevel, bevel.size > 0 || bevel.hasTexture {
-            let shading = Self.bevelShading(bevel, shape: shape, planes: planes, origin: origin, fullSize: fullSize)
+            let shading = try Self.bevelShading(bevel, shape: shape, planes: planes, origin: origin, fullSize: fullSize, isCancelled: isCancelled)
+            if isCancelled() { throw CancellationError() }
             canvas.draw(shading.shadow, opacity: Float(bevel.shadowOpacity), color: bevel.shadowColor, mode: bevel.shadowMode)
             canvas.draw(shading.highlight, opacity: Float(bevel.highlightOpacity), color: bevel.highlightColor, mode: bevel.highlightMode)
         }
+        if isCancelled() { throw CancellationError() }
         return try canvas.image(space: source.colorSpace ?? WorkingColorSpace.current)
     }
 
     /// A bevel's light and shade: the layer's shape turned into a height map by its style and technique, bent by its
     /// contour, pressed with its texture, then lit from its angle and altitude. `fullSize` is the layer's true size
     /// (see `render`); size leaves a flat middle rather than letting opposite edges meet, regardless of how big a window is actually being drawn right now.
-    static func bevelShading(_ bevel: BevelEffect, shape: [Float], planes: Planes, origin: CGPoint, fullSize: CGSize) -> (highlight: [Float], shadow: [Float]) {
+    static func bevelShading(_ bevel: BevelEffect, shape: [Float], planes: Planes, origin: CGPoint, fullSize: CGSize, isCancelled: () -> Bool = { false }) throws -> (highlight: [Float], shadow: [Float]) {
         let width = planes.width, height = planes.height, count = shape.count
         let size = max(1, Float(bevel.size(clampedTo: fullSize)))
         // Distance from the actual silhouette keeps the bevel at the edge. Blurring alpha here would
         // let opposite edges pull each other's slopes into the middle of a small shape.
-        let distances = BevelGeometry.edgeDistances(shape, width: width, height: height)
+        let distances = try BevelGeometry.edgeDistances(shape, width: width, height: height, isCancelled: isCancelled)
         var heights = [Float](repeating: 0, count: count)
         let range = max(0.01, Float(bevel.contourRange) / 100)
         for i in heights.indices {
+            if i % width == 0 && isCancelled() { throw CancellationError() }
             let distance = (shape[i] >= 0.5 ? 1 : -1) * distances[i]
             var h: Float
             switch bevel.style {
@@ -174,6 +179,7 @@ nonisolated enum LayerStyleRenderer {
         let lift = size * Float(bevel.depth) / 100 * (bevel.up ? 1 : -1)
         let textureScale = Float(bevel.textureScale) / 100, textureLift = 2 * Float(bevel.textureDepth) / 100 * (bevel.up ? 1 : -1)
         for y in 0..<height {
+            if isCancelled() { throw CancellationError() }
             for x in 0..<width {
                 let i = y * width + x
                 var h = heights[i] * lift
@@ -192,6 +198,7 @@ nonisolated enum LayerStyleRenderer {
         let flat = sin(altitude)
         var highlight = [Float](repeating: 0, count: count), shadow = [Float](repeating: 0, count: count)
         for y in 0..<height {
+            if isCancelled() { throw CancellationError() }
             for x in 0..<width {
                 let i = y * width + x
                 let region: Float

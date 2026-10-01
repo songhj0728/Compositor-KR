@@ -865,7 +865,7 @@ nonisolated enum LayerEffectsRenderer {
 
     /// `image` with `effects` around it. `mask` (the layer's own mask, in its pixel grid) hides part of the layer
     /// before the effects are made, so they follow the shape that is actually shown, as in Photoshop.
-    static func render(_ image: CGImage, mask: CGImage?, effects: LayerEffects) throws -> (image: CGImage, inset: CGFloat) {
+    static func render(_ image: CGImage, mask: CGImage?, effects: LayerEffects, isCancelled: () -> Bool = { false }) throws -> (image: CGImage, inset: CGFloat) {
         let effects = effects.visible
         guard effects.isValid else { throw ProjectError.invalid }
         let inset = margin(for: effects)
@@ -881,7 +881,7 @@ nonisolated enum LayerEffectsRenderer {
             BrushRaster.draw(shown, in: placed, mask: false, context: padded)
             guard let room = padded.makeImage() else { throw ExportError.render }
             return (try LayerStyleRenderer.render(room, effects: effects, origin: CGPoint(x: -inset, y: -inset),
-                                                  fullSize: CGSize(width: image.width, height: image.height)), inset)
+                                                  fullSize: CGSize(width: image.width, height: image.height), isCancelled: isCancelled), inset)
         }
         if let metal = MetalLayerEffects.shared {
             // The pixels with room around them, then the stroke and shadow drawn on the GPU.

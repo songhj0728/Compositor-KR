@@ -45,3 +45,18 @@ for i in disk.indices {
                  "Circular bevel distances must be Euclidean at every angle")
 }
 print("Circular hole Euclidean oracle passed")
+
+// Interrupted obsolete requests must stop before both complete transforms finish.
+var cancellationChecks = 0
+do {
+    _ = try BevelGeometry.edgeDistances(disk, width: side, height: side, isCancelled: {
+        cancellationChecks += 1
+        return cancellationChecks == 5
+    })
+    preconditionFailure("An obsolete distance calculation completed")
+} catch BevelGeometry.CalculationError.cancelled {
+    precondition(cancellationChecks == 5)
+} catch { preconditionFailure("Unexpected cancellation error") }
+let narrow = BevelGeometry.edgeDistances([0, 1, 1, 0], width: 1, height: 4)
+precondition(narrow == [0.5, 0.5, 0.5, 0.5])
+print("Cooperative cancellation and single-column geometry passed")
