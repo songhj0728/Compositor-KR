@@ -29,6 +29,8 @@ jobs:
         run: |
           swiftc Compositor/Core/BevelGeometry.swift Compositor/Core/LayerLockRules.swift Tests/PortableCore/main.swift -o "$RUNNER_TEMP/compositor-core-tests"
           "$RUNNER_TEMP/compositor-core-tests"
+          cc -std=c11 -O2 -Wall -Wextra -Werror Compositor/Core/StylePixels.c Tests/PortableCore/style_pixels.c -lm -o "$RUNNER_TEMP/compositor-style-tests"
+          "$RUNNER_TEMP/compositor-style-tests"
 
       - name: Resolve Swift packages
         run: >
