@@ -187,6 +187,114 @@ struct LayerStyleTests {
         #expect(differences.max()! <= 2, "Live regions must match the latest full-resolution mask effects")
     }
 
+    @Test(arguments: [false, true])
+    func canvasPresentsLiveBevelAndKeepsCompletedResult(mask: Bool) async throws {
+        let session = EditorSession()
+        session.createDocument(width: 600, height: 600)
+        let image = try square(size: 500, inner: 500, color: PaletteColor(red: 0.15, green: 0.5, blue: 0.9))
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Canvas bevel"))
+        let id = try #require(session.activeLayerID)
+        var bevel = BevelEffect()
+        bevel.size = 24
+        session.setEffects(LayerEffects(bevel: bevel), on: id)
+        if mask { session.addLayerMask(); session.maskPaintWhite = false }
+        session.selectTool(.brush)
+        session.brushMode = mask ? .paint : .erase
+        session.brushSettings.diameter = 40
+        let canvas = CanvasView(session: session)
+        canvas.frame = CGRect(x: 0, y: 0, width: 600, height: 600)
+        session.viewport.resize(to: canvas.bounds.size, backingScale: 1, documentSize: session.document?.size)
+        session.zoom(to: 1)
+        canvas.synchronizeDisplay()
+        _ = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+        let deadline = ContinuousClock.now + .seconds(15)
+        while session.effectsPreviews.rendered(id) == nil && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        var samples: [Duration] = []
+        session.beginBrush(at: CGPoint(x: 200, y: 300))
+        for x in stride(from: 210, through: 390, by: 20) {
+            session.continueBrush(at: CGPoint(x: x, y: 300))
+            let started = ContinuousClock.now
+            canvas.synchronizeDisplay()
+            _ = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+            let surface = try #require(canvas.strokeSurface)
+            while surface.isRendering && ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(1))
+            }
+            #expect(!surface.isRendering && session.brushStroke != nil)
+            _ = try #require(surface.image)
+            let frame = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+            let renderer = try #require(GPUCanvasRenderer.shared)
+            _ = try #require(renderer.context.createCGImage(frame, from: CGRect(origin: .zero, size: canvas.bounds.size)))
+            samples.append(started.duration(to: .now))
+        }
+        print("Debug canvas bevel24 mask=\(mask), input-to-render samples: \(samples)")
+        #expect(session.finishBrushImmediately())
+        let finished = ContinuousClock.now
+        canvas.synchronizeDisplay()
+        while canvas.strokeSurface != nil && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        #expect(canvas.strokeSurface == nil, "Completion must hand off without another user event")
+        let completed = try #require(session.effectsPreviews.rendered(id))
+        let handoffDuration = finished.duration(to: .now)
+        let layer = try #require(session.activeLayer)
+        let clip = layer.mask?.clipImage(placement: layer.mask?.placement, over: layer.transform,
+                                        width: layer.asset!.image.width, height: layer.asset!.image.height, limit: 1000)
+        let expected = try LayerEffectsRenderer.render(layer.asset!.image, mask: clip, effects: layer.effects!)
+        let actualData = try #require(completed.image.dataProvider?.data) as Data
+        // Cropped CGImages can retain the parent row stride: compare drawn tight buffers.
+        let tight = try BrushRaster.context(width: completed.image.width, height: completed.image.height, mask: false)
+        BrushRaster.draw(completed.image, in: CGRect(x: 0, y: 0, width: completed.image.width, height: completed.image.height), mask: false, context: tight)
+        let actual = try #require(tight.makeImage()?.dataProvider?.data) as Data
+        let reference = try #require(expected.image.dataProvider?.data) as Data
+        #expect(!actualData.isEmpty && actual.count == reference.count)
+        let differences = zip(actual, reference).map { abs(Int($0) - Int($1)) }
+        if let maximum = differences.max(), maximum > 2 {
+            let at = differences.firstIndex(of: maximum)!
+            print("Canvas max difference \(maximum) at \(at / 4 % completed.image.width),\(at / 4 / completed.image.width), channel \(at % 4): \(actual[at]) vs \(reference[at])")
+        }
+        #expect(differences.max()! <= 2)
+        _ = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+        try await Task.sleep(for: .milliseconds(550))
+        let retained = try #require(session.effectsPreviews.rendered(id))
+        #expect(completed.image === retained.image, "A completed full-resolution stroke must not trigger another full render")
+        print("Debug canvas bevel24 mask=\(mask), handoff: \(handoffDuration)")
+    }
+
+    @Test func bulkCompositingMatchesGeneralBlendPath() {
+        let color = PaletteColor(red: 0.2, green: 0.7, blue: 0.4)
+        let uniform = SIMD3<Float>(0.2, 0.7, 0.4)
+        let coverage = (0..<128).map { Float($0 % 17) / 16 }
+        for mode in [LayerBlendMode.normal, .multiply, .screen] {
+            var fast = LayerStyleRenderer.Canvas(width: 128, height: 1)
+            for i in fast.pixels.indices {
+                let a = Float(i % 31) / 30
+                fast.pixels[i] = SIMD4(0.8 * a, 0.3 * a, 0.5 * a, a)
+            }
+            var reference = fast
+            fast.draw(coverage, opacity: 0.65, color: color, mode: mode)
+            reference.draw(coverage, opacity: 0.65, colors: Array(repeating: uniform, count: 128), mode: mode)
+            for i in fast.pixels.indices { for c in 0..<4 {
+                #expect(abs(fast.pixels[i][c] - reference.pixels[i][c]) < 0.000001)
+            } }
+        }
+    }
+
+    @Test func portableDistanceKernelMatchesReference() throws {
+        let width = 63, height = 47
+        for kind in 0..<3 {
+            let shape: [Float] = (0..<(width * height)).map { i in
+                kind == 0 ? 0 : kind == 1 ? 1 : Float((i * 71 + i / width * 17) % 101) / 100
+            }
+            let expected = BevelGeometry.edgeDistances(shape, width: width, height: height)
+            var actual = [Float](repeating: 0, count: shape.count)
+            #expect(style_distances(shape, &actual, Int32(width), Int32(height)) == 1)
+            for i in shape.indices { #expect(abs(abs(actual[i]) - expected[i]) < 0.0001) }
+        }
+    }
+
     @Test func smoothBevelLightingTapersAtBothEndsOfItsWidth() throws {
         let width = 160, height = 80
         let shape: [Float] = (0..<(width * height)).map { ($0 % width >= 20 && $0 % width < 140) ? 1 : 0 }

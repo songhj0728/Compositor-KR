@@ -43,8 +43,8 @@ than copying the platform render/session code.
   distance is sqrt(squaredDistance) - 1 + abs(coverage - 0.5), minimum 0.01.
   This avoids directional facets around circular holes. The portable tests compare
   every pixel of a circular hole against a brute-force Euclidean oracle.
-- Mask input on a bevel layer previews coverage without synchronous bevel work;
-  effects rebuild after commit. Committed documents and exports retain all effects.
+- Mask input on a bevel layer renders immutable live regions on a worker.
+  Committed documents and exports retain all effects.
 - UI adapters own lock icons, clipping-arrow direction and localized terminology.
   Localized labels never replace persisted enum identifiers.
 
@@ -55,13 +55,12 @@ Windows tests. Synchronizing that branch is a separate operation.
 
 ## Responsive bevel previews
 
-- Canvas bevel previews first use a maximum side of 768 pixels (512 with a mask), still within the
+- Canvas bevel previews first use a maximum side of 768 pixels (including masks), still within the
   existing per-layer memory budget. After that result, 350 ms without a superseding
   request allows refinement to the existing preview limit (up to 1536 pixels).
 - Only refined results enter the undo/redo result cache. Export is unchanged and
   always renders at full resolution. No saved preference or format field is added.
-- Superseded work cooperatively cancels between distance-transform lines and bevel
-  shading rows so it releases the single worker for newer requests. Cancellation
+- Superseded work cooperatively cancels between rendering stages so it releases the single worker for newer requests. Cancellation
   is passed as a callback; the shared geometry contains no platform scheduling API.
 - Distance-transform line buffers are reused; the Euclidean geometry is unchanged.
 
@@ -101,4 +100,30 @@ Windows tests. Synchronizing that branch is a separate operation.
   must retain gradation when a normal faces below the horizon rather than clipping.
 - Windows can implement the same worker and region contract with its existing image
   adapter. No Metal or Apple scheduler is required by the height/lighting core.
-  Measure interactive performance in an optimized build, not a Swift -Onone build.
+  Validate the normal Xcode Debug build as well as optimized builds.
+
+## Portable bulk pixel kernels
+
+`Compositor/Core/StylePixels.c` implements exact signed distances, finite-support
+box blur, height/normal lighting and common RGBA compositing using C11 buffers.
+It has no Apple frameworks, dispatch, intrinsics or SIMD ABI dependency. The macOS
+adapter calls it through the existing bridging header; the app target already
+compiles C at `-O3` even when Swift debugging remains `-Onone`. Windows builds
+should compile this translation unit with optimization too. Swift geometry remains
+a reference oracle for the kernel tests. Cancellation is checked between stages.
+
+Run portable bounds/geometry tests, also suitable for AddressSanitizer:
+
+```sh
+cc -std=c11 -O2 Compositor/Core/StylePixels.c Tests/PortableCore/style_pixels.c -lm -o style-pixels-tests
+./style-pixels-tests
+```
+
+The output reach includes the profile width, the sum of the actual box radii for
+signed-distance, height and soften filters, plus the normal derivative. Input
+windows include this support again; never use a smaller halo than the filters.
+On mouse-up, flush final tiles for both direct paint and masks. Completion must
+finish cache handoff without another input event. If layer geometry is unchanged,
+trim empty stroke-grid padding and, if its seed was full-resolution, adopt the result under the
+committed image/mask identities, so another full render is unnecessary. If geometry
+changes, retain the placed surface while a fresh preview is built.
