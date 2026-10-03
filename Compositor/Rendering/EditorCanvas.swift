@@ -561,19 +561,34 @@ final class CanvasView: NSView {
             } else {
                 // Mouse-up flushes the final brush tail before removing the live stroke.
                 // Submit those immutable tiles too, then hand off only the finished result.
-                if stroke.isMask {
-                    if let placement = stroke.layer.mask?.placement {
-                        _ = placedMaskSurface(layer: stroke.layer, stroke: stroke, placement: placement)
-                    } else {
-                        _ = strokeSurface(layer: stroke.layer, stroke: stroke, mask: nil)
-                    }
+                if stroke.isMask, let placement = stroke.layer.mask?.placement {
+                    _ = placedMaskSurface(layer: stroke.layer, stroke: stroke, placement: placement)
+                } else {
+                    let mask = stroke.isMask ? nil : stroke.layer.mask?.clipImage(
+                        placement: stroke.layer.mask?.placement, over: stroke.layer.transform,
+                        width: stroke.layer.asset?.image.width ?? stroke.width,
+                        height: stroke.layer.asset?.image.height ?? stroke.height,
+                        limit: CGFloat(max(stroke.width, stroke.height)))
+                    _ = strokeSurface(layer: stroke.layer, stroke: stroke, mask: mask)
                 }
                 if !surface.isRendering {
                     if let built = surface.image {
                         let transform = stroke.isMask && stroke.layer.mask?.placement != nil
                             ? stroke.layer.transform : stroke.paintTransform
                         let placement = surface.placement ?? LayerEffectsRenderer.placed(transform, image: built, inset: surface.margin)
-                        session.effectsPreviews.seed(surface.layerID, image: built, placement: placement)
+                        if surface.hasFullResolutionSeed, let current, let asset = current.asset,
+                           current.effects?.visible == stroke.layer.effects?.visible,
+                           current.transform == stroke.layer.transform,
+                           surface.sourceRect.size == CGSize(width: asset.image.width, height: asset.image.height),
+                           let cropped = built.cropping(to: CGRect(origin: surface.sourceRect.origin,
+                               size: CGSize(width: surface.sourceRect.width + 2 * surface.margin,
+                                            height: surface.sourceRect.height + 2 * surface.margin))) {
+                            // A stroke grid includes empty canvas around the layer. Trim that
+                            // padding, keeping the effect margin, to reuse its final pixels.
+                            session.effectsPreviews.acceptCompletedStroke(current, image: cropped, inset: surface.margin)
+                        } else {
+                            session.effectsPreviews.seed(surface.layerID, image: built, placement: placement)
+                        }
                     }
                     strokeSurface = nil
                     strokeSurfaceStroke = nil
@@ -1303,7 +1318,7 @@ final class CanvasView: NSView {
     }
 
     /// The effects surface for the layer being painted, made when the stroke starts and updated as it goes.
-    private var strokeSurface: LayerEffectsSurface?
+    private(set) var strokeSurface: LayerEffectsSurface?
     private var strokeSurfaceStroke: BrushStroke?
     /// Where the GPU draws the canvas, under the overlays (see `drawOnGPU`).
     var gpuView: MetalCanvasView?
@@ -1324,7 +1339,10 @@ final class CanvasView: NSView {
             let previous = session.effectsPreviews.rendered(layer.id)
             strokeSurface = LayerEffectsSurface(layerID: layer.id, effects: effects, grid: grid, sourceRect: stroke.sourceRect,
                 seed: previous.flatMap { $0.placement == nil ? ($0.image, $0.inset) : nil },
-                completion: { [weak self] in self?.needsDisplay = true })
+                completion: { [weak self] in
+                    self?.synchronizeDisplay()
+                    self?.needsDisplay = true
+                })
         }
         guard let surface = strokeSurface else { return nil }
         if stroke.isMask {
@@ -1362,7 +1380,10 @@ final class CanvasView: NSView {
             let previous = session.effectsPreviews.rendered(layer.id)
             strokeSurface = LayerEffectsSurface(layerID: layer.id, effects: effects, grid: grid, sourceRect: full,
                 seed: previous.flatMap { $0.placement == nil ? ($0.image, $0.inset) : nil },
-                completion: { [weak self] in self?.needsDisplay = true })
+                completion: { [weak self] in
+                    self?.synchronizeDisplay()
+                    self?.needsDisplay = true
+                })
         }
         guard let surface = strokeSurface else { return nil }
         let toGrid = BrushRaster.pixelToDocument(stroke.paintTransform, width: stroke.width, height: stroke.height)
