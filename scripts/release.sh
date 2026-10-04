@@ -45,7 +45,10 @@ echo "==> Archiving a Release build"
 if $DEVELOPER_ID; then
   signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM")
 else
-  signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM="")
+  # No hardened runtime with an ad hoc signature: its library validation only loads frameworks signed by the app's own
+  # team, and ad hoc code has none, so the app would die at launch failing to load Sparkle. Notarization is what needs
+  # the hardened runtime, and an ad hoc build isn't notarized.
+  signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM="" ENABLE_HARDENED_RUNTIME=NO)
 fi
 xcodebuild archive -quiet \
   -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
@@ -66,6 +69,17 @@ else
   APP_PATH="$WORK/export/$APP.app"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+# A signature can verify and the app still be refused at launch (a framework the loader won't map), so start it and
+# make sure it's still running a few seconds later.
+echo "==> Checking that the app launches"
+"$APP_PATH/Contents/MacOS/$APP" >"$WORK/launch.log" 2>&1 &
+LAUNCHED=$!
+sleep 5
+if ! kill -0 $LAUNCHED 2>/dev/null; then
+  echo "The built app quit at launch:"; head -5 "$WORK/launch.log"; exit 1
+fi
+kill $LAUNCHED; wait $LAUNCHED 2>/dev/null || true
 
 if $NOTARIZE; then
   echo "==> Notarizing the app"
