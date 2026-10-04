@@ -879,9 +879,11 @@ nonisolated enum LayerEffectsRenderer {
         let full = CGRect(x: 0, y: 0, width: CGFloat(width), height: CGFloat(height))
         // The layer as it is shown: its pixels through its mask.
         let shown = try masked(image, mask: mask)
+        // The layer's own RGB space, so a wide-gamut layer isn't clipped to whichever project is in front.
+        let space = image.colorSpace?.model == .rgb ? image.colorSpace : nil
         // Photoshop's Layer Style past the GPU pass's reach: drawn whole in floating point.
         if effects.needsStyleRenderer {
-            let padded = try BrushRaster.context(width: width, height: height, mask: false)
+            let padded = try BrushRaster.context(width: width, height: height, mask: false, space: space)
             BrushRaster.draw(shown, in: placed, mask: false, context: padded)
             guard let room = padded.makeImage() else { throw ExportError.render }
             return (try LayerStyleRenderer.render(room, effects: effects, origin: CGPoint(x: -inset, y: -inset),
@@ -889,13 +891,13 @@ nonisolated enum LayerEffectsRenderer {
         }
         if let metal = MetalLayerEffects.shared {
             // The pixels with room around them, then the stroke and shadow drawn on the GPU.
-            let padded = try BrushRaster.context(width: width, height: height, mask: false)
+            let padded = try BrushRaster.context(width: width, height: height, mask: false, space: space)
             BrushRaster.draw(shown, in: placed, mask: false, context: padded)
             if let room = padded.makeImage(), let built = try? metal.render(room, effects: effects) {
                 return (built, inset)
             }
         }
-        let context = try BrushRaster.context(width: width, height: height, mask: false)
+        let context = try BrushRaster.context(width: width, height: height, mask: false, space: space)
         if let shadow = effects.shadow, shadow.opacity > 0 {
             let alpha = try coverage(shown, in: placed.offsetBy(dx: shadow.offset.width, dy: shadow.offset.height),
                                      size: CGSize(width: width, height: height), blur: shadow.blur)
@@ -954,7 +956,8 @@ nonisolated enum LayerEffectsRenderer {
     private static func masked(_ image: CGImage, mask: CGImage?) throws -> CGImage {
         guard let mask else { return image }
         let bounds = CGRect(x: 0, y: 0, width: image.width, height: image.height)
-        let context = try BrushRaster.context(width: image.width, height: image.height, mask: false)
+        let context = try BrushRaster.context(width: image.width, height: image.height, mask: false,
+                                              space: image.colorSpace?.model == .rgb ? image.colorSpace : nil)
         // Draw the source and its grayscale mask in the same image coordinate system.
         context.translateBy(x: 0, y: bounds.height)
         context.scaleBy(x: 1, y: -1)

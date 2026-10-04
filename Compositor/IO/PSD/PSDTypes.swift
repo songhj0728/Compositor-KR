@@ -32,6 +32,8 @@ nonisolated struct PSDDocument: @unchecked Sendable {
     var resolution: Double
     /// Bottom to top, including folders. Hidden section dividers are not stored.
     var layers: [PSDRecord]
+    /// The RGB space of the embedded ICC profile (image resource 1039); nil when there is none, read as sRGB.
+    var colorSpace: CGColorSpace? = nil
 }
 
 nonisolated struct PSDRecord: @unchecked Sendable {

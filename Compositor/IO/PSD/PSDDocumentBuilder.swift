@@ -7,6 +7,8 @@ nonisolated struct PSDImport: @unchecked Sendable {
     let resolution: Double
     let layers: [ImageLayer]
     let conversions: [PSDConversion]
+    /// The project profile the file's embedded ICC profile is, so a PSD opened as a new canvas keeps its space.
+    var colorProfile: DocumentColorProfile = .sRGB
 }
 
 nonisolated enum PSDDocumentBuilder {
@@ -140,7 +142,8 @@ nonisolated enum PSDDocumentBuilder {
             }
         }
         return PSDImport(width: document.width, height: document.height, resolution: document.resolution,
-                         layers: layers, conversions: conversions)
+                         layers: layers, conversions: conversions,
+                         colorProfile: document.colorSpace.flatMap(DocumentColorProfile.init(matching:)) ?? .sRGB)
     }
 
     private static func imported(_ image: CGImage, name: String) throws -> ImportedImage {

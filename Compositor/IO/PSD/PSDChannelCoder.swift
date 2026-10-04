@@ -55,7 +55,8 @@ nonisolated enum PSDChannelCoder {
         return plane
     }
 
-    static func rgbaImage(width: Int, height: Int, red: [UInt8], green: [UInt8], blue: [UInt8], alpha: [UInt8]) throws -> CGImage {
+    static func rgbaImage(width: Int, height: Int, red: [UInt8], green: [UInt8], blue: [UInt8], alpha: [UInt8],
+                          space: CGColorSpace? = nil) throws -> CGImage {
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         let count = width * height
         for i in 0..<count {
@@ -65,16 +66,16 @@ nonisolated enum PSDChannelCoder {
             pixels[i * 4 + 2] = UInt8((UInt16(blue[i]) * UInt16(a) + 127) / 255)
             pixels[i * 4 + 3] = a
         }
-        return try image(width: width, height: height, rgba: pixels)
+        return try image(width: width, height: height, rgba: pixels, space: space)
     }
 
-    static func image(width: Int, height: Int, rgba: [UInt8]) throws -> CGImage {
+    static func image(width: Int, height: Int, rgba: [UInt8], space: CGColorSpace? = nil) throws -> CGImage {
         let bytesPerRow = width * 4
         let data = Data(rgba)
         guard let provider = CGDataProvider(data: data as CFData),
               let image = CGImage(
                 width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: bytesPerRow,
-                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                space: space ?? CGColorSpace(name: CGColorSpace.sRGB)!,
                 bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue),
                 provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
         else { throw PSDError.truncated }

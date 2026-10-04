@@ -942,7 +942,8 @@ final class EditorSession {
         let added = incoming.count + (wrapping ? 1 : 0)
         if (document?.layers.count ?? 0) + added > 10_000 { throw ImageImportError.tooLarge }
         if document == nil {
-            document = CanvasDocument(width: imported.width, height: imported.height, layers: incoming, resolution: imported.resolution)
+            document = CanvasDocument(width: imported.width, height: imported.height, layers: incoming, resolution: imported.resolution,
+                                      colorProfile: imported.colorProfile)
             viewport.fit(documentSize: document!.size)
             activeLayerID = incoming.last(where: { $0.parentID == nil })?.id ?? incoming.last?.id
             return

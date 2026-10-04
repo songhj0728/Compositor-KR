@@ -25,7 +25,9 @@ nonisolated enum LayerStyleRenderer {
         let width = pixels.width, height = pixels.height, count = width * height
         let fullSize = fullSize ?? CGSize(width: width, height: height)
         guard count > 0, count <= 80_000_000 else { throw ExportError.tooLarge }
-        let source = try BrushRaster.context(width: width, height: height, mask: false)
+        // In the pixels' own RGB space, so the styled layer comes back in it too rather than in the front project's.
+        let source = try BrushRaster.context(width: width, height: height, mask: false,
+                                             space: pixels.colorSpace?.model == .rgb ? pixels.colorSpace : nil)
         BrushRaster.draw(pixels, in: CGRect(x: 0, y: 0, width: width, height: height), mask: false, context: source)
         guard let raw = source.data else { throw ExportError.render }
         let bytes = raw.assumingMemoryBound(to: UInt8.self)
