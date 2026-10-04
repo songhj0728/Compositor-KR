@@ -502,6 +502,16 @@
         }
       }
     },
+    "Add Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 추가"
+          }
+        }
+      }
+    },
     "Add Noise" : {
       "localizations" : {
         "ko" : {
@@ -1532,6 +1542,16 @@
         }
       }
     },
+    "Clipping Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클리핑 마스크"
+          }
+        }
+      }
+    },
     "Clone Stamp" : {
       "localizations" : {
         "ko" : {
@@ -2298,6 +2318,16 @@
         }
       }
     },
+    "Delete Mask" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 삭제"
+          }
+        }
+      }
+    },
     "Delete selected effect" : {
       "localizations" : {
         "ko" : {
@@ -2324,6 +2354,17 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택한 레이어 모두 삭제"
+          }
+        }
+      }
+    },
+    "Delete Selected Layers" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택한 레이어 삭제"
           }
         }
       }
@@ -2456,6 +2497,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "방향"
+          }
+        }
+      }
+    },
+    "Disable Mask" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 사용 안 함"
           }
         }
       }
@@ -2747,6 +2799,16 @@
         }
       }
     },
+    "Edit %@ Adjustment" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 조정 레이어 편집"
+          }
+        }
+      }
+    },
     "Edit %@." : {
       "localizations" : {
         "ko" : {
@@ -2834,6 +2896,17 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "렌즈 프로필 보정 사용"
+          }
+        }
+      }
+    },
+    "Enable Mask" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 사용"
           }
         }
       }
@@ -3788,6 +3861,16 @@
         }
       }
     },
+    "Hide All (Black)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 숨기기 (검은색)"
+          }
+        }
+      }
+    },
     "Hide Compositor" : {
       "localizations" : {
         "ko" : {
@@ -4517,6 +4600,17 @@
         }
       }
     },
+    "Layer Lock" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 잠금"
+          }
+        }
+      }
+    },
     "Layer Style" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4778,6 +4872,17 @@
         }
       }
     },
+    "Link Mask" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 연결"
+          }
+        }
+      }
+    },
     "Liquify" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4820,6 +4925,16 @@
         }
       }
     },
+    "Lock" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "잠금"
+          }
+        }
+      }
+    },
     "Lock aspect ratio" : {
       "localizations" : {
         "ko" : {
@@ -4846,6 +4961,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "안내선 잠그기"
+          }
+        }
+      }
+    },
+    "Lock or unlock selected layers" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택한 레이어 잠금 또는 잠금 해제"
           }
         }
       }
@@ -5031,6 +5156,39 @@
         }
       }
     },
+    "Merge Down" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아래 레이어와 병합"
+          }
+        }
+      }
+    },
+    "Merge Group" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹 병합"
+          }
+        }
+      }
+    },
+    "Merge Layers" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 병합"
+          }
+        }
+      }
+    },
     "Midtones" : {
       "localizations" : {
         "ko" : {
@@ -5178,6 +5336,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새로 만들기"
+          }
+        }
+      }
+    },
+    "New %@ Adjustment" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 조정 레이어 만들기"
           }
         }
       }
@@ -5652,6 +5820,7 @@
       }
     },
     "Original pixels · alpha-weighted histogram" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -5662,6 +5831,7 @@
       }
     },
     "Original pixels · selection and alpha-weighted histogram" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -6664,6 +6834,16 @@
         }
       }
     },
+    "Rename…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이름 바꾸기…"
+          }
+        }
+      }
+    },
     "Replaces this curve with a straight line or a contrast curve." : {
       "localizations" : {
         "ko" : {
@@ -6817,6 +6997,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Reveal All (White)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 나타내기 (흰색)"
           }
         }
       }
@@ -8344,6 +8534,7 @@
       }
     },
     "Underlying pixels · alpha-weighted histogram" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -8419,6 +8610,17 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "단위"
+          }
+        }
+      }
+    },
+    "Unlink Mask" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마스크 연결 해제"
           }
         }
       }
@@ -8854,186 +9056,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "한국어"
-          }
-        }
-      }
-    },
-    "Lock" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "잠금"
-          }
-        }
-      }
-    },
-    "Layer Lock" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "레이어 잠금"
-          }
-        }
-      }
-    },
-    "Lock or unlock selected layers" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "선택한 레이어 잠금 또는 잠금 해제"
-          }
-        }
-      }
-    },
-    "Rename…" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이름 바꾸기…"
-          }
-        }
-      }
-    },
-    "Delete Mask" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마스크 삭제"
-          }
-        }
-      }
-    },
-    "Delete Selected Layers" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "선택한 레이어 삭제"
-          }
-        }
-      }
-    },
-    "Add Mask" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마스크 추가"
-          }
-        }
-      }
-    },
-    "Reveal All (White)" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "모두 나타내기 (흰색)"
-          }
-        }
-      }
-    },
-    "Hide All (Black)" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "모두 숨기기 (검은색)"
-          }
-        }
-      }
-    },
-    "Enable Mask" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마스크 사용"
-          }
-        }
-      }
-    },
-    "Disable Mask" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마스크 사용 안 함"
-          }
-        }
-      }
-    },
-    "Link Mask" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마스크 연결"
-          }
-        }
-      }
-    },
-    "Unlink Mask" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "마스크 연결 해제"
-          }
-        }
-      }
-    },
-    "Merge Down" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "아래 레이어와 병합"
-          }
-        }
-      }
-    },
-    "Merge Layers" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "레이어 병합"
-          }
-        }
-      }
-    },
-    "Merge Group" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "그룹 병합"
-          }
-        }
-      }
-    },
-    "New %@ Adjustment" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 조정 레이어 만들기"
-          }
-        }
-      }
-    },
-    "Edit %@ Adjustment" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 조정 레이어 편집"
           }
         }
       }

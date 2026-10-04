@@ -974,7 +974,7 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         layerName = layer.name
         // A reused cell must not carry another row's half-finished rename.
         if renaming, layerID != layer.id { restoreLabel() }
-        if !renaming { nameLabel.stringValue = (layer.maskSourceID == nil ? "" : "↱ ") + layer.name + (layer.isLocked ? " 🔒" : "") }
+        if !renaming { nameLabel.attributedStringValue = Self.rowTitle(for: layer) }
         dimensions.stringValue = layer.liveText != nil ? "Text · Double-click to edit" : layer.adjustment != nil ? "Adjustment · Double-click to edit" : layer.isGroup ? "Folder" : layer.sizeLabel
         if let source = layer.maskSourceID {
             let sourceName = session.document?.layers.first(where: { $0.id == source })?.name ?? "Missing source"
@@ -1035,6 +1035,28 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         nameLabel.drawsBackground = false
         nameLabel.delegate = nil
     }
+    /// The name as the row shows it: a clipped layer starts with an arrow turning down to the base layer below it,
+    /// and a locked one ends with a lock. The arrow is a system symbol rather than a text glyph, so it matches the
+    /// label's size and weight whatever font would otherwise stand in for it (a Windows port uses its own icon font).
+    private static func rowTitle(for layer: ImageLayer) -> NSAttributedString {
+        let font = NSFont.systemFont(ofSize: 13)
+        let title = NSMutableAttributedString()
+        if layer.maskSourceID != nil, let arrow = NSImage(systemSymbolName: "arrow.turn.left.down",
+                                                          accessibilityDescription: String(localized: "Clipping Mask"))?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+                .applying(NSImage.SymbolConfiguration(hierarchicalColor: .secondaryLabelColor))) {
+            let attachment = NSTextAttachment()
+            attachment.image = arrow
+            // Centered on the lowercase letters, as a glyph in the label would sit.
+            attachment.bounds = CGRect(x: 0, y: (font.capHeight - arrow.size.height) / 2,
+                                       width: arrow.size.width, height: arrow.size.height)
+            title.append(NSAttributedString(attachment: attachment))
+            title.append(NSAttributedString(string: " "))
+        }
+        title.append(NSAttributedString(string: layer.name + (layer.isLocked ? " 🔒" : "")))
+        title.addAttributes([.font: font, .foregroundColor: NSColor.labelColor], range: NSRange(location: 0, length: title.length))
+        return title
+    }
     private func endRenaming(keeping: Bool) {
         guard renaming, let session, let layerID else { return }
         let typed = nameLabel.stringValue
@@ -1044,7 +1066,7 @@ private final class LayerCell: NSTableCellView, NSTextFieldDelegate {
         // Show whatever name the layer ended up with, marked as the row shows it.
         if let layer = session.document?.layers.first(where: { $0.id == layerID }) {
             layerName = layer.name
-            nameLabel.stringValue = (layer.maskSourceID == nil ? "" : "↱ ") + layer.name + (layer.isLocked ? " 🔒" : "")
+            nameLabel.attributedStringValue = Self.rowTitle(for: layer)
         }
         // Hand focus back to the list, so tool shortcuts and the arrow keys work straight away.
         var ancestor = superview
