@@ -8,6 +8,7 @@ import CoreImage
     let grid: CGSize
     let sourceRect: CGRect
     let margin: CGFloat
+    let hasFullResolutionSeed: Bool
     private let effects: LayerEffects
     private let worker: Worker
     private static let queue = DispatchQueue(label: "com.compositor.live-effects", qos: .userInitiated)
@@ -45,6 +46,12 @@ import CoreImage
         guard let worker = Worker(effects: effects, grid: grid, sourceRect: sourceRect, seed: seed) else { return nil }
         self.layerID = layerID; self.effects = effects; self.grid = grid; self.sourceRect = sourceRect
         self.margin = worker.margin; self.worker = worker; self.completion = completion
+        // A resized preview is useful during input, but its untouched pixels cannot
+        // be adopted as a finished full-resolution result after the stroke.
+        self.hasFullResolutionSeed = seed.map {
+            abs(CGFloat($0.image.width) - 2 * $0.inset - sourceRect.width) < 0.01
+                && abs(CGFloat($0.image.height) - 2 * $0.inset - sourceRect.height) < 0.01
+        } ?? true
     }
 
     func matches(layerID: UUID, effects: LayerEffects, grid: CGSize, sourceRect: CGRect) -> Bool {
@@ -80,8 +87,9 @@ import CoreImage
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.isRendering = false
-                if let result { self.image = result.image; self.lastRenderedRegion = result.region; self.completion() }
+                if let result { self.image = result.image; self.lastRenderedRegion = result.region }
                 self.processPending()
+                if result != nil { self.completion() }
             }
         }
     }
@@ -120,7 +128,10 @@ import CoreImage
             if let glow = effects.outerGlow, glow.isEnabled { reach = max(reach, glow.size * 3 + 2) }
             if let glow = effects.innerGlow, glow.isEnabled { reach = max(reach, glow.size * 3 + 2) }
             if let inner = effects.innerShadow, inner.isEnabled { reach = max(reach, inner.distance + inner.blur * 3 + 2) }
-            if let bevel = effects.bevel, bevel.isEnabled { reach = max(reach, bevel.size * 3 + bevel.soften * 3 + 4) }
+            if let bevel = effects.bevel, bevel.isEnabled {
+                let size = max(1, Float(bevel.size(clampedTo: sourceRect.size)))
+                reach = max(reach, CGFloat(size) + LayerStyleRenderer.bevelFilterSupport(bevel, size: size) + 1)
+            }
             if let satin = effects.satin, satin.isEnabled { reach = max(reach, satin.distance + satin.size * 3 + 2) }
             return ceil(reach)
         }

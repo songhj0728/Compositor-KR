@@ -66,6 +66,22 @@ final class EffectsPreviewCache {
         seeds[id] = Result(image: image, inset: 0, placement: placement)
     }
 
+    /// A completed full-resolution stroke already contains the final effects. Adopt
+    /// it under the committed pixel identities instead of running a second full render.
+    func acceptCompletedStroke(_ layer: ImageLayer, image: CGImage, inset: CGFloat) {
+        guard let asset = layer.asset, let effects = layer.effects?.visible else { return }
+        let request = Request(image: asset.image, mask: nil, maskSource: layer.mask?.enabledImage,
+                              placement: layer.mask?.placement, transform: layer.transform,
+                              effects: effects, sideLimit: sideLimit, usesOwnedMask: true)
+        entries.removeValue(forKey: layer.id)?.request.cancel()
+        seeds.removeValue(forKey: layer.id)
+        let entry = Entry(request: request, result: Result(image: image, inset: inset))
+        entries[layer.id] = entry
+        var history = recent[layer.id] ?? []
+        history.append(entry)
+        recent[layer.id] = Array(history.suffix(Self.recentPerLayer))
+    }
+
     /// Effects for a layer being painted, from the pixels the stroke has so far. Keyed by the stroke's revision:
     /// the last result stays on screen while the next one renders, so the effects never blink off mid-stroke.
     /// What is already rendered for a layer, without asking for anything new.
@@ -115,7 +131,7 @@ final class EffectsPreviewCache {
         } ?? seeds[layer.id]
         entries[layer.id] = Entry(request: request, result: previous)
         let layerID = layer.id
-        let quickSide = min(request.maskSource == nil ? 768 : 512, request.sideLimit)
+        let quickSide = min(768, request.sideLimit)
         let paddedSide = CGFloat(max(image.width, image.height)) + 2 * LayerEffectsRenderer.margin(for: effects)
         let quickLimit = effects.bevel != nil && paddedSide > CGFloat(quickSide - 8)
             ? quickSide : request.sideLimit

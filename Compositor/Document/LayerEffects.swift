@@ -859,7 +859,11 @@ nonisolated enum LayerEffectsRenderer {
         if let glow = effects.outerGlow {
             margin = max(margin, glow.size * 3)
         }
-        if let bevel = effects.bevel { margin = max(margin, bevel.outerReach) }
+        if let bevel = effects.bevel {
+            // Full renders need the same filter halo as live regions. Otherwise
+            // zero-padding a signed distance field changes lighting at the image edge.
+            margin = max(margin, bevel.outerReach + LayerStyleRenderer.bevelFilterSupport(bevel, size: max(1, Float(bevel.size))))
+        }
         return ceil(margin) + 2
     }
 
