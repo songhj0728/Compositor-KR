@@ -3,13 +3,13 @@
   <channel>
     <title>Compositor-KR</title>
     <item>
-      <title>Version 1.4.5(C)</title>
-      <pubDate>Sun, 04 Oct 2026 06:23:05 +0000</pubDate>
-      <sparkle:version>43</sparkle:version>
-      <sparkle:shortVersionString>1.4.5(C)</sparkle:shortVersionString>
+      <title>Version 1.4.5(D)</title>
+      <pubDate>Sun, 04 Oct 2026 07:19:16 +0000</pubDate>
+      <sparkle:version>44</sparkle:version>
+      <sparkle:shortVersionString>1.4.5(D)</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-      <link>https://github.com/songhj0728/Compositor-KR/releases/tag/v1.4.5(C)</link>
-      <enclosure url="https://github.com/songhj0728/Compositor-KR/releases/download/v1.4.5(C)/Compositor-KR.dmg" sparkle:edSignature="tAKP78aa8BY4GzFt1KxJ8dtgv3o8+s+glaIxYrqmlBIgJdHgfC3UFabZ0l1lD3GS/ElN0nHYN+l8NMOpCC8vCA==" length="10022676" type="application/octet-stream"/>
+      <link>https://github.com/songhj0728/Compositor-KR/releases/tag/v1.4.5(D)</link>
+      <enclosure url="https://github.com/songhj0728/Compositor-KR/releases/download/v1.4.5(D)/Compositor-KR.dmg" sparkle:edSignature="iFnq9gUEPPbAdT+GV/qCvdvOurDUh0p1uu1q8kw1abpBk1bRIhVhWkS8bGelUJ3X+e1qvoTEG/FYMwW6oYzPBg==" length="10023860" type="application/octet-stream"/>
     </item>
   </channel>
 </rss>
