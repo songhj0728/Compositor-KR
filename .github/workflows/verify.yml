@@ -50,7 +50,8 @@ jobs:
           -derivedDataPath DerivedData
           CODE_SIGN_IDENTITY=-
 
-      # These two suites show real windows and time them, so they run alone after the rest.
+      # Window and asynchronous preview tests need the main actor to service callbacks.
+      # Run them after the CPU-heavy suites so parallel load cannot exhaust their deadlines.
       - name: Run unit tests in parallel
         run: >
           xcodebuild test-without-building
@@ -62,8 +63,9 @@ jobs:
           -parallel-testing-enabled YES
           -skip-testing:CompositorTests/FloatingPanelTests
           -skip-testing:CompositorTests/SliderSnapTests
+          -skip-testing:CompositorTests/LayerStyleTests
 
-      - name: Run window tests serially
+      - name: Run window and preview tests serially
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: >
           xcodebuild test-without-building
@@ -75,6 +77,7 @@ jobs:
           -parallel-testing-enabled NO
           -only-testing:CompositorTests/FloatingPanelTests
           -only-testing:CompositorTests/SliderSnapTests
+          -only-testing:CompositorTests/LayerStyleTests
 
       - name: Upload test results
         if: failure()
