@@ -28,7 +28,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Compositor-KR"
+            "value" : "Proteon"
           }
         }
       }
@@ -40,33 +40,33 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Compositor-KR"
+            "value" : "Proteon"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Compositor"
+            "value" : "Proteon"
           }
         }
       }
     },
-    "Compositor Layer" : {
+    "Proteon Layer" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Compositor 레이어"
+            "value" : "Proteon 레이어"
           }
         }
       }
     },
-    "Compositor Project" : {
+    "Proteon Project" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Compositor 프로젝트"
+            "value" : "Proteon 프로젝트"
           }
         }
       }

@@ -1777,22 +1777,22 @@
         }
       }
     },
-    "Compositor" : {
+    "Proteon" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Compositor"
+            "value" : "Proteon"
           }
         }
       }
     },
-    "Compositor will convert these Photoshop features. Nothing is applied until you continue." : {
+    "Proteon will convert these Photoshop features. Nothing is applied until you continue." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Compositor가 다음 Photoshop 기능을 변환합니다. 계속하기 전까지는 아무것도 적용되지 않습니다."
+            "value" : "Proteon이 다음 Photoshop 기능을 변환합니다. 계속하기 전까지는 아무것도 적용되지 않습니다."
           }
         }
       }
@@ -3871,12 +3871,12 @@
         }
       }
     },
-    "Hide Compositor" : {
+    "Hide Proteon" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Compositor 가리기"
+            "value" : "Proteon 가리기"
           }
         }
       }
@@ -6537,23 +6537,23 @@
         }
       }
     },
-    "Quit and reopen Compositor to use " : {
+    "Quit and reopen Proteon to use " : {
       "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다음 언어를 사용하려면 Compositor를 종료한 후 다시 여세요: "
+            "value" : "다음 언어를 사용하려면 Proteon을 종료한 후 다시 여세요: "
           }
         }
       }
     },
-    "Quit and reopen Compositor to use %@." : {
+    "Quit and reopen Proteon to use %@." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 사용을 위해 Compositor를 종료한 후 다시 여세요."
+            "value" : "%@ 사용을 위해 Proteon을 종료한 후 다시 여세요."
           }
         }
       }

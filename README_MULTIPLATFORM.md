@@ -1,8 +1,10 @@
+**Product: Proteon (inspired by Proteus).** Internal project/module names remain Compositor.
+
 # Multiplatform Development
 
 ## Multiplatform development
 
-The long-term direction of Compositor-KR is a shared macOS + Windows codebase while preserving the existing macOS application.
+The long-term direction of Proteon is a shared macOS + Windows codebase while preserving the existing macOS application.
 
 This repository uses vendor-neutral AI development instructions:
 - [AGENTS.md](AGENTS.md) — repository-wide rules

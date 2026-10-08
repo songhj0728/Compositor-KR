@@ -1,5 +1,7 @@
-# Attention!
+# Proteon
 한국어
+
+최종 제품명은 **Proteon**이며 Proteus에서 영감을 받았습니다. 저장소와 내부 module은 호환성을 위해 기존 이름을 유지합니다.
 
 이 작업은 robbietilton의 Compositor 프로그램을 기반으로 한 포크 버전입니다.
 
@@ -13,6 +15,8 @@ PSD로 내보내면 텍스트는 포토샵에서 편집 가능한 문자 레이�
 
 English
 
+The product name is **Proteon**, inspired by Proteus. Repository and internal module names remain unchanged for compatibility.
+
 This project is a fork of Compositor by robbietilton.
 
 We are currently working on Korean localization and additional features aimed at making the application a practical alternative to Adobe Photoshop.
@@ -22,7 +26,7 @@ The goal is to make the application familiar and easy to use for users who are a
 Exported PSD files keep their layer structure in Photoshop; text is written as editable type and layer effects as Photoshop's own Layer Style. A few effects that need Photoshop's pattern library (Pattern Overlay, a bevel's Texture) are merged into pixels.
 
 
-# Compositor
+## Original Compositor background
 
 Adobe Photoshop costs too much and tools like GIMP don’t feel familiar enough for me to stay in flow. That’s why I built Compositor.
 
@@ -33,7 +37,7 @@ Because it’s open source, you can download the Xcode project and add, remove, 
 ## Installation
 
 ### Download
-Download the latest Compositor-KR release from [GitHub Releases](https://github.com/songhj0728/Compositor-KR/releases/latest). The app checks this repository for updates on its own.
+Download the latest published build (existing releases are named Compositor-KR) from [GitHub Releases](https://github.com/songhj0728/Compositor-KR/releases/latest). The app checks this repository for updates on its own.
 
 The original, English-only Compositor is at [robbietilton.com/compositor](https://robbietilton.com/compositor) and [github.com/robbietilton/Compositor](https://github.com/robbietilton/Compositor).
 
@@ -97,7 +101,7 @@ The original, English-only Compositor is at [robbietilton.com/compositor](https:
 - Automatic updates, signed and notarized
 
 ### Works with AI agents
-- AI agents and scripts can build and edit projects directly: a `.comp` is a folder of PNG layers and a manifest, and an open project updates live as it's written. See [Writing Compositor projects](docs/writing-comp-files.md)
+- AI agents and scripts can build and edit projects directly: a `.comp` is a folder of PNG layers and a manifest, and an open project updates live as it's written. See [Writing Proteon projects](docs/writing-comp-files.md)
 
 ## Requirements
 
@@ -106,11 +110,11 @@ The original, English-only Compositor is at [robbietilton.com/compositor](https:
 
 ## Building
 
-Open `Compositor.xcodeproj` and run the **Compositor** scheme.
+Open `Compositor-KR.xcodeproj` and run the **Compositor** scheme.
 
 ## Releasing
 
-`scripts/release.sh` builds a Release version, signs it with Developer ID, notarizes and staples it, and packages it into `dist/Compositor-<version>.dmg`.
+`scripts/release.sh` builds a Release version, signs it with Developer ID, notarizes and staples it, and packages it into `dist/Proteon-<version>.dmg`.
 
 It needs, all kept outside this repository:
 

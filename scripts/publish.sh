@@ -15,7 +15,9 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT="$PROJECT_DIR/Compositor-KR.xcodeproj"
 SCHEME=Compositor
-APP=Compositor-KR
+APP=Proteon
+# Keep the public asset name for existing update/download links.
+ASSET=Compositor-KR
 REPO=songhj0728/Compositor-KR
 WORK="$HOME/Library/Caches/CompositorKRRelease"
 SIGN_UPDATE="$WORK/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update"
@@ -55,7 +57,7 @@ fi
 echo "==> $APP $VERSION ($BUILD)"
 # Every release names its file Compositor-KR.dmg, so …/releases/latest/download/Compositor-KR.dmg always works.
 mkdir -p "$WORK/publish"
-DMG="$WORK/publish/$APP.dmg"
+DMG="$WORK/publish/$ASSET.dmg"
 cp "$SOURCE" "$DMG"
 
 echo "==> Signing the update for Sparkle"
@@ -69,7 +71,7 @@ else
     "$TAG" "$APP $VERSION" "$NOTES")
   upload=$(api -X POST "https://api.github.com/repos/$REPO/releases" -d "$body" \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["upload_url"].split("{")[0])')
-  api -X POST -H "Content-Type: application/octet-stream" --data-binary @"$DMG" "$upload?name=$APP.dmg" >/dev/null
+  api -X POST -H "Content-Type: application/octet-stream" --data-binary @"$DMG" "$upload?name=$ASSET.dmg" >/dev/null
 fi
 
 echo "==> Publishing the update feed"
@@ -85,7 +87,7 @@ cat > "$PROJECT_DIR/appcast.xml" <<XML
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>$MINIMUM</sparkle:minimumSystemVersion>
       <link>https://github.com/$REPO/releases/tag/$TAG</link>
-      <enclosure url="https://github.com/$REPO/releases/download/$TAG/$APP.dmg" $signature type="application/octet-stream"/>
+      <enclosure url="https://github.com/$REPO/releases/download/$TAG/$ASSET.dmg" $signature type="application/octet-stream"/>
     </item>
   </channel>
 </rss>

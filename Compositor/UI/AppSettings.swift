@@ -255,7 +255,7 @@ private struct AppSettingsSheet: View {
                         ForEach(AppLanguage.allCases) { Text($0.label).tag($0) }
                     }
                     if settings.needsRestartForLanguage {
-                        Text("Quit and reopen Compositor to use \(Text(settings.language.label)).")
+                        Text("Quit and reopen Proteon to use \(Text(settings.language.label)).")
                             .foregroundStyle(.orange).font(.callout)
                     }
                 }.padding(6)

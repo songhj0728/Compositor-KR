@@ -1,4 +1,4 @@
-# Writing Compositor projects (for AI agents and scripts)
+# Writing Proteon projects (for AI agents and scripts)
 
 A Compositor project (`.comp`) is a folder of PNG layer images plus a `manifest.json`. Anything that can write files can build or edit one, and Compositor updates the open canvas as the files change. No plugin or API is involved.
 

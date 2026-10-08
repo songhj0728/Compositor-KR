@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds the Compositor-KR DMG into dist/.
+# Builds the Proteon DMG into dist/.
 #
 # With a "Developer ID Application" certificate in the login keychain and notarization credentials saved once with
 #     xcrun notarytool store-credentials "compositor-kr-notary" --apple-id "…" --team-id 78U738RSNN
@@ -14,7 +14,8 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT="$PROJECT_DIR/Compositor-KR.xcodeproj"
 SCHEME=Compositor
-APP=Compositor-KR
+APP=Proteon
+BUILT_APP=Compositor-KR
 TEAM=78U738RSNN
 IDENTITY="Developer ID Application"
 NOTARY_PROFILE=compositor-kr-notary
@@ -62,10 +63,11 @@ if $DEVELOPER_ID; then
     -archivePath "$WORK/$APP.xcarchive" \
     -exportOptionsPlist "$PROJECT_DIR/scripts/ExportOptions.plist" \
     -exportPath "$WORK/export"
+  mv "$WORK/export/$BUILT_APP.app" "$WORK/export/$APP.app"
   APP_PATH="$WORK/export/$APP.app"
 else
   mkdir -p "$WORK/export"
-  ditto "$WORK/$APP.xcarchive/Products/Applications/$APP.app" "$WORK/export/$APP.app"
+  ditto "$WORK/$APP.xcarchive/Products/Applications/$BUILT_APP.app" "$WORK/export/$APP.app"
   APP_PATH="$WORK/export/$APP.app"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
@@ -73,7 +75,7 @@ codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 # A signature can verify and the app still be refused at launch (a framework the loader won't map), so start it and
 # make sure it's still running a few seconds later.
 echo "==> Checking that the app launches"
-"$APP_PATH/Contents/MacOS/$APP" >"$WORK/launch.log" 2>&1 &
+"$APP_PATH/Contents/MacOS/$BUILT_APP" >"$WORK/launch.log" 2>&1 &
 LAUNCHED=$!
 sleep 5
 if ! kill -0 $LAUNCHED 2>/dev/null; then
