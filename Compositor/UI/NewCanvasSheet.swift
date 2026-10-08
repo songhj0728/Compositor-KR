@@ -2,6 +2,67 @@ import SwiftUI
 import AppKit
 import ImageIO
 
+/// The units New Canvas sizes can be typed in. Print units turn into pixels at the chosen DPI.
+nonisolated enum NewCanvasUnit: String, CaseIterable, Sendable {
+    case pixels = "px", inches = "in", centimeters = "cm", millimeters = "mm"
+
+    /// The unit written out, for the summary line's pill.
+    var name: String {
+        switch self {
+        case .pixels: "Pixels"
+        case .inches: "Inches"
+        case .centimeters: "Centimeters"
+        case .millimeters: "Millimeters"
+        }
+    }
+    /// The next unit, for the pill: px → in → cm → mm → px.
+    var next: NewCanvasUnit { Self.allCases[(Self.allCases.firstIndex(of: self)! + 1) % Self.allCases.count] }
+    private var perInch: Double? {
+        switch self {
+        case .pixels: nil
+        case .inches: 1
+        case .centimeters: 2.54
+        case .millimeters: 25.4
+        }
+    }
+    /// Whole pixels for a typed size, or nil when it isn't a size a canvas can have.
+    func pixels(_ text: String, resolution: Double) -> Int? {
+        guard let value = Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")),
+              value.isFinite, value > 0 else { return nil }
+        let pixels = perInch.map { (value / $0 * resolution).rounded() } ?? value
+        guard pixels == pixels.rounded(), (1...Double(DocumentLimits.maxSide)).contains(pixels) else { return nil }
+        return Int(pixels)
+    }
+    /// A pixel size written in this unit: whole pixels, or print sizes to two decimals at most.
+    func text(_ pixels: Int, resolution: Double) -> String {
+        guard let perInch else { return String(pixels) }
+        return (Double(pixels) / resolution * perInch).formatted(.number.precision(.fractionLength(0...2)).grouping(.never)
+            .locale(Locale(identifier: "en_US_POSIX")))
+    }
+}
+
+/// What a new canvas starts as: see-through, or a Background layer of white or black.
+nonisolated enum NewCanvasBackground: String, CaseIterable, Sendable {
+    case transparent, white, black
+    var title: String { "\(rawValue.capitalized) canvas" }
+    var next: NewCanvasBackground { Self.allCases[(Self.allCases.firstIndex(of: self)! + 1) % Self.allCases.count] }
+    var color: CGColor? {
+        switch self {
+        case .transparent: nil
+        case .white: CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1)
+        case .black: CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 1)
+        }
+    }
+    /// The same color as the fork's project API takes it: components in the new project's working space.
+    var palette: PaletteColor? {
+        switch self {
+        case .transparent: nil
+        case .white: .white
+        case .black: PaletteColor(red: 0, green: 0, blue: 0)
+        }
+    }
+}
+
 struct NewCanvasSheet: View {
     let session: EditorSession
     var onCreate: ((NewCanvasSpec) -> Void)? = nil

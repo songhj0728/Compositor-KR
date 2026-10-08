@@ -190,11 +190,11 @@ final class EditorSession {
     @ObservationIgnored var distortEffectsCache: [UUID: DistortEffectsCache] = [:]
     /// Document positions a move has just snapped to, drawn as guides while it lasts.
     @ObservationIgnored var snapGuides: (xs: [CGFloat], ys: [CGFloat]) = ([], [])
-    var snappingEnabled = true {
-        didSet {
-            if !snappingEnabled { snapGuides = ([], []) }
-            refreshCanvasPreview?()
-        }
+    /// Crop, resize and selection moves follow View › Snap (⇧⌘;) too: they had a Snap item of their own, which left
+    /// the View menu with two called Snap.
+    var snappingEnabled: Bool {
+        get { snapEnabled }
+        set { snapEnabled = newValue }
     }
     /// Where the last brush stroke ended, so a Shift-click paints a straight line on from it.
     @ObservationIgnored var lastBrushPoint: (point: CGPoint, layerID: UUID, mask: Bool)?
@@ -324,9 +324,17 @@ final class EditorSession {
     }
     /// User guides. Hidden extras do not snap.
     var showsGuides = ToolDefaults.bool("guides", true) { didSet { ToolDefaults.set(showsGuides, "guides") } }
+    /// F: the canvas alone on black, filling the screen, with every panel and bar put away. F again brings them back.
+    var canvasOnly = false
     var showsRulers = ToolDefaults.bool("rulers", false) { didSet { ToolDefaults.set(showsRulers, "rulers") } }
     /// Master snap switch (View > Snap). On so today's layer/canvas snap keeps working.
-    var snapEnabled = ToolDefaults.bool("snap", true) { didSet { ToolDefaults.set(snapEnabled, "snap") } }
+    var snapEnabled = ToolDefaults.bool("snap", true) {
+        didSet {
+            ToolDefaults.set(snapEnabled, "snap")
+            if !snapEnabled { snapGuides = ([], []) }
+            refreshCanvasPreview?()
+        }
+    }
     var snapToGuides = ToolDefaults.bool("snapGuides", true) { didSet { ToolDefaults.set(snapToGuides, "snapGuides") } }
     var snapToGrid = ToolDefaults.bool("snapGrid", false) { didSet { ToolDefaults.set(snapToGrid, "snapGrid") } }
     var snapToLayers = ToolDefaults.bool("snapLayers", true) { didSet { ToolDefaults.set(snapToLayers, "snapLayers") } }
@@ -579,6 +587,8 @@ final class EditorSession {
     /// The RAW file being developed, and the settings the sheet is editing (see RawImporter).
     var rawDevelop: (url: URL, settings: RawDevelopSettings)?
     var showsRawDevelop = false { didSet { resumeFileRequests() } }
+    /// Import was pressed and the full frame is developing: the sheet stays up, showing that, until the layer is in.
+    var rawImporting = false
     @ObservationIgnored private var rawContinuation: CheckedContinuation<RawDevelopSettings?, Never>?
     /// Tests assign this to develop without a sheet.
     @ObservationIgnored var confirmRawDevelop: ((URL, RawDevelopSettings) async -> RawDevelopSettings?)?
@@ -594,12 +604,18 @@ final class EditorSession {
         }
     }
     func finishRawDevelop(_ settings: RawDevelopSettings?) {
-        showsRawDevelop = false
-        rawDevelop = nil
-        Task { await RawImporter.Queue.shared.release() }
+        // Importing, the sheet waits for the develop to finish (see `endRawDevelop`); cancelling closes it now.
+        if settings != nil, rawContinuation != nil { rawImporting = true } else { endRawDevelop() }
         let continuation = rawContinuation
         rawContinuation = nil
         continuation?.resume(returning: settings)
+    }
+    /// Closes the develop sheet once the RAW is in, or when it was cancelled.
+    func endRawDevelop() {
+        showsRawDevelop = false
+        rawImporting = false
+        rawDevelop = nil
+        Task { await RawImporter.Queue.shared.release() }
     }
     @ObservationIgnored private var conversionContinuation: CheckedContinuation<Bool, Never>?
     /// Cancel pressed while a Photoshop file was still being read.
@@ -648,7 +664,8 @@ final class EditorSession {
     private func restore(_ snapshot: DocumentHistory.Snapshot) {
         cancelCrop()
         cancelGradient()
-        let changedCanvas = document?.id != snapshot.document?.id
+        // A different canvas, or this one at another size (a rotation), is fitted to the window again.
+        let changedCanvas = document?.id != snapshot.document?.id || document?.size != snapshot.document?.size
         let keepMaskTarget = isMaskSelected && activeLayerID == snapshot.activeLayerID
         document = snapshot.document
         activeLayerID = snapshot.activeLayerID
@@ -824,6 +841,7 @@ final class EditorSession {
                     guard size.width <= DocumentLimits.maxSide, size.height <= DocumentLimits.maxSide,
                           size.width * size.height <= DocumentLimits.documentPixelBudget - usedPixels else { throw ImageImportError.tooLarge }
                     guard let settings = await developRaw(url) else { continue }
+                    defer { if rawImporting { endRawDevelop() } }
                     // Seconds of work: off the main actor, or pressing Import freezes the window.
                     guard let developed = await RawImporter.Queue.shared.develop(url, settings: settings, limit: nil)
                     else { throw ImageImportError.unreadable }
@@ -981,7 +999,7 @@ final class EditorSession {
         commitTransform()
         beginEdit("New Canvas")
         defer { endEdit() }
-        var document = CanvasDocument(width: width, height: height, resolution: resolution.isFinite && resolution > 0 ? resolution : 72,
+        var document = CanvasDocument(width: width, height: height, resolution: (1...9600).contains(resolution) ? resolution : 72,
                                       colorProfile: profile)
         var layer: ImageLayer?
         if emptyLayer, let background {

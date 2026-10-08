@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 extension EditorSession {
     func projectSnapshot() -> ProjectSnapshot? {
