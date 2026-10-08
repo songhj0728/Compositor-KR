@@ -169,6 +169,9 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         if !dismissing { onClose?() }
     }
 
+    /// Compositor-KR: Reset Workspace puts dialogs back to opening centered on the canvas.
+    static func forgetPositions() { positions.removeAll() }
+
     /// Returns keyboard focus to a panel, e.g. after a click on the canvas.
     static func refocus(_ identifier: NSUserInterfaceItemIdentifier) {
         NSApp.windows.first { $0.identifier == identifier && $0.isVisible }?.makeKey()

@@ -2,8 +2,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
-    /// The Layers panel's width, remembered across launches.
-    @AppStorage("layersPanelWidth") private var layersPanelWidth = 252.0
+    /// Compositor-KR: where the panels sit and how big the tools are (Window ▸ Workspace), remembered across launches.
+    private var workspace = WorkspaceManager.shared
     @Bindable var session: EditorSession
     var applicationDelegate: CompositorApplicationDelegate? = nil
     @Environment(\.openWindow) private var openWindow
@@ -84,8 +84,9 @@ struct ContentView: View {
         VStack(spacing: 0) {
             if !session.canvasOnly { toolHeaders }
             HStack(spacing: 0) {
-                if !session.canvasOnly {
-                    toolRail
+                // Compositor-KR: the workspace can float the tools and the side panel in windows of their own.
+                if !session.canvasOnly, !workspace.layout.floatsTools {
+                    ToolRail(session: session)
                     Divider()
                 }
                 VStack(spacing: 0) {
@@ -114,9 +115,10 @@ struct ContentView: View {
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("editor")) } action: { canvasFrame = $0 }
                     }
                 }
-                if !session.canvasOnly {
-                    PanelResizeEdge(width: $layersPanelWidth, range: LayersPanel.widths)
-                    LayersPanel(session: session, width: layersPanelWidth)
+                if !session.canvasOnly, !workspace.layout.floatsSidePanel {
+                    PanelResizeEdge(width: Binding(get: { workspace.layout.sidePanelWidth }, set: { workspace.layout.sidePanelWidth = $0 }),
+                                    range: LayersPanel.widths)
+                    LayersPanel(session: session, width: workspace.layout.sidePanelWidth)
                 }
             }
             if !session.canvasOnly {
@@ -292,41 +294,6 @@ struct ContentView: View {
         if let applicationDelegate { Task { await applicationDelegate.projects.newCanvas() } }
         else { session.clearProject() }
     }
-    private var toolRail: some View {
-        // Scrolls when the window is too short for every tool, rather than pushing the bars above and below away.
-        IndicatorlessScrollView {
-        VStack(spacing: 10) {
-            ForEach(NavigationTool.allCases.filter { $0 != .idle }, id: \.self) { tool in
-                Button { session.selectTool(tool) } label: {
-                    Group {
-                        if tool == .gradient { GradientToolIcon().frame(width: 18, height: 18) }
-                        else if tool == .cloneStamp { CloneStampToolIcon().frame(width: 18, height: 18) }
-                        else if tool == .lasso, session.lassoKind == .polygonal { PolygonalLassoToolIcon().frame(width: 18, height: 18) }
-                        else if tool == .wand, session.wandMode == .object { ObjectSelectionToolIcon().frame(width: 18, height: 18) }
-                        else if tool == .pathSelection { PathSelectionToolIcon(direct: session.pathSelectionKind == .direct).frame(width: 18, height: 18) }
-                        // The Marquee's icon follows its shape: a dashed circle in Ellipse mode.
-                        else { Image(systemName: tool == .marquee && session.marqueeKind == .ellipse ? "circle.dashed" : session.symbol(for: tool)).font(.system(size: 17)) }
-                    }
-                    .frame(width: 36, height: 36)
-                        .background(session.tool == tool ? Color.white.opacity(0.12) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 7))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 7)
-                                .strokeBorder(session.tool == tool ? Color.white.opacity(0.14) : .clear)
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).help(tool.label).accessibilityLabel(tool.label)
-                .foregroundStyle(.primary)
-                .accessibilityAddTraits(session.tool == tool ? .isSelected : [])
-            }
-            ColorPaletteControls(session: session).padding(.top, 8)
-        }
-        .padding(.top, 16).padding(.bottom, 12)
-        .frame(width: 56)
-        }
-        .frame(width: 56)
-    }
     private var welcome: some View {
         NewCanvasSheet(session: session,
             onCreate: { session.createNewProject(width: $0.width, height: $0.height, resolution: $0.resolution,
@@ -352,7 +319,7 @@ struct ContentView: View {
                 Text("Importing images…")
             } else {
                 Text(session.tool == .pen ? "Click to add an anchor · Drag to pull out curve handles · Click the first anchor to close · Click a segment to add, an anchor to delete · Option-click converts · Shift 45° · Return or Escape ends the path"
-                    : session.tool == .pathSelection ? (session.pathSelectionKind == .path ? "Click a path to select it · Drag to move · Shift add · Arrow keys nudge · Delete removes · Tab for Direct Selection" : "Click or box anchors · Drag anchors or handles · Option-drag a handle for a corner · Shift add · Delete removes · Tab for Path Selection")
+                    : session.tool == .pathSelection ? (session.effectivePathSelectionKind == .path ? "Click a path to select it · Drag to move · Shift add · Arrow keys nudge · Delete removes · Tab for Direct Selection" : "Click or box anchors · Drag anchors or handles · Option-drag a handle for a corner · Shift add · Delete removes · Tab for Path Selection")
                     : session.tool == .marquee ? (session.marqueeKind == .ellipse ? "Drag an ellipse · Shift add · Option subtract · Shift again mid-drag circle · Drag inside to move · Delete clears · ⌘D deselect" : "Drag a rectangle · Shift add · Option subtract · Shift again mid-drag square · Drag inside to move · ⌘-drag moves pixels · Delete clears · ⌘D deselect") : session.tool == .wand ? (session.wandMode == .object ? "Click an object to select its outline · Tab for Wand · Shift add · Option subtract · Drag inside to move · ⌘-drag moves pixels · Delete clears · ⌘D deselect" : "Click to select similar colors · Tab for Object · Shift add · Option subtract · Drag inside to move · ⌘-drag moves pixels · Delete clears · ⌘D deselect") : session.tool == .lasso ? (session.lassoKind == .freehand ? "Drag to select · Drag inside to move · Shift add · Option subtract · Delete clears · ⌥⌫/⌘⌫ fill · ⌘D deselect" : "Click corners · Click start, double-click or Enter to close · Delete removes corner · Escape cancel") : session.tool == .brush ? (session.brushMode == .erase ? "Drag to erase" : "Drag to paint") + " · [ ] size · Shift-[ ] hardness · 1–0 opacity · Escape cancel · Space to pan" : session.tool == .blur ? (session.blurMode == .blur ? "Drag to soften" : session.blurMode == .sharpen ? "Drag to sharpen" : "Drag to smudge") + " · [ ] size · Shift-[ ] hardness · 1–0 strength · Space to pan" : session.tool == .cloneStamp ? "Option-click to set the source · Drag to clone · [ ] size · Shift-[ ] hardness · 1–0 opacity · Space to pan" : session.tool == .spotHealing ? "Drag over blemishes to heal · [ ] size · Shift-[ ] hardness · Escape cancel · Space to pan" : session.tool == .type ? "Drag a text box · Click text to edit · Drag box handles to resize · ⌘Return finish · Escape cancel" : session.tool == .shape ? "Drag to draw a shape on a new layer · Click to enter its size · Shift \(session.shapeKind == .line ? "45°" : session.shapeKind == .rectangle ? "square" : "circle") · Option from center · Shift-U or Tab for the next shape · Escape cancel · Space to pan" : session.tool == .gradient ? "Drag to draw · Drag ends to adjust · Shift 45° · 1–0 opacity · Enter apply · Escape cancel" : session.tool == .crop ? "Drag to crop · Enter apply · Escape cancel · Space to pan" : session.tool == .move ? "Drag to move · Handles to resize · Circle to rotate · 1–0 layer opacity · Space to pan" : session.tool == .hand ? "Drag to pan · Pinch to zoom" : session.tool == .idle ? "No tool selected · Press a tool's key to pick one · Space to pan" : "Click to zoom in · Option-click to zoom out · Drag right or left to zoom smoothly · Space to pan")
             }
         }
@@ -502,6 +469,13 @@ private struct ToolPanels: ViewModifier {
                     shapeSizePanel.show(title: "Shape Size", content: ShapeSizeSheet(session: session, request: request))
                 } else { shapeSizePanel.close() }
             }
+            // Compositor-KR: the floating tool and panel windows follow the workspace, the project in front and Canvas
+            // Only; holding Command with a path selection tool switches to the other one until it's let go.
+            .onAppear { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
+            .onChange(of: WorkspaceManager.shared.layout) { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
+            .onChange(of: ObjectIdentifier(session)) { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
+            .onChange(of: session.canvasOnly) { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
+            .onChange(of: HeldModifiers.shared.flags.contains(.command), initial: true) { _, held in session.pathSelectionSwapHeld = held }
     }
 }
 

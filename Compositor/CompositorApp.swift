@@ -190,6 +190,11 @@ struct CompositorApp: App {
                     // No service providers are registered, and the submenu only ever offered
                     // unrelated system items (Finder tags, dictionary lookups, and the like).
                     CommandGroup(replacing: .systemServices) { }
+                    // Compositor-KR: Window ▸ Workspace, and floating the tools and the side panel.
+                    CommandGroup(after: .windowArrangement) {
+                        Divider()
+                        WorkspaceMenu()
+                    }
                     CommandGroup(replacing: .appSettings) {
                         Button("Settings…") { AppSettings.shared.show() }
                             .keyboardShortcut(",")

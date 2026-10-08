@@ -1,17 +1,41 @@
 import SwiftUI
 
-/// The side panel's tabs over Layers, Paths and Channels, as Photoshop groups them.
+/// The side panel's tabs over Layers, Channels and Paths, as Photoshop groups them. They sit in the workspace's
+/// order; dragging one onto another moves it there, and its context menu moves it a place left or right.
 struct SidePanelTabs: View {
     @Bindable var session: EditorSession
+    var manager = WorkspaceManager.shared
 
     var body: some View {
-        Picker("Panel", selection: $session.sidePanelTab) {
-            Text("Layers").tag(SidePanelTab.layers)
-            Text("Paths").tag(SidePanelTab.paths)
-            Text("Channels").tag(SidePanelTab.channels)
+        HStack(spacing: 2) {
+            ForEach(manager.layout.tabOrder, id: \.self) { tab in
+                let selected = session.sidePanelTab == tab
+                Button { session.sidePanelTab = tab } label: {
+                    Text(String(localized: tab.title))
+                        .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(selected ? Color.white.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 5))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(selected ? .primary : .secondary)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .draggable(tab.rawValue)
+                .dropDestination(for: String.self) { items, _ in
+                    guard let dragged = items.first.flatMap(SidePanelTab.init(rawValue:)) else { return false }
+                    manager.layout.move(dragged, to: tab)
+                    return true
+                }
+                .contextMenu {
+                    Button("Move Left") { manager.layout.move(tab, by: -1) }
+                        .disabled(manager.layout.tabOrder.first == tab)
+                    Button("Move Right") { manager.layout.move(tab, by: 1) }
+                        .disabled(manager.layout.tabOrder.last == tab)
+                }
+            }
+            Spacer(minLength: 0)
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidePanelTabs")
     }
 }

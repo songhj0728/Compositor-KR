@@ -237,6 +237,7 @@ private struct AppSettingsSheet: View {
                     }
                 }.padding(6)
             }
+            WorkspaceSettingsSection()
             GroupBox("Performance") {
                 Stepper("History States: \(settings.maxUndoSteps)", value: $settings.maxUndoSteps, in: 10...500, step: 10)
                     .padding(6)

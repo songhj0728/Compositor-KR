@@ -16,7 +16,7 @@ struct EditorCanvas: NSViewRepresentable {
         // Compositor-KR: the path outline and the single-channel view are drawn in the overlay, which these redraw.
         _ = session.document?.paths
         _ = (session.activePathID, session.selectedPathAnchors, session.selectedPathContours, session.penDraft)
-        _ = (session.pathSelectionKind, session.sidePanelTab, session.channelView, session.tool)
+        _ = (session.effectivePathSelectionKind, session.sidePanelTab, session.channelView, session.tool)
         _ = session.pathDrag?.current
         view.refreshOverlay()
         view.synchronizeDisplay()
@@ -1551,7 +1551,7 @@ final class CanvasView: NSView {
         let picked: Set<PathAnchorRef>
         let drawn: Set<PathAnchorRef>
         let everything = PathEditing.allAnchors(of: Set(path.contours.indices), in: path)
-        if session.tool == .pathSelection, session.pathSelectionKind == .path {
+        if session.tool == .pathSelection, session.effectivePathSelectionKind == .path {
             picked = PathEditing.allAnchors(of: session.selectedPathContours, in: path)
             drawn = picked
         } else {

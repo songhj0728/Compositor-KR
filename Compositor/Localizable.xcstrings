@@ -33,6 +33,7 @@
         }
       }
     },
+    "—" : {},
     "." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2295,6 +2296,16 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "삭제"
+          }
+        }
+      }
+    },
     "Delete " : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2423,6 +2434,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "선택한 레이어 삭제"
+          }
+        }
+      }
+    },
+    "Delete Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역 삭제"
           }
         }
       }
@@ -2711,6 +2732,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "점을 드래그합니다. 클릭하여 점을 추가합니다. 점을 더블 클릭하여 삭제합니다."
+          }
+        }
+      }
+    },
+    "Drag a tab in the panel to move it. Floating panels move by their title bars and dock again when closed." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널의 탭을 끌어 순서를 바꿀 수 있습니다. 떠 있는 패널은 제목 막대로 옮기고, 닫으면 다시 붙습니다."
           }
         }
       }
@@ -3477,6 +3508,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "세로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Float Layers Panel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 패널 분리"
+          }
+        }
+      }
+    },
+    "Float the Layers panel in its own window" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 패널을 별도 창으로 띄우기"
+          }
+        }
+      }
+    },
+    "Float the tools in their own window" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구를 별도 창으로 띄우기"
+          }
+        }
+      }
+    },
+    "Float this panel in its own window" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 패널을 별도 창으로 띄우기"
+          }
+        }
+      }
+    },
+    "Float Tools" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구 분리"
           }
         }
       }
@@ -4657,6 +4738,16 @@
         }
       }
     },
+    "Large" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크게"
+          }
+        }
+      }
+    },
     "Lasso" : {
       "localizations" : {
         "ko" : {
@@ -5290,6 +5381,16 @@
         }
       }
     },
+    "Medium" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보통"
+          }
+        }
+      }
+    },
     "Medium Contrast" : {
       "localizations" : {
         "ko" : {
@@ -5433,6 +5534,16 @@
         }
       }
     },
+    "Move Left" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "왼쪽으로 이동"
+          }
+        }
+      }
+    },
     "Move Mask" : {
       "localizations" : {
         "ko" : {
@@ -5453,6 +5564,16 @@
         }
       }
     },
+    "Move Right" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오른쪽으로 이동"
+          }
+        }
+      }
+    },
     "Multiply" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5460,6 +5581,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "곱하기"
+          }
+        }
+      }
+    },
+    "My Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 작업 영역"
           }
         }
       }
@@ -6128,6 +6259,7 @@
       }
     },
     "Panel" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -6781,6 +6913,16 @@
         }
       }
     },
+    "Put every panel, tab and size back as it was when the app was new" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 패널·탭·크기를 처음 설치했을 때 상태로 되돌립니다"
+          }
+        }
+      }
+    },
     "px" : {
       "localizations" : {
         "ko" : {
@@ -7144,6 +7286,16 @@
         }
       }
     },
+    "Reset Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역 재설정"
+          }
+        }
+      }
+    },
     "Resize" : {
       "localizations" : {
         "ko" : {
@@ -7491,6 +7643,46 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다른 이름으로 저장…"
+          }
+        }
+      }
+    },
+    "Save Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역 저장"
+          }
+        }
+      }
+    },
+    "Save Workspace…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 작업 영역 저장…"
+          }
+        }
+      }
+    },
+    "Save…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장…"
+          }
+        }
+      }
+    },
+    "Saved" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장된 작업 영역"
           }
         }
       }
@@ -7950,6 +8142,16 @@
         }
       }
     },
+    "Small" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작게"
+          }
+        }
+      }
+    },
     "Smear" : {
       "localizations" : {
         "ko" : {
@@ -8304,6 +8506,16 @@
         }
       }
     },
+    "Tab order" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "탭 순서"
+          }
+        }
+      }
+    },
     "Tabloid" : {},
     "Take back every stroke" : {
       "extractionState" : "stale",
@@ -8506,6 +8718,16 @@
         }
       }
     },
+    "The panels' places, the tab order and the tool icon size are saved under this name." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널 위치, 탭 순서, 도구 아이콘 크기가 이 이름으로 저장됩니다."
+          }
+        }
+      }
+    },
     "The pattern's own color" : {
       "localizations" : {
         "ko" : {
@@ -8632,6 +8854,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "채널당 톤 수입니다. 2로 설정하면 완전한 흑백이 됩니다."
+          }
+        }
+      }
+    },
+    "Tool Icons" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구 아이콘"
           }
         }
       }
@@ -9242,6 +9474,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "작업 중…"
+          }
+        }
+      }
+    },
+    "Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역"
           }
         }
       }

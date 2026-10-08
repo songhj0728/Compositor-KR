@@ -34,11 +34,6 @@ nonisolated struct PathDrag: Sendable {
     var original: VectorPath
 }
 
-/// The side panel's pages.
-nonisolated enum SidePanelTab: String, CaseIterable, Sendable {
-    case layers, paths, channels
-}
-
 /// What the canvas shows of the color: everything, or one channel alone in gray, as Photoshop's Channels panel does.
 nonisolated enum ColorChannelView: String, CaseIterable, Sendable {
     case composite, red, green, blue
@@ -131,7 +126,7 @@ extension EditorSession {
 
     /// The anchors whose handles are on screen: the selected ones, and the Pen's newest one.
     var pathAnchorsShowingHandles: Set<PathAnchorRef> {
-        var shown = tool == .pathSelection && pathSelectionKind == .direct ? selectedPathAnchors : []
+        var shown = tool == .pathSelection && effectivePathSelectionKind == .direct ? selectedPathAnchors : []
         if let draft = penDraft, draft.pathID == activePathID, let path = activePath, path.contours.indices.contains(draft.contour),
            !path.contours[draft.contour].anchors.isEmpty {
             shown.insert(PathAnchorRef(contour: draft.contour, anchor: path.contours[draft.contour].anchors.count - 1))
@@ -308,14 +303,14 @@ extension EditorSession {
                 break
             }
             // Path Selection also picks a closed contour by clicking inside it.
-            if pathSelectionKind == .path, let inside = Self.contour(containing: target, in: paths[index]) {
+            if effectivePathSelectionKind == .path, let inside = Self.contour(containing: target, in: paths[index]) {
                 found = (index, .segment(contour: inside, index: 0, t: 0))
                 break
             }
         }
         guard let found else {
             if !shift { selectedPathAnchors = []; selectedPathContours = [] }
-            if pathSelectionKind == .direct, let path = activePath {
+            if effectivePathSelectionKind == .direct, let path = activePath {
                 beginEdit("Move Anchor Points")
                 pathDrag = PathDrag(kind: .marquee(adding: shift ? selectedPathAnchors : []), start: target, current: target, original: path)
             }
@@ -324,8 +319,8 @@ extension EditorSession {
         if paths[found.index].id != activePathID { selectPath(paths[found.index].id) }
         let path = paths[found.index]
         // Every case below starts a drag, which `pathDragEnded` closes.
-        beginEdit(pathSelectionKind == .path ? "Move Path" : "Move Anchor Points")
-        switch pathSelectionKind {
+        beginEdit(effectivePathSelectionKind == .path ? "Move Path" : "Move Anchor Points")
+        switch effectivePathSelectionKind {
         case .path:
             let contour = found.hit.contour
             if shift { selectedPathContours.formSymmetricDifference([contour]) }
@@ -396,10 +391,10 @@ extension EditorSession {
         if tool == .pen, let draft = penDraft, path.contours.indices.contains(draft.contour), let last = path.contours[draft.contour].anchors.indices.last {
             PathEditing.delete([PathAnchorRef(contour: draft.contour, anchor: last)], in: &path)
             if !path.contours.indices.contains(draft.contour) || path.contours[draft.contour].anchors.isEmpty { penDraft = nil }
-        } else if pathSelectionKind == .direct, !selectedPathAnchors.isEmpty {
+        } else if effectivePathSelectionKind == .direct, !selectedPathAnchors.isEmpty {
             PathEditing.delete(selectedPathAnchors, in: &path)
             selectedPathAnchors = []
-        } else if pathSelectionKind == .path, !selectedPathContours.isEmpty {
+        } else if effectivePathSelectionKind == .path, !selectedPathContours.isEmpty {
             for contour in selectedPathContours.sorted(by: >) where path.contours.indices.contains(contour) { path.contours.remove(at: contour) }
             selectedPathContours = []
         } else { return false }
@@ -413,7 +408,7 @@ extension EditorSession {
     func nudgePathSelection(dx: CGFloat, dy: CGFloat) -> Bool {
         guard tool == .pathSelection, canEditPaths, let index = activePathIndex, var path = document?.paths[index] else { return false }
         let delta = PathVector(Double(dx), Double(dy))
-        switch pathSelectionKind {
+        switch effectivePathSelectionKind {
         case .direct:
             guard !selectedPathAnchors.isEmpty else { return false }
             PathEditing.move(selectedPathAnchors, by: delta, in: &path)

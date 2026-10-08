@@ -34,6 +34,7 @@ This repository is **Compositor-KR** (github.com/songhj0728/Compositor-KR), a Ko
 - Korean localization and keyboard shortcuts that work on a Korean input source (`NSEvent.shortcutCharacters`).
 - The two-level font picker (family, then weight), the outside shape stroke, layer lock (`Core/LayerLockRules.swift`), Move-tool auto-select/deselect, the bevel kernels (`Core/BevelGeometry.swift`, `Core/StylePixels.c`), the clipping-mask arrow symbol in the layer list.
 - The Pen (P), Path Selection and Direct Selection (Shift-A; A alone stays upstream's No tool), vector paths saved in format version 14 (`Core/VectorPath.swift`, `Document/PathEditing.swift`), and the side panel's Layers / Paths / Channels tabs with the single-channel canvas view (`Core/ColorChannels.swift`, `Document/ChannelView.swift`, `UI/PathsPanel.swift`).
+- Workspaces (Window ▸ Workspace and Settings ▸ Workspace): floating tool and side-panel windows, draggable tabs in the default order Layers · Channels · Paths, tool icon size (small by default), saved workspaces and Reset Workspace (`Core/WorkspaceLayout.swift`, `UI/Workspace.swift`). Command (Ctrl on Windows) held swaps Path Selection and Direct Selection.
 - `ColorProfileRoundTripTests` and the other fork tests: fix the code, not the test, unless the owner agrees the behavior should change.
 
 ### How to work here

@@ -1,4 +1,6 @@
-// Compile with Compositor/Core/*.swift. This harness uses only the Swift standard library.
+// Compile with Compositor/Core/*.swift. This harness uses only the Swift standard library and Foundation, which
+// Swift ships on Windows and Linux too.
+import Foundation
 let locks: [Int: (locked: Bool, parent: Int?)] = [
     1: (true, nil), 2: (false, 1), 3: (false, 2), 4: (false, nil)
 ]
@@ -113,3 +115,29 @@ precondition(path.contours[0].anchors.count == 2)
 PathEditing.delete([PathAnchorRef(contour: 0, anchor: 0), PathAnchorRef(contour: 0, anchor: 1)], in: &path)
 precondition(path.contours.isEmpty, "a contour with nothing left goes")
 print("Portable path tests passed: hits, splits, handles, moves and deletes")
+
+// Workspaces: the side panel's tab order, saved layouts and Reset Workspace.
+var layout = WorkspaceLayout.standard
+precondition(layout.tabOrder == [.layers, .channels, .paths] && layout.toolIconSize == .small && !layout.floatsTools)
+layout.move(.paths, to: .layers)
+precondition(layout.tabOrder == [.paths, .layers, .channels], "a dragged tab takes the place it's dropped on")
+layout.move(.channels, by: -1)
+precondition(layout.tabOrder == [.paths, .channels, .layers])
+var broken = layout
+broken.tabOrder = [.layers, .layers]
+broken.sidePanelWidth = 9_000
+broken.toolsFrame = PanelFrame(x: 0, y: 0, width: .nan, height: 10)
+let fixed = broken.normalized()
+precondition(fixed.tabOrder == [.layers, .channels, .paths] && fixed.sidePanelWidth == 352 && fixed.toolsFrame == nil)
+var library = WorkspaceLibrary()
+library.current = layout
+precondition(library.save(as: "  Painting  ") && library.activeName == "Painting" && !library.save(as: "   "))
+library.reset()
+precondition(library.current == .standard && library.activeName == nil && library.saved.count == 1, "reset keeps saved workspaces")
+precondition(library.choose("Painting") && library.current.tabOrder == [.paths, .channels, .layers])
+let reread = WorkspaceLibrary.decoded(library.encoded())
+precondition(reread == library, "a library survives being stored")
+let newer = #"{"current":{"tabOrder":["history","paths","layers"],"toolIconSize":"large"},"saved":[]}"#.data(using: .utf8)!
+precondition(WorkspaceLibrary.decoded(newer).current.tabOrder == [.paths, .layers, .channels], "unknown tabs are skipped, missing ones added")
+precondition(WorkspaceLibrary.decoded(Data("garbage".utf8)) == WorkspaceLibrary())
+print("Portable workspace tests passed: tab order, normalizing, save, choose, reset and storage")

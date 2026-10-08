@@ -132,6 +132,12 @@ final class EditorSession {
     var activePathID: UUID?
     /// Path Selection picks whole contours; Direct Selection picks anchors and handles.
     var pathSelectionKind: PathSelectionKind = .path
+    /// Command (Ctrl on Windows) held: the other path selection tool, for as long as it's down, as in Photoshop.
+    var pathSelectionSwapHeld = false
+    /// The path selection tool actually in hand, with a held Command taken into account.
+    var effectivePathSelectionKind: PathSelectionKind {
+        pathSelectionSwapHeld ? (pathSelectionKind == .path ? .direct : .path) : pathSelectionKind
+    }
     /// The contours (Path Selection) or anchors (Direct Selection) picked in the active path.
     var selectedPathContours: Set<Int> = []
     var selectedPathAnchors: Set<PathAnchorRef> = []

@@ -2,8 +2,8 @@ import SwiftUI
 
 struct LayersPanel: View {
     @Bindable var session: EditorSession
-    /// Dragging the panel's left edge sets it, within `widths`.
-    var width: CGFloat = 252
+    /// Dragging the panel's left edge sets it, within `widths`. Nil when it floats and its window sets the width.
+    var width: CGFloat? = 252
     static let widths: ClosedRange<Double> = 202...352
 
     var body: some View {
@@ -14,6 +14,14 @@ struct LayersPanel: View {
                 if session.sidePanelTab == .layers {
                     Text("\(session.document?.layers.count ?? 0)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                         .accessibilityIdentifier("layerCount")
+                }
+                // Docked, a button floats the panel in its own window; floating, its close button docks it again.
+                if width != nil {
+                    Button { WorkspaceManager.shared.layout.floatsSidePanel = true } label: {
+                        Image(systemName: "macwindow.on.rectangle").font(.system(size: 11))
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                    .help("Float this panel in its own window").accessibilityLabel("Float this panel in its own window")
                 }
             }.padding(.horizontal, 12).padding(.vertical, 12)
             Divider()
