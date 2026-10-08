@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     /// Compositor-KR: where the panels sit and how big the tools are (Window ▸ Workspace), remembered across launches.
-    private var workspace = WorkspaceManager.shared
+    private var workspace: WorkspaceManager { .shared }
     @Bindable var session: EditorSession
     var applicationDelegate: CompositorApplicationDelegate? = nil
     @Environment(\.openWindow) private var openWindow
