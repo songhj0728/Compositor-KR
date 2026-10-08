@@ -45,9 +45,13 @@ extension EditorSession {
                 layers[index].mask?.placement = placement.quarterTurned(clockwise: clockwise, canvas: canvas)
             }
         }
+        // Compositor-KR: the project keeps its color profile and its paths turn with it.
+        let turn = clockwise ? PathAffine(a: 0, b: 1, c: -1, d: 0, tx: Double(canvas.height), ty: 0)
+                             : PathAffine(a: 0, b: -1, c: 1, d: 0, tx: 0, ty: Double(canvas.width))
         var turned = CanvasDocument(id: document.id, width: document.height, height: document.width, layers: layers,
                                     resolution: document.resolution,
-                                    guides: document.guides.map { $0.quarterTurned(clockwise: clockwise, canvas: canvas) })
+                                    guides: document.guides.map { $0.quarterTurned(clockwise: clockwise, canvas: canvas) },
+                                    colorProfile: document.colorProfile, paths: document.paths.map { $0.transformed(turn) })
         if let selection = document.selection {
             var turn = clockwise ? CGAffineTransform(a: 0, b: 1, c: -1, d: 0, tx: canvas.height, ty: 0)
                                  : CGAffineTransform(a: 0, b: -1, c: 1, d: 0, tx: 0, ty: canvas.width)

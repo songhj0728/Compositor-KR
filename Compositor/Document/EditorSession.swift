@@ -71,11 +71,13 @@ struct CanvasDocument: Equatable {
     var layers: [ImageLayer] = [] // Bottom to top.
     /// User-placed alignment lines. Saved with the project; undo covers them.
     var guides: [CanvasGuide] = []
+    /// The Paths panel's paths, drawn and edited with the Pen and the path selection tools. Saved; undo covers them.
+    var paths: [VectorPath] = []
     /// Part of the document so undo/redo covers selection changes. Not saved to disk.
     var selection: DocumentSelection?
     var size: CGSize { CGSize(width: width, height: height) }
     init(id: UUID = UUID(), width: Int, height: Int, layers: [ImageLayer] = [], resolution: Double = 72, guides: [CanvasGuide] = [],
-         colorProfile: DocumentColorProfile = .sRGB) {
+         colorProfile: DocumentColorProfile = .sRGB, paths: [VectorPath] = []) {
         self.id = id
         self.width = width
         self.height = height
@@ -83,6 +85,7 @@ struct CanvasDocument: Equatable {
         self.resolution = resolution
         self.guides = guides
         self.colorProfile = colorProfile
+        self.paths = paths
     }
 
     // Geometry limit; raster memory limits will be established with image import.
@@ -94,15 +97,18 @@ struct CanvasDocument: Equatable {
 }
 
 enum NavigationTool: String, CaseIterable {
-    case move, marquee, lasso, wand, crop, brush, spotHealing, cloneStamp, blur, gradient, shape, type, eyedropper, hand, zoom
+    case move, marquee, lasso, wand, crop, brush, spotHealing, cloneStamp, blur, gradient, shape, type
+    /// Compositor-KR: the Pen (P) draws vector paths; Path Selection and Direct Selection (Shift-A, Tab switches) edit them.
+    case pen, pathSelection
+    case eyedropper, hand, zoom
     /// No tool (A): nothing in the tool rail is selected and canvas clicks do nothing.
     case idle
     /// Tools that paint with the brush tip, sharing its size, hardness, opacity, and keys.
     var isBrushTool: Bool { self == .brush || self == .spotHealing || self == .cloneStamp || self == .blur }
     /// Tools that draw and edit selections, sharing modifiers, moving, and nudging.
     var isSelectionTool: Bool { self == .marquee || self == .lasso || self == .wand }
-    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.and.down.and.arrow.left.and.right" : self == .hand ? "hand.draw" : "magnifyingglass" }
-    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear (R)" : self == .gradient ? "Gradient (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .crop ? "Crop (C)" : self == .move ? "Move (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
+    var symbol: String { self == .pen ? "point.topleft.down.curvedto.point.filled.bottomright.up" : self == .pathSelection ? "cursorarrow" : self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.and.down.and.arrow.left.and.right" : self == .hand ? "hand.draw" : "magnifyingglass" }
+    var label: String { self == .pen ? "Pen (P)" : self == .pathSelection ? "Path Selection (⇧A) · Tab switches Path and Direct Selection" : self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear (R)" : self == .gradient ? "Gradient (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .crop ? "Crop (C)" : self == .move ? "Move (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
 }
 
 @Observable
@@ -121,6 +127,23 @@ final class EditorSession {
     var adjustmentEditingID: UUID? { didSet { resumeFileRequests() } }
     /// The Layer Style dialog, open on one layer.
     var layerStyle: LayerStyleEdit?
+    // Compositor-KR: vector paths (see Document/PathEditing.swift) and the side panel's tabs.
+    /// The path the Paths panel has selected, which the Pen adds to and the path tools edit.
+    var activePathID: UUID?
+    /// Path Selection picks whole contours; Direct Selection picks anchors and handles.
+    var pathSelectionKind: PathSelectionKind = .path
+    /// The contours (Path Selection) or anchors (Direct Selection) picked in the active path.
+    var selectedPathContours: Set<Int> = []
+    var selectedPathAnchors: Set<PathAnchorRef> = []
+    /// The open contour the Pen is adding anchors to.
+    var penDraft: PenDraft?
+    /// A drag under way with the Pen or a path selection tool.
+    var pathDrag: PathDrag?
+    /// Which page of the side panel is showing.
+    var sidePanelTab: SidePanelTab = .layers
+    /// The color channel the canvas shows: all of them, or one alone in gray, as the Channels panel picks.
+    var channelView: ColorChannelView = .composite
+    @ObservationIgnored var channelPreviews = ChannelPreviewCache()
     var effectSelection: LayerEffectSelection?
     @ObservationIgnored var effectsPreviews = EffectsPreviewCache()
     var projectURL: URL?
@@ -394,7 +417,7 @@ final class EditorSession {
     func selectTool(_ value: NavigationTool) {
         if tool != value, !finishText() { return }
         guard !isProjectBusy, brushStroke == nil, warpStroke == nil, levels == nil else { return }
-        if tool != value { commitTransform(); cancelCrop(); resolveGradient(); cancelLasso(); cancelShape(); cancelShapeSize() }
+        if tool != value { commitTransform(); cancelCrop(); resolveGradient(); cancelLasso(); cancelShape(); cancelShapeSize(); penDraft = nil }
         let from = Self.tipFamily(tool), to = Self.tipFamily(value)
         if from != to, let parked = parkedBrushTips[to] {
             parkedBrushTips[from] = (brushSettings.diameter, brushSettings.hardness, brushSettings.opacity)
@@ -437,6 +460,7 @@ final class EditorSession {
         case .spotHealing: spotHealingMode = next(spotHealingMode)
         case .cloneStamp: cloneSettings.sampleAllLayers.toggle()
         case .gradient: gradientSettings.shape = next(gradientSettings.shape)
+        case .pathSelection: togglePathSelectionKind()
         default: break
         }
     }

@@ -72,7 +72,16 @@ struct CommandPaletteView: View {
 final class CommandPaletteController {
     static let shared = CommandPaletteController()
     /// Left out of the palette: the palette itself and the system menus.
-    static let skipped: Set<String> = ["Command Palette…", "Window", "Help", "Services"]
+    /// Compositor-KR: by their English titles, their translations, and the titles macOS gives its own Window, Help and
+    /// Services menus in the running language, so the palette leaves them out in Korean too.
+    static var skipped: Set<String> {
+        let names = ["Command Palette…", "Window", "Help", "Services"]
+        var titles = Set(names).union(names.map { String(localized: String.LocalizationValue($0)) })
+        for menu in [NSApp.windowsMenu, NSApp.helpMenu, NSApp.servicesMenu].compactMap({ $0 }) where !menu.title.isEmpty {
+            titles.insert(menu.title)
+        }
+        return titles
+    }
 
     private(set) var panel: PalettePanel?
     private weak var window: NSWindow?

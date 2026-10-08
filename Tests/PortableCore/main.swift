@@ -85,3 +85,31 @@ precondition(shadeA.shadow < shadeB.shadow && shadeB.shadow < 1)
 precondition(BevelGeometry.shading(lit: 0.5, flat: 0.5).shadow == 0)
 precondition(BevelGeometry.shading(lit: -1, flat: 0.5).shadow == 1)
 print("Diffuse shadows remain graded below the horizon")
+
+// Vector paths: the editing rules the Pen and the path selection tools share.
+var path = VectorPath(name: "Path 1", contours: [PathContour(anchors: [
+    PathAnchor(PathVector(0, 0)), PathAnchor(PathVector(100, 0)), PathAnchor(PathVector(100, 100))
+])])
+if case .anchor(let ref)? = PathEditing.hitTest(path, at: PathVector(99, 1), tolerance: 4) {
+    precondition(ref == PathAnchorRef(contour: 0, anchor: 1))
+} else { preconditionFailure("an anchor under the pointer is hit") }
+if case .segment(0, 0, let t)? = PathEditing.hitTest(path, at: PathVector(50, 2), tolerance: 4) {
+    precondition(abs(t - 0.5) < 0.01)
+    let added = PathEditing.insertAnchor(contour: 0, segment: 0, at: t, in: &path)
+    precondition(added == PathAnchorRef(contour: 0, anchor: 1) && path.contours[0].anchors.count == 4)
+    precondition(path.contours[0].anchors[1].point.distance(to: PathVector(50, 0)) < 0.6, "a split keeps the curve")
+} else { preconditionFailure("a segment under the pointer is hit") }
+PathEditing.dragOutHandles(PathAnchorRef(contour: 0, anchor: 3), to: PathVector(130, 100), in: &path)
+let dragged = path.contours[0].anchors[3]
+precondition(dragged.isSmooth && dragged.inHandle == PathVector(70, 100), "the Pen's drag mirrors the handles")
+PathEditing.setHandle(PathAnchorRef(contour: 0, anchor: 3), outgoing: true, to: PathVector(100, 140), breaking: false, in: &path)
+precondition(path.contours[0].anchors[3].inHandle.distance(to: PathVector(100, 70)) < 0.0001, "a smooth anchor keeps its handles in line")
+PathEditing.setHandle(PathAnchorRef(contour: 0, anchor: 3), outgoing: true, to: PathVector(140, 140), breaking: true, in: &path)
+precondition(!path.contours[0].anchors[3].isSmooth && path.contours[0].anchors[3].inHandle.distance(to: PathVector(100, 70)) < 0.0001)
+PathEditing.moveContours([0], by: PathVector(10, 5), in: &path)
+precondition(path.contours[0].anchors[0].point == PathVector(10, 5) && path.contours[0].anchors[3].outHandle == PathVector(150, 145))
+PathEditing.delete([PathAnchorRef(contour: 0, anchor: 0), PathAnchorRef(contour: 0, anchor: 1)], in: &path)
+precondition(path.contours[0].anchors.count == 2)
+PathEditing.delete([PathAnchorRef(contour: 0, anchor: 0), PathAnchorRef(contour: 0, anchor: 1)], in: &path)
+precondition(path.contours.isEmpty, "a contour with nothing left goes")
+print("Portable path tests passed: hits, splits, handles, moves and deletes")
