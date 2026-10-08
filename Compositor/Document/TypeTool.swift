@@ -83,21 +83,35 @@ nonisolated struct LayerTextStyle: Codable, Equatable, Sendable {
         fontRuns?.first { $0.location <= index && index < $0.location + $0.length }?.fontName ?? fontName
     }
 
-    /// The one face covering `range`, or nil when that range is empty or uses more than one.
-    func uniformFontName(in range: NSRange) -> String? {
+    /// Every distinct face covering `range` — one when it's uniform, several when it varies, empty for an empty
+    /// range. Scans `fontRuns`, not each character, so it stays cheap over a long selection.
+    func fontNames(in range: NSRange) -> Set<String> {
         let count = content.utf16.count
         let start = max(0, min(range.location, count))
         let end = max(start, min(range.location + range.length, count))
-        guard end > start else { return nil }
-        let face = fontName(at: start)
+        guard end > start else { return [] }
+        var names: Set<String> = []
         var index = start
         for run in fontRuns ?? [] where run.location < end && run.location + run.length > index {
-            if run.location > index, fontName != face { return nil }
-            if run.fontName != face { return nil }
+            if run.location > index { names.insert(fontName) }
+            names.insert(run.fontName)
             index = min(end, max(index, run.location + run.length))
         }
-        if index < end, fontName != face { return nil }
-        return face
+        if index < end { names.insert(fontName) }
+        return names
+    }
+
+    /// The one face covering `range`, or nil when that range is empty or uses more than one.
+    func uniformFontName(in range: NSRange) -> String? {
+        let names = fontNames(in: range)
+        return names.count == 1 ? names.first : nil
+    }
+
+    /// The one family every face in `range` belongs to, when it's just one — so the family picker keeps showing it
+    /// even where `uniformFontName` sees more than one face, because a selection spans a few of its weights.
+    func uniformFontFamily(in range: NSRange) -> String? {
+        let families = Set(fontNames(in: range).compactMap { NSFont(name: $0, size: NSFont.systemFontSize)?.familyName })
+        return families.count == 1 ? families.first : nil
     }
 
     /// Sets the face of `range`. An empty range, or one covering the whole text, changes all of it.

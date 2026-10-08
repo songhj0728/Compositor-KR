@@ -12,7 +12,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The newest format version: what a save writes when the project needs it.
-    static let current = 12
+    static let current = 13
     /// What a save writes when nothing in the project needs `current`: the version before Photoshop's Layer Style,
     /// which Compositor-KR 1.4.5 and earlier open. A project is written in the oldest version that holds it, so it keeps
     /// opening in older copies of the app until it uses something they can't keep.
@@ -20,10 +20,10 @@ nonisolated struct ProjectManifest: Codable, Sendable {
     /// Every version `load` accepts. The package-header check, the manifest check and the error
     /// message all read this, so they cannot drift apart when `current` is bumped.
     static let supported = 1...ProjectManifest.current
-    /// The oldest version that holds this manifest: `current` once any layer uses Photoshop's Layer Style (the same
-    /// test `load` applies to let it in), `compatible` otherwise.
+    /// The oldest version that holds this manifest: 13 for locks, 12 for Layer Style, 11 otherwise.
     var neededVersion: Int {
-        layers.contains { $0.effects?.usesLayerStyle == true } ? ProjectManifest.current : ProjectManifest.compatible
+        if layers.contains(where: { $0.isLocked == true }) { return 13 }
+        return layers.contains { $0.effects?.usesLayerStyle == true } ? 12 : ProjectManifest.compatible
     }
 
     var format = "com.compositor.project"
@@ -62,6 +62,7 @@ nonisolated struct ProjectLayerRecord: Codable, Sendable {
     /// The stroke and drop shadow drawn around the layer.
     var effects: LayerEffects? = nil
     var text: LayerTextStyle? = nil
+    var isLocked: Bool? = nil
 }
 
 nonisolated struct ProjectSnapshot: @unchecked Sendable {
@@ -224,6 +225,7 @@ actor ProjectStore {
                       text.fontRuns == nil || manifest.version >= 11,
                       layer.imageFile != nil, layer.isGroup != true, layer.adjustment == nil else { throw ProjectError.invalid }
             }
+            guard layer.isLocked != true || manifest.version >= 13 else { throw ProjectError.invalid }
             // Photoshop's full Layer Style (new effects, blend modes, contours, Fill Opacity) arrived in version 12.
             if let effects = layer.effects, effects.usesLayerStyle {
                 guard manifest.version >= 12, effects.isValid else { throw ProjectError.invalid }

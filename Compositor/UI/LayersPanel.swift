@@ -16,6 +16,18 @@ struct LayersPanel: View {
             }.padding(18)
             Divider()
             LayerAppearanceControls(session: session, layerID: session.activeLayerID).id(session.activeLayerID)
+            HStack {
+                Text("Lock").font(.caption)
+                Button { session.toggleSelectedLayerLock() } label: {
+                    Image(systemName: session.selectionContainsLockedLayers ? "lock.fill" : "lock.open")
+                        .frame(width: 28, height: 24)
+                }
+                .buttonStyle(.borderless)
+                .help("Lock or unlock selected layers")
+                .accessibilityLabel("Lock or unlock selected layers")
+                .disabled(!session.canToggleSelectedLayerLock)
+                Spacer()
+            }.padding(.horizontal, 12).padding(.bottom, 8)
             Divider()
             if let layers = session.document?.layers, !layers.isEmpty {
                 NativeLayerList(session: session)
@@ -34,7 +46,7 @@ struct LayersPanel: View {
             HStack(spacing: 0) {
                 Button { session.addBlankLayer() } label: { Image(systemName: "plus.square").footerHitArea() }
                     .help("New blank layer (⇧⌘N)").accessibilityLabel("New blank layer")
-                    .accessibilityIdentifier("addBlankLayer").disabled(!session.canEditLayers)
+                    .accessibilityIdentifier("addBlankLayer").disabled(!session.canSelectLayers)
                 Button { session.groupSelectedLayers() } label: { Image(systemName: "folder.badge.plus").footerHitArea() }
                     .help("Group selected layers (⌘G)").accessibilityLabel("New folder").disabled(!session.canEditLayers)
                 LayerMaskMenu(session: session)
@@ -56,7 +68,7 @@ struct LayersPanel: View {
                         Button { session.addAdjustment(kind) } label: { Text(kind.displayName) }
                     }
                 } label: { Image(systemName: "circle.lefthalf.filled").footerHitArea() }
-                    .menuStyle(.borderlessButton).fixedSize().help("New adjustment layer").disabled(!session.canEditLayers)
+                    .menuStyle(.borderlessButton).fixedSize().help("New adjustment layer").disabled(!session.canSelectLayers)
                 Spacer()
                 Button { session.deleteLayerOrMask() } label: { Image(systemName: "trash").footerHitArea() }
                     .help(session.selectedEffect != nil ? "Delete selected effect" : session.isMaskSelected ? "Delete layer mask" : session.selectedLayerIDs.count > 1 ? "Delete selected layers" : "Delete selected layer")
@@ -86,4 +98,3 @@ extension View {
             .contentShape(Rectangle())
     }
 }
-

@@ -1,0 +1,1 @@
+Read [AGENTS.md](AGENTS.md) before changing anything: it holds the rules for AI agents working in this repository, starting with the "Compositor-KR fork: read this first" section, which lists what must not be touched.

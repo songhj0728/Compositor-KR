@@ -10,3 +10,4 @@
 #import "Rendering/LiquifyPixels.h"
 #import "Rendering/PSDPixels.h"
 #import "Rendering/SmearPixels.h"
+#import "Core/StylePixels.h"

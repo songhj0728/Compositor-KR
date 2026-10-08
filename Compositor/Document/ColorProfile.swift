@@ -57,6 +57,31 @@ extension DocumentColorProfile {
     /// The RGB space the project's pixels are edited in. Images that arrive in another space keep their own tag, so
     /// Core Graphics converts them wherever they're drawn.
     nonisolated var workingSpace: CGColorSpace { Self.spaces[self]! }
+    /// The RGB profile `space` is, by name, by identical ICC data, or else by converting the same colors (another
+    /// writer's copy of Adobe RGB has different bytes but the same primaries and curve); nil for any other space.
+    nonisolated init?(matching space: CGColorSpace) {
+        guard space.model == .rgb else { return nil }
+        let candidates = Self.allCases.filter { !$0.editsInRGB }
+        let icc = space.copyICCData() as Data?
+        if let match = candidates.first(where: { profile in
+            if let name = space.name, name == profile.workingSpace.name { return true }
+            return icc != nil && icc == profile.workingSpace.copyICCData() as Data?
+        }) {
+            self = match
+            return
+        }
+        // Saturated primaries and mid-tones tell the gamuts and the transfer curves apart.
+        let samples: [[CGFloat]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0.5, 0.5, 0.5], [0.25, 0.6, 0.85]]
+        guard let match = candidates.first(where: { profile in
+            samples.allSatisfy { rgb in
+                guard let color = CGColor(colorSpace: space, components: rgb + [1]),
+                      let converted = color.converted(to: profile.workingSpace, intent: .relativeColorimetric, options: nil)?.components
+                else { return false }
+                return zip(rgb, converted).allSatisfy { abs($0 - $1) < 0.002 }
+            }
+        }) else { return nil }
+        self = match
+    }
     /// What an exported JPEG is converted to: CMYK for a CMYK project, the working space otherwise. PNG has no CMYK,
     /// so a CMYK project's PNGs stay in its working RGB.
     nonisolated var jpegSpace: CGColorSpace { editsInRGB ? Self.cmykSpace : workingSpace }

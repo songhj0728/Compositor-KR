@@ -48,6 +48,7 @@ nonisolated enum PSDReader {
         let resourcesLength = Int(try cursor.u32())
         let resourcesEnd = cursor.offset + resourcesLength
         var resolution = 72.0
+        var colorSpace: CGColorSpace?
         while cursor.offset + 12 <= resourcesEnd {
             let signature = try cursor.string(4)
             guard signature == "8BIM" else { break }
@@ -62,6 +63,10 @@ nonisolated enum PSDReader {
                 if !resolution.isFinite || resolution < 1 { resolution = 72 }
                 resolution = min(9600, max(1, resolution))
             }
+            // The layers' numbers are in this profile's space; an RGB one is kept so they aren't read as sRGB.
+            if id == 1039, length > 0, let space = CGColorSpace(iccData: try cursor.bytes(length) as CFData), space.model == .rgb {
+                colorSpace = space
+            }
             cursor.offset = dataStart + length
             if length % 2 == 1 { try cursor.skip(1) }
         }
@@ -69,7 +74,7 @@ nonisolated enum PSDReader {
         let layerSection = try checkedLength(isPSB ? cursor.u64() : UInt64(cursor.u32()))
         let layerSectionEnd = cursor.offset + layerSection
         guard layerSection >= 4 else {
-            return PSDDocument(width: canvasWidth, height: canvasHeight, resolution: resolution, layers: [])
+            return PSDDocument(width: canvasWidth, height: canvasHeight, resolution: resolution, layers: [], colorSpace: colorSpace)
         }
         let layerInfoLength = try checkedLength(isPSB ? cursor.u64() : UInt64(cursor.u32()))
         _ = layerInfoLength
@@ -87,13 +92,14 @@ nonisolated enum PSDReader {
         }
         var usedPixels = 0
         for index in raw.indices {
-            try decodeChannels(&cursor, layer: &raw[index], remainingPixels: remainingPixels - usedPixels, isPSB: isPSB)
+            try decodeChannels(&cursor, layer: &raw[index], remainingPixels: remainingPixels - usedPixels, isPSB: isPSB, space: colorSpace)
             if let image = raw[index].image { usedPixels += image.width * image.height }
         }
         cursor.offset = layerSectionEnd
         return PSDDocument(width: canvasWidth, height: canvasHeight, resolution: resolution,
                            layers: try assemble(raw, canvas: CGSize(width: canvasWidth, height: canvasHeight),
-                                                remainingPixels: remainingPixels - usedPixels))
+                                                remainingPixels: remainingPixels - usedPixels),
+                           colorSpace: colorSpace)
     }
 
     private struct RawLayer {
@@ -280,7 +286,8 @@ nonisolated enum PSDReader {
                        width: croppedRight - croppedLeft, height: croppedBottom - croppedTop)
     }
 
-    private static func decodeChannels(_ cursor: inout PSDCursor, layer: inout RawLayer, remainingPixels: Int, isPSB: Bool) throws {
+    private static func decodeChannels(_ cursor: inout PSDCursor, layer: inout RawLayer, remainingPixels: Int, isPSB: Bool,
+                                       space: CGColorSpace?) throws {
         var planes: [Int: [UInt8]] = [:]
         let width = max(0, layer.right - layer.left)
         let height = max(0, layer.bottom - layer.top)
@@ -322,7 +329,8 @@ nonisolated enum PSDReader {
         guard red.count >= width * height, green.count >= width * height, blue.count >= width * height, alpha.count >= width * height else {
             throw PSDError.truncated
         }
-        layer.image = try PSDChannelCoder.rgbaImage(width: width, height: height, red: red, green: green, blue: blue, alpha: alpha)
+        layer.image = try PSDChannelCoder.rgbaImage(width: width, height: height, red: red, green: green, blue: blue, alpha: alpha,
+                                                   space: space)
     }
 
     private static func assemble(_ raw: [RawLayer], canvas: CGSize, remainingPixels: Int) throws -> [PSDRecord] {

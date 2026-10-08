@@ -15,6 +15,392 @@ struct LayerStyleTests {
         return try #require(context.makeImage())
     }
 
+    @Test func bevelPreviewRefinesAfterQuickFeedback() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 900, height: 900)
+        let image = try square(size: 900, inner: 500)
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Preview"))
+        let id = try #require(session.activeLayerID)
+        session.setEffects(LayerEffects(bevel: BevelEffect()), on: id)
+        let layer = try #require(session.document?.layers.first { $0.id == id })
+        let cache = EffectsPreviewCache()
+        cache.prepare(layers: [layer])
+        defer { cache.prepare(layers: []) }
+        var widths: [Int] = []
+        _ = cache.preview(for: layer, mask: nil, transform: layer.transform, maskPlacement: nil) {
+            if let result = cache.rendered(id) { widths.append(result.image.width) }
+        }
+        let deadline = ContinuousClock.now + .seconds(30)
+        while widths.count < 2 && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(widths.count == 2, "The quick preview must be followed by a refined result")
+        if widths.count == 2 {
+            #expect(widths[0] <= 768)
+            #expect(widths[1] > widths[0])
+            let expected = try LayerEffectsRenderer.render(image, mask: nil, effects: try #require(layer.effects))
+            #expect(widths[1] == expected.image.width, "Refinement restores the existing preview quality")
+            let actualData = try #require(cache.rendered(id)?.image.dataProvider?.data) as Data
+            let expectedData = try #require(expected.image.dataProvider?.data) as Data
+            #expect(actualData == expectedData, "The refined pixels must equal a direct render")
+        }
+    }
+
+    @Test(arguments: [false, true]) func paintedMaskPreviewDoesNotFlattenItsFullRaster(placed: Bool) async throws {
+        let session = EditorSession()
+        session.createDocument(width: 900, height: 900)
+        let image = try square(size: 900, inner: 500)
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Masked bevel"))
+        let id = try #require(session.activeLayerID)
+        session.setEffects(LayerEffects(bevel: BevelEffect()), on: id)
+        session.addLayerMask()
+        if placed, let index = session.document?.layers.firstIndex(where: { $0.id == id }) {
+            var placement = session.document!.layers[index].transform
+            placement.origin.x += 40
+            placement.rotation = 12
+            session.document!.layers[index].mask?.placement = placement
+            session.document!.layers[index].mask?.isLinked = false
+        }
+        session.selectTool(.brush)
+        session.maskPaintWhite = false
+        session.brushSettings.diameter = 120
+        session.beginBrush(at: CGPoint(x: 450, y: 450))
+        session.continueBrush(at: CGPoint(x: 550, y: 450))
+        #expect(session.finishBrushImmediately())
+        let layer = try #require(session.activeLayer)
+        let raster = try #require(layer.mask?.asset.raster)
+        #expect(!raster.hasMaterializedPixels)
+        let cache = EffectsPreviewCache()
+        cache.prepare(layers: [layer])
+        defer { cache.prepare(layers: []) }
+        var completions = 0
+        let start = ContinuousClock.now
+        _ = cache.preview(for: layer, mask: nil, transform: layer.transform, maskPlacement: layer.mask?.placement, usesOwnedMask: true) {
+            completions += 1
+            if completions == 1 { print("Mask stroke first preview (placed=\(placed)): \(start.duration(to: .now))") }
+        }
+        let deadline = ContinuousClock.now + .seconds(30)
+        while completions < 2 && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(completions == 2)
+        #expect(!raster.hasMaterializedPixels, "Neither preview pass may assemble the original-size painted mask")
+        let mask = layer.mask?.clipImage(placement: layer.mask?.placement, over: layer.transform,
+            width: image.width, height: image.height)
+        let expected = try LayerEffectsRenderer.render(image, mask: mask, effects: try #require(layer.effects))
+        let actual = try #require(cache.rendered(id)?.image)
+        #expect(actual.width == expected.image.width && actual.height == expected.image.height)
+        let actualData = try #require(actual.dataProvider?.data) as Data
+        let expectedData = try #require(expected.image.dataProvider?.data) as Data
+        #expect(actualData.count == expectedData.count)
+        // Independent tile interpolation can differ slightly at tile edges after rotation.
+        let differences = zip(actualData, expectedData).map { abs(Int($0) - Int($1)) }
+        #expect(Double(differences.reduce(0, +)) / Double(differences.count) < 0.5)
+    }
+
+    @Test func changingSuppliedMaskInvalidatesTheEffectsPreview() async throws {
+        let image = try square()
+        var layer = ImageLayer(asset: ImportedImage(image: image, thumbnail: image, name: "Mask preview"), origin: .zero)
+        layer.effects = LayerEffects(bevel: BevelEffect())
+        let cache = EffectsPreviewCache()
+        cache.prepare(layers: [layer])
+        defer { cache.prepare(layers: []) }
+        var completions = 0
+        for revealing in [true, false] {
+            let mask = try #require(LayerMask.solid(revealing: revealing))
+            let target = completions + 1
+            _ = cache.preview(for: layer, mask: mask.asset.image, transform: layer.transform, maskPlacement: nil) {
+                completions += 1
+            }
+            let deadline = ContinuousClock.now + .seconds(10)
+            while completions < target && ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            #expect(completions == target)
+        }
+        let hidden = try #require(cache.rendered(layer.id)?.image)
+        #expect(try pixel(hidden, hidden.width / 2, hidden.height / 2).alpha == 0)
+    }
+
+    @Test func liveBevelUpdatesBeforeMouseUpAndCoalescesToLatestMask() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 900, height: 900)
+        let image = try square(size: 900, inner: 800)
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Live bevel"))
+        let id = try #require(session.activeLayerID)
+        var bevel = BevelEffect()
+        bevel.size = 8
+        bevel.soften = 2
+        let effects = LayerEffects(bevel: bevel)
+        session.setEffects(effects, on: id)
+        session.addLayerMask()
+        session.selectTool(.brush)
+        session.maskPaintWhite = false
+        session.brushSettings.diameter = 60
+        let seed = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        var completions = 0
+        let surface = try #require(LayerEffectsSurface(layerID: id, effects: effects,
+            grid: CGSize(width: 900, height: 900), sourceRect: CGRect(x: 0, y: 0, width: 900, height: 900),
+            seed: seed, completion: { completions += 1 }))
+        session.beginBrush(at: CGPoint(x: 350, y: 400))
+        let stroke = try #require(session.brushStroke)
+        func update() {
+            let patches = stroke.patches
+            surface.update(base: image, patches: [], mask: nil,
+                maskStroke: .init(patches: patches, toGrid: .identity) { region in
+                    guard let context = try? BrushRaster.context(width: Int(region.width), height: Int(region.height), mask: true) else { return nil }
+                    context.setFillColor(gray: 1, alpha: 1)
+                    context.fill(CGRect(origin: .zero, size: region.size))
+                    context.translateBy(x: -region.minX, y: -region.minY)
+                    for patch in patches { BrushRaster.draw(patch.image, in: patch.rect, mask: true, context: context) }
+                    return context.makeImage()
+                })
+        }
+        let first = ContinuousClock.now
+        update()
+        let deadline = ContinuousClock.now + .seconds(30)
+        while completions == 0 && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        #expect(completions > 0 && session.brushStroke === stroke, "Effects must update while the stroke is still active")
+        print("Live bevel first region: \(first.duration(to: .now))")
+        let submit = ContinuousClock.now
+        for x in stride(from: 370, through: 690, by: 40) {
+            session.continueBrush(at: CGPoint(x: x, y: 400))
+            update()
+        }
+        print("Live bevel 9 pointer samples submitted: \(submit.duration(to: .now))")
+        while surface.isRendering && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        #expect(!surface.isRendering)
+        let region = try #require(surface.lastRenderedRegion)
+        #expect(region.width * region.height < 900 * 900 / 2, "A small stroke must not rebuild the whole layer")
+        #expect(session.finishBrushImmediately())
+        let mask = try #require(session.activeLayer?.mask?.enabledImage)
+        let expected = try LayerEffectsRenderer.render(image, mask: mask, effects: effects)
+        let actual = try #require(surface.image)
+        let actualData = try #require(actual.dataProvider?.data) as Data
+        let expectedData = try #require(expected.image.dataProvider?.data) as Data
+        #expect(actualData.count == expectedData.count)
+        let differences = zip(actualData, expectedData).map { abs(Int($0) - Int($1)) }
+        #expect(differences.max()! <= 2, "Live regions must match the latest full-resolution mask effects")
+    }
+
+    @Test(arguments: [false, true])
+    func canvasPresentsLiveBevelAndKeepsCompletedResult(mask: Bool) async throws {
+        let session = EditorSession()
+        session.createDocument(width: 600, height: 600)
+        let image = try square(size: 500, inner: 500, color: PaletteColor(red: 0.15, green: 0.5, blue: 0.9))
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Canvas bevel"))
+        let id = try #require(session.activeLayerID)
+        var bevel = BevelEffect()
+        bevel.size = 24
+        session.setEffects(LayerEffects(bevel: bevel), on: id)
+        if mask { session.addLayerMask(); session.maskPaintWhite = false }
+        session.selectTool(.brush)
+        session.brushMode = mask ? .paint : .erase
+        session.brushSettings.diameter = 40
+        let canvas = CanvasView(session: session)
+        canvas.frame = CGRect(x: 0, y: 0, width: 600, height: 600)
+        session.viewport.resize(to: canvas.bounds.size, backingScale: 1, documentSize: session.document?.size)
+        session.zoom(to: 1)
+        canvas.synchronizeDisplay()
+        _ = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+        let deadline = ContinuousClock.now + .seconds(15)
+        while session.effectsPreviews.rendered(id) == nil && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        var samples: [Duration] = []
+        session.beginBrush(at: CGPoint(x: 200, y: 300))
+        for x in stride(from: 210, through: 390, by: 20) {
+            session.continueBrush(at: CGPoint(x: x, y: 300))
+            let started = ContinuousClock.now
+            canvas.synchronizeDisplay()
+            _ = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+            let surface = try #require(canvas.strokeSurface)
+            while surface.isRendering && ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(1))
+            }
+            #expect(!surface.isRendering && session.brushStroke != nil)
+            _ = try #require(surface.image)
+            let frame = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+            let renderer = try #require(GPUCanvasRenderer.shared)
+            _ = try #require(renderer.context.createCGImage(frame, from: CGRect(origin: .zero, size: canvas.bounds.size)))
+            samples.append(started.duration(to: .now))
+        }
+        print("Debug canvas bevel24 mask=\(mask), input-to-render samples: \(samples)")
+        #expect(session.finishBrushImmediately())
+        let finished = ContinuousClock.now
+        canvas.synchronizeDisplay()
+        while canvas.strokeSurface != nil && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        #expect(canvas.strokeSurface == nil, "Completion must hand off without another user event")
+        let completed = try #require(session.effectsPreviews.rendered(id))
+        let handoffDuration = finished.duration(to: .now)
+        let layer = try #require(session.activeLayer)
+        let clip = layer.mask?.clipImage(placement: layer.mask?.placement, over: layer.transform,
+                                        width: layer.asset!.image.width, height: layer.asset!.image.height, limit: 1000)
+        let expected = try LayerEffectsRenderer.render(layer.asset!.image, mask: clip, effects: layer.effects!)
+        let actualData = try #require(completed.image.dataProvider?.data) as Data
+        // Cropped CGImages can retain the parent row stride: compare drawn tight buffers.
+        let tight = try BrushRaster.context(width: completed.image.width, height: completed.image.height, mask: false)
+        BrushRaster.draw(completed.image, in: CGRect(x: 0, y: 0, width: completed.image.width, height: completed.image.height), mask: false, context: tight)
+        let actual = try #require(tight.makeImage()?.dataProvider?.data) as Data
+        let reference = try #require(expected.image.dataProvider?.data) as Data
+        #expect(!actualData.isEmpty && actual.count == reference.count)
+        let differences = zip(actual, reference).map { abs(Int($0) - Int($1)) }
+        if let maximum = differences.max(), maximum > 2 {
+            let at = differences.firstIndex(of: maximum)!
+            print("Canvas max difference \(maximum) at \(at / 4 % completed.image.width),\(at / 4 / completed.image.width), channel \(at % 4): \(actual[at]) vs \(reference[at])")
+        }
+        #expect(differences.max()! <= 2)
+        _ = try #require(canvas.gpuFrame(size: canvas.bounds.size))
+        try await Task.sleep(for: .milliseconds(550))
+        let retained = try #require(session.effectsPreviews.rendered(id))
+        #expect(completed.image === retained.image, "A completed full-resolution stroke must not trigger another full render")
+        print("Debug canvas bevel24 mask=\(mask), handoff: \(handoffDuration)")
+    }
+
+    @Test func bulkCompositingMatchesGeneralBlendPath() {
+        let color = PaletteColor(red: 0.2, green: 0.7, blue: 0.4)
+        let uniform = SIMD3<Float>(0.2, 0.7, 0.4)
+        let coverage = (0..<128).map { Float($0 % 17) / 16 }
+        for mode in [LayerBlendMode.normal, .multiply, .screen] {
+            var fast = LayerStyleRenderer.Canvas(width: 128, height: 1)
+            for i in fast.pixels.indices {
+                let a = Float(i % 31) / 30
+                fast.pixels[i] = SIMD4(0.8 * a, 0.3 * a, 0.5 * a, a)
+            }
+            var reference = fast
+            fast.draw(coverage, opacity: 0.65, color: color, mode: mode)
+            reference.draw(coverage, opacity: 0.65, colors: Array(repeating: uniform, count: 128), mode: mode)
+            for i in fast.pixels.indices { for c in 0..<4 {
+                #expect(abs(fast.pixels[i][c] - reference.pixels[i][c]) < 0.000001)
+            } }
+        }
+    }
+
+    @Test func portableDistanceKernelMatchesReference() throws {
+        let width = 63, height = 47
+        for kind in 0..<3 {
+            let shape: [Float] = (0..<(width * height)).map { i in
+                kind == 0 ? 0 : kind == 1 ? 1 : Float((i * 71 + i / width * 17) % 101) / 100
+            }
+            let expected = BevelGeometry.edgeDistances(shape, width: width, height: height)
+            var actual = [Float](repeating: 0, count: shape.count)
+            #expect(style_distances(shape, &actual, Int32(width), Int32(height)) == 1)
+            for i in shape.indices { #expect(abs(abs(actual[i]) - expected[i]) < 0.0001) }
+        }
+    }
+
+    @Test func smoothBevelLightingTapersAtBothEndsOfItsWidth() throws {
+        let width = 160, height = 80
+        let shape: [Float] = (0..<(width * height)).map { ($0 % width >= 20 && $0 % width < 140) ? 1 : 0 }
+        var bevel = BevelEffect()
+        bevel.size = 24
+        bevel.angle = 180
+        bevel.altitude = 30
+        let planes = LayerStyleRenderer.Planes(width: width, height: height)
+        let shading = try LayerStyleRenderer.bevelShading(bevel, shape: shape, planes: planes, origin: .zero, fullSize: CGSize(width: width, height: height))
+        let middle = 40 * width
+        #expect(shading.highlight[middle + 22] < shading.highlight[middle + 31])
+        #expect(shading.highlight[middle + 42] < shading.highlight[middle + 31])
+        #expect(shading.highlight[middle + 10] == 0)
+        #expect(shading.highlight[middle + 70] == 0)
+    }
+
+    @Test func circularBevelHasContinuousAngularShading() throws {
+        let width = 200, height = 200
+        let shape: [Float] = (0..<(width * height)).map {
+            let x = Float($0 % width) - 100, y = Float($0 / width) - 100
+            return x * x + y * y >= 40 * 40 ? 1 : 0
+        }
+        var bevel = BevelEffect()
+        bevel.size = 24
+        let shade = try LayerStyleRenderer.bevelShading(bevel, shape: shape,
+            planes: LayerStyleRenderer.Planes(width: width, height: height), origin: .zero,
+            fullSize: CGSize(width: width, height: height))
+        func sample(_ plane: [Float], _ angle: Float) -> Float {
+            let x = 100 + 52 * cos(angle), y = 100 + 52 * sin(angle)
+            let ix = Int(x), iy = Int(y), fx = x - Float(ix), fy = y - Float(iy)
+            let a = plane[iy * width + ix] * (1 - fx) + plane[iy * width + ix + 1] * fx
+            let b = plane[(iy + 1) * width + ix] * (1 - fx) + plane[(iy + 1) * width + ix + 1] * fx
+            return a * (1 - fy) + b * fy
+        }
+        for plane in [shade.highlight, shade.shadow] {
+            let samples = (0..<360).map { sample(plane, Float($0) * .pi / 180) }
+            let largestStep = samples.indices.map { abs(samples[$0] - samples[($0 + 1) % 360]) }.max()!
+            #expect(largestStep < 0.035, "Circular shading must change gradually rather than in radial bands: \(largestStep)")
+        }
+    }
+
+    @Test func erasedPixelsAndLayerMaskProduceTheSameBevel() throws {
+        let base = try square(size: 180, inner: 140)
+        let hole = CGRect(x: 60, y: 60, width: 60, height: 60)
+        let erased = try BrushRaster.copy(base)
+        erased.setBlendMode(.clear)
+        erased.fillEllipse(in: hole)
+        let mask = try BrushRaster.context(width: 180, height: 180, mask: true)
+        mask.setFillColor(gray: 1, alpha: 1)
+        mask.fill(CGRect(x: 0, y: 0, width: 180, height: 180))
+        mask.setFillColor(gray: 0, alpha: 1)
+        mask.fillEllipse(in: hole)
+        var bevel = BevelEffect()
+        bevel.size = 24
+        let effects = LayerEffects(bevel: bevel)
+        let direct = try LayerEffectsRenderer.render(try #require(erased.makeImage()), mask: nil, effects: effects)
+        let masked = try LayerEffectsRenderer.render(base, mask: try #require(mask.makeImage()), effects: effects)
+        let a = try BrushRaster.copy(direct.image), b = try BrushRaster.copy(masked.image)
+        let count = a.bytesPerRow * a.height
+        let ap = try #require(a.data).assumingMemoryBound(to: UInt8.self)
+        let bp = try #require(b.data).assumingMemoryBound(to: UInt8.self)
+        #expect((0..<count).map { abs(Int(ap[$0]) - Int(bp[$0])) }.max()! <= 2)
+    }
+
+    @Test func softenBlursShadingWithoutExpandingInnerBevelCoverage() throws {
+        let image = try square(size: 100, inner: 70)
+        var bevel = BevelEffect()
+        bevel.size = 12
+        bevel.soften = 8
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
+        #expect(try pixel(result.image, 3, 3).alpha == 0)
+        #expect(try pixel(result.image, Int(result.inset) + 50, Int(result.inset) + 50).red == 255)
+    }
+
+    @Test func roundHoleBevelKeepsItsSilhouette() throws {
+        let source = try BrushRaster.context(width: 300, height: 200, mask: false)
+        source.setFillColor(CGColor(srgbRed: 0.1, green: 0.55, blue: 1, alpha: 1))
+        source.addPath(CGPath(roundedRect: CGRect(x: 20, y: 20, width: 260, height: 160), cornerWidth: 30, cornerHeight: 30, transform: nil))
+        source.addEllipse(in: CGRect(x: 105, y: 55, width: 90, height: 90))
+        source.fillPath(using: .evenOdd)
+        var bevel = BevelEffect()
+        bevel.size = 24
+        bevel.depth = 150
+        bevel.soften = 2
+        let rendered = try LayerEffectsRenderer.render(try #require(source.makeImage()), mask: nil, effects: LayerEffects(bevel: bevel))
+        #expect(try pixel(rendered.image, Int(rendered.inset) + 150, Int(rendered.inset) + 100).alpha == 0)
+        let png = try #require(NSBitmapImageRep(cgImage: rendered.image).representation(using: .png, properties: [:]))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("compositor-round-bevel-qa.png")
+        try png.write(to: url)
+        print("Bevel visual QA: \(url.path)")
+    }
+
+    @Test func cancelledStyleRenderingDoesNotReturnAnImage() throws {
+        let image = try square()
+        var checks = 0
+        do {
+            _ = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: BevelEffect()), isCancelled: {
+                checks += 1
+                return checks >= 4
+            })
+            Issue.record("Cancelled rendering returned a completed image")
+        } catch is CancellationError {
+            #expect(checks == 4)
+        }
+    }
+
     /// The pixel's straight (not premultiplied) RGBA, 0–255.
     private func pixel(_ image: CGImage, _ x: Int, _ y: Int) throws -> (red: Int, green: Int, blue: Int, alpha: Int) {
         let context = try BrushRaster.copy(image)
@@ -54,7 +440,7 @@ struct LayerStyleTests {
         styled.bevel = BevelEffect()
         session.setEffects(styled, on: id)
         let new = try await saved()
-        #expect(new.onDisk == ProjectManifest.current)
+        #expect(new.onDisk == 12)
         #expect(new.loaded.manifest.layers.first { $0.id == id }?.effects?.bevel != nil)
 
         // Taking the style off again lets the project go back to the older version.
@@ -143,6 +529,104 @@ struct LayerStyleTests {
         let outer = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
         let outside = Int(outer.inset) + 13
         #expect(try pixel(outer.image, outside, Int(outer.inset) + 30).alpha > 0, "an outer bevel reaches outside")
+    }
+
+    @Test func oversizedBevelUsesTheLayerSizeWithoutEffectPadding() throws {
+        let image = try square(size: 20, inner: 20, color: PaletteColor(red: 0.5, green: 0.5, blue: 0.5))
+        var bevel = BevelEffect()
+        bevel.size = 80
+        bevel.style = .outerBevel
+        let effects = LayerEffects(bevel: bevel)
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: effects)
+        let context = try BrushRaster.context(width: result.image.width, height: result.image.height, mask: false)
+        BrushRaster.draw(image, in: CGRect(x: result.inset, y: result.inset, width: 20, height: 20),
+                         mask: false, context: context)
+        let padded = try #require(context.makeImage())
+        let expected = try LayerStyleRenderer.render(padded, effects: effects,
+            origin: CGPoint(x: -result.inset, y: -result.inset), fullSize: CGSize(width: 20, height: 20))
+        let actualPixels = try BrushRaster.copy(result.image)
+        let expectedPixels = try BrushRaster.copy(expected)
+        let actualData = try #require(actualPixels.data)
+        let expectedData = try #require(expectedPixels.data)
+        #expect(Data(bytes: actualData, count: actualPixels.bytesPerRow * actualPixels.height)
+            == Data(bytes: expectedData, count: expectedPixels.bytesPerRow * expectedPixels.height))
+    }
+
+    @Test(arguments: BevelEffect.Technique.allCases)
+    func smallShapeKeepsAFlatCenter(technique: BevelEffect.Technique) throws {
+        let image = try square(size: 24, inner: 24, color: PaletteColor(red: 0.5, green: 0.5, blue: 0.5))
+        var bevel = BevelEffect()
+        bevel.technique = technique
+        bevel.size = 250
+        let result = try LayerEffectsRenderer.render(image, mask: nil, effects: LayerEffects(bevel: bevel))
+        let inset = Int(result.inset)
+        let middle = try pixel(result.image, inset + 12, inset + 12)
+        #expect(abs(middle.red - 128) <= 5)
+        #expect(middle.alpha == 255)
+    }
+
+    @Test func layerLockPreventsEditsAndSurvivesSaving() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60)
+        let image = try square()
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Square"))
+        let id = try #require(session.activeLayerID)
+        let original = try #require(session.activeLayer)
+        session.toggleSelectedLayerLock()
+        #expect(session.canSelectLayers && !session.canEditLayers)
+        session.nudgeLayer(dx: 10, dy: 10)
+        session.setLayerOpacity(0.2)
+        session.deleteSelectedLayers()
+        #expect(session.activeLayer?.transform == original.transform)
+        #expect(session.activeLayer?.opacity == original.opacity)
+        #expect(session.activeLayer?.id == id)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Locked-\(UUID()).comp")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try await ProjectStore.shared.save(try #require(session.projectSnapshot()), to: url)
+        let loaded = try await ProjectStore.shared.load(from: url)
+        #expect(loaded.manifest.version == 13)
+        let reopened = EditorSession()
+        reopened.installProject(loaded, from: url)
+        #expect(reopened.activeLayer?.isLocked == true && !reopened.canEditLayers)
+        session.undo()
+        #expect(session.activeLayer?.isLocked == false && session.canEditLayers)
+        reopened.toggleSelectedLayerLock()
+        #expect(reopened.canEditLayers)
+    }
+
+    @Test func lockedFolderProtectsChildrenUntilTheFolderIsUnlocked() throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60)
+        let image = try square()
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Square"))
+        let child = try #require(session.activeLayerID)
+        session.groupSelectedLayers()
+        let folder = try #require(session.activeLayerID)
+        session.toggleSelectedLayerLock()
+        session.selectLayer(child)
+        #expect(session.layerIsLocked(child))
+        #expect(!session.canToggleSelectedLayerLock && !session.canEditLayers)
+        session.toggleSelectedLayerLock()
+        #expect(session.activeLayer?.isLocked == false)
+        session.selectLayer(folder)
+        session.toggleSelectedLayerLock()
+        session.selectLayer(child)
+        #expect(session.canToggleSelectedLayerLock && session.canEditLayers)
+    }
+
+    @Test func lockedLayerDoesNotBlockCreatingAnotherLayer() throws {
+        let session = EditorSession()
+        session.createDocument(width: 60, height: 60, emptyLayer: true)
+        let locked = try #require(session.activeLayerID)
+        session.toggleSelectedLayerLock()
+        session.addBlankLayer()
+        #expect(session.document?.layers.count == 2)
+        #expect(session.activeLayerID != locked && session.canEditLayers)
+        session.selectLayer(locked)
+        session.addAdjustment(.invert)
+        #expect(session.document?.layers.count == 3)
+        #expect(session.activeLayer?.adjustment?.kind == .invert)
+        #expect(session.layerIsLocked(locked))
     }
 
     @Test func satinAndPatternDrawOnlyInsideTheShape() throws {

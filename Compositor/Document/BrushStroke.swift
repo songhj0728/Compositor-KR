@@ -80,9 +80,9 @@ nonisolated enum BrushRaster {
         }
     }
 
-    static func draw(_ image: CGImage, in rect: CGRect, mask: Bool, context: CGContext) {
+    static func draw(_ image: CGImage, in rect: CGRect, mask: Bool, context: CGContext, interpolation: CGInterpolationQuality = .none) {
         context.saveGState()
-        context.interpolationQuality = .none
+        context.interpolationQuality = interpolation
         context.translateBy(x: rect.minX, y: rect.maxY)
         context.scaleBy(x: 1, y: -1)
         let bounds = CGRect(origin: .zero, size: rect.size)

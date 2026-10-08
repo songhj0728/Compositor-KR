@@ -437,7 +437,7 @@ struct TypeToolTests {
         #expect(pixels.red > 50 && pixels.dark > 50)
 
         let snapshot = try #require(session.projectSnapshot())
-        #expect(snapshot.manifest.version == 12)
+        #expect(snapshot.manifest.version == ProjectManifest.current)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("TextColors-\(UUID()).comp")
         defer { try? FileManager.default.removeItem(at: url) }
         try await ProjectStore.shared.save(snapshot, to: url)
@@ -488,6 +488,22 @@ struct TypeToolTests {
         style.replaceCharacters(in: NSRange(location: 5, length: 0), withLength: 1)
         style.content += "!"
         #expect(style.isValid && style.fontName(at: 5) == "Courier")
+    }
+
+    /// The family picker keeps showing "Helvetica" over a selection that mixes its Regular and Bold faces, even
+    /// though the face picker sees two different faces there and shows neither.
+    @Test func uniformFontFamilyStaysWhenOnlyTheWeightVaries() {
+        var style = LayerTextStyle()
+        style.content = "Hello"
+        style.fontName = "Helvetica"
+        style.setFont("Helvetica-Bold", in: NSRange(location: 0, length: 2))
+        let range = NSRange(location: 0, length: 5)
+        #expect(style.fontNames(in: range) == Set(["Helvetica-Bold", "Helvetica"]))
+        #expect(style.uniformFontName(in: range) == nil, "two different faces")
+        #expect(style.uniformFontFamily(in: range) == "Helvetica", "but the same family")
+        style.setFont("Courier", in: NSRange(location: 0, length: 2))
+        #expect(style.uniformFontFamily(in: range) == nil, "different families now")
+        #expect(style.uniformFontFamily(in: NSRange(location: 3, length: 2)) == "Helvetica", "just the uniform tail")
     }
 
     @Test func selectedFontSurvivesReopening() async throws {

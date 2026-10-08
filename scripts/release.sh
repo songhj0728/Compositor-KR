@@ -45,7 +45,10 @@ echo "==> Archiving a Release build"
 if $DEVELOPER_ID; then
   signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM")
 else
-  signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM="")
+  # No hardened runtime with an ad hoc signature: its library validation only loads frameworks signed by the app's own
+  # team, and ad hoc code has none, so the app would die at launch failing to load Sparkle. Notarization is what needs
+  # the hardened runtime, and an ad hoc build isn't notarized.
+  signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM="" ENABLE_HARDENED_RUNTIME=NO)
 fi
 xcodebuild archive -quiet \
   -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
@@ -66,6 +69,17 @@ else
   APP_PATH="$WORK/export/$APP.app"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+# A signature can verify and the app still be refused at launch (a framework the loader won't map), so start it and
+# make sure it's still running a few seconds later.
+echo "==> Checking that the app launches"
+"$APP_PATH/Contents/MacOS/$APP" >"$WORK/launch.log" 2>&1 &
+LAUNCHED=$!
+sleep 5
+if ! kill -0 $LAUNCHED 2>/dev/null; then
+  echo "The built app quit at launch:"; head -5 "$WORK/launch.log"; exit 1
+fi
+kill $LAUNCHED; wait $LAUNCHED 2>/dev/null || true
 
 if $NOTARIZE; then
   echo "==> Notarizing the app"
@@ -108,7 +122,14 @@ if command -v create-dmg >/dev/null; then
 else
   # The app and a link to Applications to drag it onto, without create-dmg's window layout.
   ln -s /Applications "$STAGE/Applications"
-  hdiutil create -quiet -volname "$APP" -srcfolder "$STAGE" -fs HFS+ -format UDZO "$DMG"
+  # `hdiutil create -srcfolder` lays out the filesystem by mounting a scratch image partway through,
+  # which some sandboxed environments refuse ("Operation not permitted") even though they allow every
+  # other disk-image operation. makehybrid builds the HFS+ image straight from the folder without
+  # mounting anything, and convert then compresses it the same way `-format UDZO` would have.
+  HYBRID="$WORK/hybrid.dmg"
+  hdiutil makehybrid -quiet -hfs -hfs-volume-name "$APP" -o "$HYBRID" "$STAGE"
+  hdiutil convert -quiet "$HYBRID" -format UDZO -o "$DMG"
+  rm -f "$HYBRID"
 fi
 
 if $DEVELOPER_ID; then

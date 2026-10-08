@@ -14,12 +14,20 @@ nonisolated enum LayerStyleRenderer {
     /// `pixels` — the layer as it's shown, with room around it for the effects — with `effects` drawn over and
     /// around it, the same size. `origin` is where the image's top-left pixel sits in the layer's own pixels, so a
     /// pattern stays put however much room there is around it, or whichever piece of the layer is being redrawn.
-    static func render(_ pixels: CGImage, effects: LayerEffects, origin: CGPoint = .zero) throws -> CGImage {
+    /// `fullSize` is the layer's own true size, not this call's (`pixels` may be only the window a paint stroke
+    /// just touched, padded by its reach) — Bevel & Emboss keys its size to it, so a layer redrawn a window at a
+    /// time bevels exactly as it would whole, and a bevel too big for a small layer eases off short of its middle
+    /// rather than warping it.
+    static func render(_ pixels: CGImage, effects: LayerEffects, origin: CGPoint = .zero, fullSize: CGSize? = nil, isCancelled: () -> Bool = { false }) throws -> CGImage {
+        if isCancelled() { throw CancellationError() }
         let effects = effects.visible
         guard effects.isValid else { throw ProjectError.invalid }
         let width = pixels.width, height = pixels.height, count = width * height
+        let fullSize = fullSize ?? CGSize(width: width, height: height)
         guard count > 0, count <= 80_000_000 else { throw ExportError.tooLarge }
-        let source = try BrushRaster.context(width: width, height: height, mask: false)
+        // In the pixels' own RGB space, so the styled layer comes back in it too rather than in the front project's.
+        let source = try BrushRaster.context(width: width, height: height, mask: false,
+                                             space: pixels.colorSpace?.model == .rgb ? pixels.colorSpace : nil)
         BrushRaster.draw(pixels, in: CGRect(x: 0, y: 0, width: width, height: height), mask: false, context: source)
         guard let raw = source.data else { throw ExportError.render }
         let bytes = raw.assumingMemoryBound(to: UInt8.self)
@@ -28,13 +36,8 @@ nonisolated enum LayerStyleRenderer {
         var canvas = Canvas(width: width, height: height)
         var layer = [SIMD4<Float>](repeating: .zero, count: count)
         var shape = [Float](repeating: 0, count: count)
-        for y in 0..<height {
-            for x in 0..<width {
-                let at = y * rowBytes + x * 4, index = y * width + x
-                let pixel = SIMD4<Float>(Float(bytes[at]), Float(bytes[at + 1]), Float(bytes[at + 2]), Float(bytes[at + 3])) / 255
-                layer[index] = pixel
-                shape[index] = pixel.w
-            }
+        layer.withUnsafeMutableBytes { rgba in
+            style_unpack(bytes, rowBytes, rgba.baseAddress!.assumingMemoryBound(to: Float.self), &shape, Int32(width), Int32(height))
         }
         let planes = Planes(width: width, height: height)
 
@@ -133,56 +136,74 @@ nonisolated enum LayerStyleRenderer {
         }
         if let stroke, stroke.inside || stroke.centered == true { drawStroke(stroke) }
         if let bevel = effects.bevel, bevel.size > 0 || bevel.hasTexture {
-            let shading = Self.bevelShading(bevel, shape: shape, planes: planes, origin: origin)
+            let shading = try Self.bevelShading(bevel, shape: shape, planes: planes, origin: origin, fullSize: fullSize, isCancelled: isCancelled)
+            if isCancelled() { throw CancellationError() }
             canvas.draw(shading.shadow, opacity: Float(bevel.shadowOpacity), color: bevel.shadowColor, mode: bevel.shadowMode)
             canvas.draw(shading.highlight, opacity: Float(bevel.highlightOpacity), color: bevel.highlightColor, mode: bevel.highlightMode)
         }
+        if isCancelled() { throw CancellationError() }
         return try canvas.image(space: source.colorSpace ?? WorkingColorSpace.current)
     }
 
+    /// Finite filter support outside the distance profile, including its normal derivative.
+    static func bevelFilterSupport(_ bevel: BevelEffect, size: Float) -> CGFloat {
+        func support(_ sigma: Float) -> Int { Planes.boxRadii(sigma: sigma).reduce(0, +) }
+        let geometry = bevel.technique == .smooth ? support(min(4, max(1, size / 4))) : 0
+        let height = bevel.technique == .smooth ? support(min(2, max(0.75, size / 6)))
+            : bevel.technique == .chiselSoft ? support(1.5) : 0
+        let soften = bevel.soften > 0 ? support(Float(bevel.soften) / 2) : 0
+        return CGFloat(geometry + height + soften + 1)
+    }
+
     /// A bevel's light and shade: the layer's shape turned into a height map by its style and technique, bent by its
-    /// contour, pressed with its texture, then lit from its angle and altitude.
-    static func bevelShading(_ bevel: BevelEffect, shape: [Float], planes: Planes, origin: CGPoint) -> (highlight: [Float], shadow: [Float]) {
+    /// contour, pressed with its texture, then lit from its angle and altitude. `fullSize` is the layer's true size
+    /// (see `render`); size leaves a flat middle rather than letting opposite edges meet, regardless of how big a window is actually being drawn right now.
+    static func bevelShading(_ bevel: BevelEffect, shape: [Float], planes: Planes, origin: CGPoint, fullSize: CGSize, isCancelled: () -> Bool = { false }) throws -> (highlight: [Float], shadow: [Float]) {
         let width = planes.width, height = planes.height, count = shape.count
-        let size = max(1, Float(bevel.size))
-        // How far into (and out of) the edge the slope runs, 0 outside to 1 inside, 0.5 on the edge.
-        let ramp: [Float]
-        switch bevel.technique {
-        case .smooth:
-            ramp = planes.gaussian(shape, sigma: size / 2)
-        case .chiselHard:
-            ramp = planes.box(planes.box(shape, radius: Int(size.rounded()), horizontal: true), radius: Int(size.rounded()), horizontal: false)
-        case .chiselSoft:
-            let boxed = planes.box(planes.box(shape, radius: Int(size.rounded()), horizontal: true), radius: Int(size.rounded()), horizontal: false)
-            ramp = planes.gaussian(boxed, sigma: 1.5)
+        let size = max(1, Float(bevel.size(clampedTo: fullSize)))
+        // Distance from the actual silhouette keeps the bevel at the edge. Blurring alpha here would
+        // let opposite edges pull each other's slopes into the middle of a small shape.
+        if isCancelled() { throw CancellationError() }
+        var signedDistances = [Float](repeating: 0, count: count)
+        guard style_distances(shape, &signedDistances, Int32(width), Int32(height)) != 0 else { throw ExportError.render }
+        if isCancelled() { throw CancellationError() }
+        // Filter the geometry before clipping it into a height profile. Filtering
+        // the clipped height alone leaves staircase normals deep within a wide bevel.
+        if bevel.technique == .smooth {
+            signedDistances = planes.gaussian(signedDistances, sigma: min(4, max(1, size / 4)))
         }
         var heights = [Float](repeating: 0, count: count)
         let range = max(0.01, Float(bevel.contourRange) / 100)
-        for i in heights.indices {
-            let b = ramp[i]
-            var h: Float
-            switch bevel.style {
-            case .innerBevel: h = min(1, max(0, 2 * b - 1))
-            case .outerBevel: h = min(1, max(0, 2 * b))
-            case .emboss: h = b
-            case .pillowEmboss: h = abs(2 * b - 1)
-            }
-            if bevel.hasContour { h = bevel.contour.value(min(1, h / (2 * range))) }
-            heights[i] = h
+        let profile: Int32
+        switch bevel.style {
+        case .innerBevel: profile = 0
+        case .outerBevel: profile = 1
+        case .emboss: profile = 2
+        case .pillowEmboss: profile = 3
         }
-        if bevel.soften > 0 { heights = planes.gaussian(heights, sigma: Float(bevel.soften) / 2) }
+        style_height(signedDistances, &heights, count, size, profile, bevel.technique == .smooth ? 1 : 0)
+        if bevel.hasContour {
+            for i in heights.indices { heights[i] = bevel.contour.value(min(1, heights[i] / (2 * range))) }
+        }
+        // Smooth rounds the profile and filters pixel-scale distance fluctuations
+        // before normals; otherwise curved edges produce radial lighting bands.
+        if bevel.technique == .smooth { heights = planes.gaussian(heights, sigma: min(2, max(0.75, size / 6))) }
+        if bevel.technique == .chiselSoft { heights = planes.gaussian(heights, sigma: 1.5) }
         let lift = size * Float(bevel.depth) / 100 * (bevel.up ? 1 : -1)
         let textureScale = Float(bevel.textureScale) / 100, textureLift = 2 * Float(bevel.textureDepth) / 100 * (bevel.up ? 1 : -1)
-        for y in 0..<height {
-            for x in 0..<width {
-                let i = y * width + x
-                var h = heights[i] * lift
-                if bevel.hasTexture, shape[i] > 0 {
-                    var t = bevel.texture.value(x: Float(x) + Float(origin.x), y: Float(y) + Float(origin.y), scale: textureScale)
-                    if bevel.textureInvert { t = 1 - t }
-                    h += shape[i] * t * textureLift
+        if bevel.hasTexture {
+            for y in 0..<height {
+                if isCancelled() { throw CancellationError() }
+                for x in 0..<width {
+                    let i = y * width + x
+                    var h = heights[i] * lift
+                    if shape[i] > 0 {
+                        var t = bevel.texture.value(x: Float(x) + Float(origin.x), y: Float(y) + Float(origin.y), scale: textureScale)
+                        if bevel.textureInvert { t = 1 - t }
+                        h += shape[i] * t * textureLift
+                    }
+                    heights[i] = h
                 }
-                heights[i] = h
             }
         }
         // Light from the dial's angle (counterclockwise from the right, y up) and altitude above the horizon; the
@@ -191,28 +212,20 @@ nonisolated enum LayerStyleRenderer {
         let light = SIMD3<Float>(cos(altitude) * cos(azimuth), -cos(altitude) * sin(azimuth), sin(altitude))
         let flat = sin(altitude)
         var highlight = [Float](repeating: 0, count: count), shadow = [Float](repeating: 0, count: count)
-        for y in 0..<height {
-            for x in 0..<width {
-                let i = y * width + x
-                let region: Float
-                switch bevel.style {
-                case .innerBevel: region = shape[i]
-                case .outerBevel: region = 1 - shape[i]
-                case .emboss, .pillowEmboss: region = 1
-                }
-                guard region > 0 else { continue }
-                let left = heights[y * width + max(0, x - 1)], right = heights[y * width + min(width - 1, x + 1)]
-                let up = heights[max(0, y - 1) * width + x], down = heights[min(height - 1, y + 1) * width + x]
-                let slope = SIMD3<Float>(-(right - left) / 2, -(down - up) / 2, 1)
-                let normal = slope / (slope * slope).sum().squareRoot()
-                let lit = (normal * light).sum()
-                if lit > flat, flat < 1 {
-                    highlight[i] = bevel.gloss.value((lit - flat) / (1 - flat)) * region
-                } else if lit < flat, flat > 0.001 {
-                    shadow[i] = bevel.gloss.value((flat - lit) / flat) * region
-                }
+        style_light(heights, &highlight, &shadow, Int32(width), Int32(height), bevel.hasTexture ? 1 : lift, light.x, light.y, flat)
+        if bevel.gloss != .linear {
+            for i in shape.indices {
+                if highlight[i] > 0 { highlight[i] = bevel.gloss.value(highlight[i]) }
+                if shadow[i] > 0 { shadow[i] = bevel.gloss.value(shadow[i]) }
             }
         }
+        if isCancelled() { throw CancellationError() }
+        // Soften acts on the lighting result, not the height/width of the bevel.
+        if bevel.soften > 0 {
+            highlight = planes.gaussian(highlight, sigma: Float(bevel.soften) / 2)
+            shadow = planes.gaussian(shadow, sigma: Float(bevel.soften) / 2)
+        }
+        style_clip(&highlight, &shadow, shape, count, profile)
         return (highlight, shadow)
     }
 
@@ -250,27 +263,7 @@ nonisolated enum LayerStyleRenderer {
         func box(_ plane: [Float], radius: Int, horizontal: Bool) -> [Float] {
             guard radius > 0, plane.count == width * height else { return plane }
             var result = [Float](repeating: 0, count: plane.count)
-            let lines = horizontal ? height : width, length = horizontal ? width : height
-            let step = horizontal ? 1 : width, lineStep = horizontal ? width : 1
-            let scale = 1 / Float(2 * radius + 1)
-            plane.withUnsafeBufferPointer { input in
-                result.withUnsafeMutableBufferPointer { output in
-                    let source = input.baseAddress!, target = output.baseAddress!
-                    DispatchQueue.concurrentPerform(iterations: min(lines, 64)) { chunk in
-                        var sums = [Double](repeating: 0, count: length + 1)
-                        var line = chunk
-                        while line < lines {
-                            let base = line * lineStep
-                            for i in 0..<length { sums[i + 1] = sums[i] + Double(source[base + i * step]) }
-                            for i in 0..<length {
-                                let low = max(0, i - radius), high = min(length, i + radius + 1)
-                                target[base + i * step] = Float(sums[high] - sums[low]) * scale
-                            }
-                            line += min(lines, 64)
-                        }
-                    }
-                }
-            }
+            style_box(plane, &result, Int32(width), Int32(height), Int32(radius), horizontal ? 1 : 0)
             return result
         }
 
@@ -309,9 +302,10 @@ nonisolated enum LayerStyleRenderer {
 
         /// The layer's own pixels (premultiplied), at `fill` of their strength, over what is there.
         mutating func drawPixels(_ layer: [SIMD4<Float>], fill: Float) {
-            for i in pixels.indices {
-                let source = layer[i] * fill
-                pixels[i] = source + pixels[i] * (1 - source.w)
+            pixels.withUnsafeMutableBytes { target in
+                layer.withUnsafeBytes { source in
+                    style_over(target.baseAddress!.assumingMemoryBound(to: Float.self), source.baseAddress!.assumingMemoryBound(to: Float.self), fill, layer.count)
+                }
             }
         }
 
@@ -327,6 +321,14 @@ nonisolated enum LayerStyleRenderer {
         /// W3C compositing formula Photoshop's modes follow: where nothing is under it, just its color.
         private mutating func draw(_ coverage: [Float], opacity: Float, uniform: SIMD3<Float>, colors: [SIMD3<Float>]?, mode: LayerBlendMode) {
             guard opacity > 0, coverage.count == pixels.count else { return }
+            if colors == nil, mode == .normal || mode == .multiply || mode == .screen {
+                let count = pixels.count
+                pixels.withUnsafeMutableBytes { target in
+                    style_color(target.baseAddress!.assumingMemoryBound(to: Float.self), coverage, opacity,
+                                uniform.x, uniform.y, uniform.z, mode == .normal ? 0 : mode == .multiply ? 1 : 2, count)
+                }
+                return
+            }
             for i in pixels.indices {
                 let amount = min(1, max(0, coverage[i] * opacity))
                 guard amount > 0 else { continue }
@@ -346,14 +348,9 @@ nonisolated enum LayerStyleRenderer {
 
         func image(space: CGColorSpace) throws -> CGImage {
             var bytes = [UInt8](repeating: 0, count: pixels.count * 4)
-            for i in pixels.indices {
-                let pixel = pixels[i]
-                let alpha = min(1, max(0, pixel.w))
-                bytes[i * 4 + 3] = UInt8(alpha * 255 + 0.5)
-                // Premultiplied, so no channel may exceed its coverage.
-                bytes[i * 4] = UInt8(min(alpha, max(0, pixel.x)) * 255 + 0.5)
-                bytes[i * 4 + 1] = UInt8(min(alpha, max(0, pixel.y)) * 255 + 0.5)
-                bytes[i * 4 + 2] = UInt8(min(alpha, max(0, pixel.z)) * 255 + 0.5)
+            let count = pixels.count
+            pixels.withUnsafeBytes { source in
+                style_pack(source.baseAddress!.assumingMemoryBound(to: Float.self), &bytes, count)
             }
             guard let provider = CGDataProvider(data: Data(bytes) as CFData),
                   let image = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,

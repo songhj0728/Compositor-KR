@@ -55,7 +55,7 @@ struct TransformTests {
             view.mouseUp(with: event)
             session.commitTransform()
         }
-        #expect(!session.transformAutoSelect, "Auto Select starts off; a press drags the active layer")
+        #expect(session.transformAutoSelect, "Auto Select starts on so clicking selects the layer under the pointer")
         session.transformAutoSelect = true
         try click(CGPoint(x: 300, y: 50))
         #expect(session.activeLayerID == second)

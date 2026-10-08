@@ -15,6 +15,7 @@ option(COMPOSITOR_BUILD_TESTS "Build the shared-code tests" ON)
 # pool on Windows).
 set(COMPOSITOR_PIXELS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Compositor/Rendering)
 set(COMPOSITOR_PIXEL_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/Compositor/Core/StylePixels.c
     ${COMPOSITOR_PIXELS_DIR}/AdjustPixels.c
     ${COMPOSITOR_PIXELS_DIR}/BrushPixels.c
     ${COMPOSITOR_PIXELS_DIR}/ContentFill.c
@@ -63,4 +64,13 @@ if(COMPOSITOR_BUILD_TESTS)
         target_compile_options(compositor_pixel_tests PRIVATE /utf-8)
     endif()
     add_test(NAME pixels COMMAND compositor_pixel_tests)
+    # Main's style kernels use the same portable source in the app and Windows library.
+    add_executable(compositor_style_tests Tests/PortableCore/style_pixels.c)
+    target_link_libraries(compositor_style_tests PRIVATE compositor_pixels_testing)
+    if(MSVC)
+        target_compile_options(compositor_style_tests PRIVATE /utf-8 /UNDEBUG)
+    else()
+        target_compile_options(compositor_style_tests PRIVATE -UNDEBUG)
+    endif()
+    add_test(NAME portable_style COMMAND compositor_style_tests)
 endif()

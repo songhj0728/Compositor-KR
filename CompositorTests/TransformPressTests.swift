@@ -19,6 +19,7 @@ struct TransformPressTests {
         let image = try #require(context.makeImage())
         session.insert(ImportedImage(image: image, thumbnail: image, name: "Red")) // centered: 150–250 × 100–200
         session.selectTool(.move)
+        session.transformAutoSelect = false
         let view = CanvasView(session: session)
         let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 400, height: 300), styleMask: [.titled],
                               backing: .buffered, defer: false)
@@ -84,6 +85,31 @@ struct TransformPressTests {
         #expect(session.activeLayerID == moved)
         let origin = try #require(session.document?.layers.first { $0.id == moved }?.transform.origin)
         #expect(near(origin, autoSelect ? CGPoint(x: 20, y: 10) : CGPoint(x: 170, y: 110)), "\(origin)")
+    }
+
+    /// With Auto Select on, a click on empty canvas — nothing under the pointer at all — clears the selection
+    /// instead of silently dragging whatever was active before; a later click on a different layer picks that one
+    /// up, moving the selection there.
+    @Test(arguments: [false, true])
+    func emptyClickWithAutoSelectOnDeselectsAndAnotherLayerPicksItUp(locked: Bool) throws {
+        let (session, view, window) = try makeCanvas()
+        let red = try #require(session.activeLayerID)
+        let context = try BrushRaster.context(width: 60, height: 60, mask: false)
+        context.setFillColor(CGColor(srgbRed: 0, green: 0, blue: 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: 60, height: 60))
+        let image = try #require(context.makeImage())
+        session.insert(ImportedImage(image: image, thumbnail: image, name: "Blue"))
+        session.document?.layers[1].transform.origin = CGPoint(x: 0, y: 0) // 0–60 × 0–60, clear of the red square
+        let blue = try #require(session.activeLayerID)
+        session.selectLayer(red)
+        if locked { session.toggleSelectedLayerLock() }
+        session.transformAutoSelect = true
+        view.synchronizeDisplay()
+        // Empty canvas: neither square is anywhere near (350, 250) on the 400 × 300 canvas.
+        try drag(session, view, in: window, from: CGPoint(x: 350, y: 250), to: CGPoint(x: 350, y: 250))
+        #expect(session.activeLayerID == nil, "the click found nothing, so it cleared the selection")
+        try drag(session, view, in: window, from: CGPoint(x: 30, y: 30), to: CGPoint(x: 30, y: 30))
+        #expect(session.activeLayerID == blue, "and a later click on a layer picks it up")
     }
 
     /// Cmd-Shift-click adds the layer under the pointer to the selection even with Auto Select on.
