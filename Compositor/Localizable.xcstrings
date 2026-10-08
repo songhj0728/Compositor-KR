@@ -2737,6 +2737,7 @@
       }
     },
     "Drag a tab in the panel to move it. Floating panels move by their title bars and dock again when closed." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -2772,6 +2773,26 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "드래그하거나 스크롤하여 이동합니다. 더블 클릭하면 맞춤과 100% 사이를 전환합니다."
+          }
+        }
+      }
+    },
+    "Drag the bar on top of the tools or the Layers panel to move it over the canvas; let go by its edge to dock it again. Drag a tab to change the order." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구나 레이어 패널 맨 위의 막대를 끌면 캔버스 위로 옮길 수 있고, 원래 가장자리에서 놓으면 다시 붙습니다. 탭을 끌면 순서가 바뀝니다."
+          }
+        }
+      }
+    },
+    "Drag to move this panel; let go by its edge to dock it again" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끌어서 패널을 옮기고, 가장자리에서 놓으면 다시 붙습니다"
           }
         }
       }
@@ -3513,6 +3534,7 @@
       }
     },
     "Float Layers Panel" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -3523,6 +3545,7 @@
       }
     },
     "Float the Layers panel in its own window" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -3533,6 +3556,7 @@
       }
     },
     "Float the tools in their own window" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -3543,6 +3567,7 @@
       }
     },
     "Float this panel in its own window" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -3553,6 +3578,7 @@
       }
     },
     "Float Tools" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -5560,6 +5586,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "그룹 밖으로 이동"
+          }
+        }
+      }
+    },
+    "Move panel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널 이동"
           }
         }
       }

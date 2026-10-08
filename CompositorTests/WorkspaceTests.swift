@@ -1,8 +1,10 @@
 import AppKit
+import SwiftUI
 import Testing
 @testable import Compositor
 
-/// Window ▸ Workspace: the stored layouts, the floating panel windows, and Command switching the path selection tools.
+/// Window ▸ Workspace: the stored layouts, panels dragged over the canvas and docked again, and Command switching the path
+/// selection tools.
 @MainActor
 struct WorkspaceTests {
     /// A store of its own, so the tests never touch the person's real workspace.
@@ -79,29 +81,49 @@ struct WorkspaceTests {
         #expect(session.effectivePathSelectionKind == .path)
     }
 
-    /// Floating the tools and the side panel puts them in windows of their own; turning it off (or closing them)
-    /// docks them again. Uses the shared workspace, put back afterwards.
-    @Test func floatingPanelsOpenAndDockAgain() throws {
+    /// Letting a dragged panel go away from its edge floats it there, kept within reach; letting it go by its edge docks
+    /// it again. Stored in the workspace, so it's where it was next launch.
+    @Test func draggedPanelsFloatWhereTheyreLeftAndDockByTheirEdges() {
+        let store = defaults()
+        let manager = WorkspaceManager(defaults: store)
+        manager.layout.drop(.tools, x: 300, y: 120, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        #expect(manager.layout.floatsTools && manager.layout.toolsFrame == PanelFrame(x: 300, y: 120, width: 44, height: 600),
+                "\(String(describing: manager.layout.toolsFrame))")
+        manager.layout.drop(.tools, x: 3000, y: 900, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        #expect(manager.layout.toolsFrame == PanelFrame(x: 1160, y: 660, width: 44, height: 600), "dragged off the editor, kept within reach")
+        manager.layout.drop(.tools, x: 300, y: 120, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        manager.layout.drop(.sidePanel, x: 400, y: 40, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
+        #expect(manager.layout.floatsSidePanel && manager.layout.sidePanelFrame?.x == 400)
+        #expect(WorkspaceManager(defaults: store).layout.floatsTools, "remembered across launches")
+        manager.layout.drop(.tools, x: 20, y: 10, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        #expect(!manager.layout.floatsTools, "let go by the left edge, the tools dock")
+        manager.layout.drop(.sidePanel, x: 1200 - 252 - 30, y: 10, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
+        #expect(!manager.layout.floatsSidePanel, "let go by the right edge, the panel docks")
+        manager.layout.drop(.sidePanel, x: 400, y: 40, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
+        manager.reset()
+        #expect(!manager.layout.floatsSidePanel && !manager.layout.floatsTools, "Reset docks everything")
+    }
+
+    /// The editor with a floating tool rail: it draws over the canvas rather than beside it.
+    @Test func aFloatingRailDrawsOverTheCanvas() throws {
         let manager = WorkspaceManager.shared
         let before = manager.layout
-        defer {
-            manager.layout = before
-            WorkspaceWindows.shared.closeAll()
-        }
+        defer { manager.layout = before }
         let session = EditorSession()
         session.createNewProject(width: 100, height: 100)
-        func window(_ name: String) -> NSWindow? { NSApp.windows.first { $0.identifier?.rawValue == "workspace.\(name)" } }
-        manager.layout.floatsTools = true
-        manager.layout.floatsSidePanel = true
-        WorkspaceWindows.shared.update(session: session, canvasOnly: false)
-        #expect(window("tools")?.isVisible == true && window("sidePanel")?.isVisible == true)
-        // Canvas Only hides them; closing one docks it.
-        WorkspaceWindows.shared.update(session: session, canvasOnly: true)
-        #expect(window("tools")?.isVisible != true)
-        WorkspaceWindows.shared.update(session: session, canvasOnly: false)
-        let tools = try #require(window("tools"))
-        tools.performClose(nil)
-        #expect(!manager.layout.floatsTools && !tools.isVisible)
-        #expect(manager.layout.floatsSidePanel)
+        func canvasWidth() throws -> CGFloat {
+            var width: CGFloat = 0
+            let host = NSHostingView(rootView: WorkspaceEditorArea(session: session, hidesPanels: false) {
+                Color.clear.onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            }.frame(width: 1000, height: 700))
+            host.frame = CGRect(x: 0, y: 0, width: 1000, height: 700)
+            host.layoutSubtreeIfNeeded()
+            return width
+        }
+        manager.layout.floatsTools = false
+        let docked = try canvasWidth()
+        manager.layout.drop(.tools, x: 300, y: 50, width: 44, height: 600, editorWidth: 1000, editorHeight: 700)
+        let floating = try canvasWidth()
+        #expect(floating > docked, "floating, the rail no longer takes room from the canvas (\(docked) → \(floating))")
     }
 }

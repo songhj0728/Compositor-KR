@@ -141,3 +141,16 @@ let newer = #"{"current":{"tabOrder":["history","paths","layers"],"toolIconSize"
 precondition(WorkspaceLibrary.decoded(newer).current.tabOrder == [.paths, .layers, .channels], "unknown tabs are skipped, missing ones added")
 precondition(WorkspaceLibrary.decoded(Data("garbage".utf8)) == WorkspaceLibrary())
 print("Portable workspace tests passed: tab order, normalizing, save, choose, reset and storage")
+
+// Dragging panels and tabs: generous drop targets.
+precondition(WorkspaceDocking.insertionIndex(forX: 500, midpoints: [30, 90]) == 2, "anywhere past the last tab's middle is the end")
+precondition(WorkspaceDocking.insertionIndex(forX: 10, midpoints: [30, 90]) == 0)
+precondition(WorkspaceDocking.insertionIndex(forX: 60, midpoints: [30, 90]) == 1, "between two tabs, by their middles")
+var order = WorkspaceLayout.standard
+order.move(.layers, toIndex: 2)
+precondition(order.tabOrder == [.channels, .paths, .layers])
+precondition(WorkspaceDocking.toolsDock(atX: 30) && !WorkspaceDocking.toolsDock(atX: 120))
+precondition(WorkspaceDocking.sidePanelDocks(right: 980, editorWidth: 1000) && !WorkspaceDocking.sidePanelDocks(right: 700, editorWidth: 1000))
+let kept = WorkspaceDocking.clamped(PanelFrame(x: 5000, y: -50, width: 44, height: 600), editorWidth: 1000, height: 700)
+precondition(kept.x == 960 && kept.y == 0, "a panel dragged off the editor stays within reach")
+print("Portable docking tests passed: insertion points, snapping and keeping panels in reach")

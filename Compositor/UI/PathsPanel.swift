@@ -1,42 +1,86 @@
 import SwiftUI
 
-/// The side panel's tabs over Layers, Channels and Paths, as Photoshop groups them. They sit in the workspace's
-/// order; dragging one onto another moves it there, and its context menu moves it a place left or right.
+/// The side panel's tabs over Layers, Channels and Paths, as Photoshop groups them, in the workspace's order. Dragging
+/// a tab shows, dimmed, where it would go; where it lands is decided by the other tabs' middles, so it needn't be
+/// dropped onto a label, and anywhere past the last tab sends it to the end.
 struct SidePanelTabs: View {
     @Bindable var session: EditorSession
     var manager = WorkspaceManager.shared
+    /// The tabs' frames when the drag began, so the preview moving them doesn't move the targets.
+    @State private var frames: [SidePanelTab: CGRect] = [:]
+    @State private var drag: (tab: SidePanelTab, x: CGFloat, grab: CGFloat, start: [SidePanelTab: CGRect])?
+    private static let space = "sidePanelTabs"
+
+    private var order: [SidePanelTab] { manager.layout.tabOrder }
+    /// Where the dragged tab would land, among the others.
+    private var insertion: Int? {
+        guard let drag else { return nil }
+        let midpoints = order.filter { $0 != drag.tab }.compactMap { drag.start[$0]?.midX }.map(Double.init)
+        return WorkspaceDocking.insertionIndex(forX: Double(drag.x), midpoints: midpoints)
+    }
+    /// The order as it would be after the drop, for the preview.
+    private var shownOrder: [SidePanelTab] {
+        guard let drag, let insertion else { return order }
+        var preview = order.filter { $0 != drag.tab }
+        preview.insert(drag.tab, at: min(insertion, preview.count))
+        return preview
+    }
 
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(manager.layout.tabOrder, id: \.self) { tab in
-                let selected = session.sidePanelTab == tab
-                Button { session.sidePanelTab = tab } label: {
-                    Text(String(localized: tab.title))
-                        .font(.system(size: 12, weight: selected ? .semibold : .regular))
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(selected ? Color.white.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 5))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(selected ? .primary : .secondary)
-                .accessibilityAddTraits(selected ? .isSelected : [])
-                .draggable(tab.rawValue)
-                .dropDestination(for: String.self) { items, _ in
-                    guard let dragged = items.first.flatMap(SidePanelTab.init(rawValue:)) else { return false }
-                    manager.layout.move(dragged, to: tab)
-                    return true
-                }
-                .contextMenu {
-                    Button("Move Left") { manager.layout.move(tab, by: -1) }
-                        .disabled(manager.layout.tabOrder.first == tab)
-                    Button("Move Right") { manager.layout.move(tab, by: 1) }
-                        .disabled(manager.layout.tabOrder.last == tab)
-                }
+            ForEach(shownOrder, id: \.self) { tab in
+                label(tab)
+                    // The dragged tab's own slot shows dimmed where it would go.
+                    .opacity(drag?.tab == tab ? 0.35 : 1)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.space)) } action: { frame in
+                        if drag == nil { frames[tab] = frame }
+                    }
+                    .onTapGesture { session.sidePanelTab = tab }
+                    .gesture(DragGesture(minimumDistance: 4, coordinateSpace: .named(Self.space))
+                        .onChanged { value in
+                            if drag == nil {
+                                let frame = frames[tab] ?? .zero
+                                drag = (tab, value.location.x, value.startLocation.x - frame.minX, frames)
+                            } else { drag?.x = value.location.x }
+                        }
+                        .onEnded { _ in
+                            if let drag, let insertion { manager.layout.move(drag.tab, toIndex: insertion) }
+                            drag = nil
+                        })
+                    .contextMenu {
+                        Button("Move Left") { manager.layout.move(tab, by: -1) }
+                            .disabled(order.first == tab)
+                        Button("Move Right") { manager.layout.move(tab, by: 1) }
+                            .disabled(order.last == tab)
+                    }
             }
             Spacer(minLength: 0)
         }
+        .animation(.snappy(duration: 0.18), value: shownOrder)
+        .coordinateSpace(name: Self.space)
+        // The tab itself follows the pointer above the strip.
+        .overlay(alignment: .leading) {
+            if let drag {
+                label(drag.tab)
+                    .background(Color(white: 0.24), in: RoundedRectangle(cornerRadius: 5))
+                    .shadow(color: .black.opacity(0.4), radius: 4, y: 2)
+                    .offset(x: drag.x - drag.grab)
+                    .allowsHitTesting(false)
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sidePanelTabs")
+    }
+
+    private func label(_ tab: SidePanelTab) -> some View {
+        let selected = session.sidePanelTab == tab
+        return Text(String(localized: tab.title))
+            .font(.system(size: 12, weight: selected ? .semibold : .regular))
+            .foregroundStyle(selected ? .primary : .secondary)
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(selected ? Color.white.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 5))
+            .contentShape(Rectangle())
+            .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
     }
 }
 

@@ -2,8 +2,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
-    /// Compositor-KR: where the panels sit and how big the tools are (Window ▸ Workspace), remembered across launches.
-    private var workspace: WorkspaceManager { .shared }
     @Bindable var session: EditorSession
     var applicationDelegate: CompositorApplicationDelegate? = nil
     @Environment(\.openWindow) private var openWindow
@@ -83,12 +81,8 @@ struct ContentView: View {
     @ViewBuilder private var editorStack: some View {
         VStack(spacing: 0) {
             if !session.canvasOnly { toolHeaders }
-            HStack(spacing: 0) {
-                // Compositor-KR: the workspace can float the tools and the side panel in windows of their own.
-                if !session.canvasOnly, !workspace.layout.floatsTools {
-                    ToolRail(session: session)
-                    Divider()
-                }
+            // Compositor-KR: the tools and the side panel dock along the edges or float over the canvas (see Workspace).
+            WorkspaceEditorArea(session: session, hidesPanels: session.canvasOnly) {
                 VStack(spacing: 0) {
                     if session.showsRulers, session.document != nil, !session.canvasOnly {
                         HStack(spacing: 0) {
@@ -114,11 +108,6 @@ struct ContentView: View {
                         }
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("editor")) } action: { canvasFrame = $0 }
                     }
-                }
-                if !session.canvasOnly, !workspace.layout.floatsSidePanel {
-                    PanelResizeEdge(width: Binding(get: { workspace.layout.sidePanelWidth }, set: { workspace.layout.sidePanelWidth = $0 }),
-                                    range: LayersPanel.widths)
-                    LayersPanel(session: session, width: workspace.layout.sidePanelWidth)
                 }
             }
             if !session.canvasOnly {
@@ -330,7 +319,7 @@ struct ContentView: View {
 }
 
 /// A panel's divider that resizes the panel to its right: drag left to widen, right to narrow, within `range`.
-private struct PanelResizeEdge: View {
+struct PanelResizeEdge: View {
     @Binding var width: Double
     let range: ClosedRange<Double>
     @State private var startWidth: Double?
@@ -469,12 +458,7 @@ private struct ToolPanels: ViewModifier {
                     shapeSizePanel.show(title: "Shape Size", content: ShapeSizeSheet(session: session, request: request))
                 } else { shapeSizePanel.close() }
             }
-            // Compositor-KR: the floating tool and panel windows follow the workspace, the project in front and Canvas
-            // Only; holding Command with a path selection tool switches to the other one until it's let go.
-            .onAppear { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
-            .onChange(of: WorkspaceManager.shared.layout) { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
-            .onChange(of: ObjectIdentifier(session)) { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
-            .onChange(of: session.canvasOnly) { WorkspaceWindows.shared.update(session: session, canvasOnly: session.canvasOnly) }
+            // Compositor-KR: holding Command with a path selection tool switches to the other one until it's let go.
             .onChange(of: HeldModifiers.shared.flags.contains(.command), initial: true) { _, held in session.pathSelectionSwapHeld = held }
     }
 }

@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
 
-// The Apple layer of the workspace (Core/WorkspaceLayout.swift): it keeps the layout in UserDefaults, floats the tool
-// rail and the side panel in movable windows of their own, and offers the Window ▸ Workspace menu and the Settings
-// section.
+// The Apple layer of the workspace (Core/WorkspaceLayout.swift): it keeps the layout in UserDefaults, lets the tool
+// rail and the side panel be dragged out over the canvas and docked again, and offers the Window ▸ Workspace menu and
+// the Settings section.
 
 /// The workspace in use and the saved ones, kept across launches.
 @MainActor @Observable
@@ -77,156 +77,179 @@ final class WorkspaceManager {
     }
 }
 
-// MARK: - Floating panel windows
+// MARK: - Panels that move around the editor
 
-/// The tool rail and the side panel in windows of their own, as Photoshop lets its panels float: moved by their title
-/// bars, remembered where they're left, and docked back when closed.
-@MainActor
-final class WorkspaceWindows: NSObject, NSWindowDelegate {
-    static let shared = WorkspaceWindows()
-    private enum Kind: String { case tools, sidePanel }
-    private var windows: [Kind: NSPanel] = [:]
-    /// Which session each window shows, so a project tab switch refills it.
-    private var shownSession: [Kind: ObjectIdentifier] = [:]
-    private var settingFrame = false
+/// The editor's middle: the tool rail, the canvas and the side panel, docked along the edges or floating over the
+/// canvas. Each panel has a grab bar on top; dragging it lifts the panel out, and letting go near its edge docks it
+/// again, the edge lighting up while it would.
+struct WorkspaceEditorArea<Canvas: View>: View {
+    @Bindable var session: EditorSession
+    /// Canvas Only: just the canvas.
+    var hidesPanels: Bool
+    @ViewBuilder var canvas: Canvas
+    private var manager: WorkspaceManager { .shared }
+    @State private var size: CGSize = .zero
+    @State private var drag: PanelDrag?
+    static var space: String { "workspaceEditorArea" }
 
-    /// Puts the floating windows in line with the layout, showing `session`.
-    func update(session: EditorSession, canvasOnly: Bool) {
-        let layout = WorkspaceManager.shared.layout
-        sync(.tools, floating: layout.floatsTools && !canvasOnly, session: session, frame: layout.toolsFrame) {
-            ToolRail(session: session, scrolls: false)
-        }
-        sync(.sidePanel, floating: layout.floatsSidePanel && !canvasOnly, session: session, frame: layout.sidePanelFrame) {
-            LayersPanel(session: session, width: nil)
-        }
+    typealias Panel = WorkspacePanel
+    private struct PanelDrag {
+        var panel: Panel
+        /// Where the pointer took hold, from the panel's top-left corner.
+        var grab: CGSize
+        var origin: CGPoint
     }
 
-    func closeAll() {
-        for kind in [Kind.tools, .sidePanel] { hide(kind) }
-    }
-
-    private func sync(_ kind: Kind, floating: Bool, session: EditorSession, frame: PanelFrame?, content: () -> some View) {
-        guard floating else { hide(kind); return }
-        let panel = windows[kind] ?? make(kind)
-        if shownSession[kind] != ObjectIdentifier(session) || panel.contentView == nil {
-            let host = NSHostingView(rootView: AnyView(content()
-                .roundedControls()
-                .preferredColorScheme(AppSettings.shared.colorScheme.colorScheme)
-                .tint(AppSettings.shared.accentColor.color)))
-            host.autoresizingMask = [.width, .height]
-            if kind == .tools { host.sizingOptions = [.intrinsicContentSize] } else { host.sizingOptions = [] }
-            panel.contentView = host
-            shownSession[kind] = ObjectIdentifier(session)
-        }
-        if !panel.isVisible {
-            settingFrame = true
-            // Where it was left, unless that's off every screen now (a display unplugged).
-            if let frame, frame.isUsable, NSScreen.screens.contains(where: { $0.visibleFrame.intersects(frame.rect) }) {
-                panel.setFrame(frame.rect, display: false)
-            } else {
-                place(kind, panel: panel)
+    var body: some View {
+        let layout = manager.layout
+        HStack(spacing: 0) {
+            if !hidesPanels, !layout.floatsTools, drag?.panel != .tools {
+                ToolRail(session: session, grip: grip(.tools))
+                Divider()
             }
-            settingFrame = false
-            panel.orderFront(nil)
+            canvas
+            if !hidesPanels, !layout.floatsSidePanel, drag?.panel != .sidePanel {
+                PanelResizeEdge(width: Binding(get: { manager.layout.sidePanelWidth }, set: { manager.layout.sidePanelWidth = $0 }),
+                                range: LayersPanel.widths)
+                LayersPanel(session: session, width: layout.sidePanelWidth, grip: grip(.sidePanel))
+            }
+        }
+        .coordinateSpace(name: Self.space)
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+        .overlay(alignment: .topLeading) {
+            if !hidesPanels { floatingPanels }
         }
     }
 
-    private func hide(_ kind: Kind) {
-        guard let panel = windows[kind], panel.isVisible else { return }
-        settingFrame = true
-        panel.orderOut(nil)
-        settingFrame = false
-    }
-
-    private func make(_ kind: Kind) -> NSPanel {
-        var style: NSWindow.StyleMask = [.titled, .closable, .utilityWindow, .nonactivatingPanel]
-        if kind == .sidePanel { style.insert(.resizable) }
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: kind == .tools ? 60 : 252, height: kind == .tools ? 520 : 560),
-                            styleMask: style, backing: .buffered, defer: false)
-        panel.identifier = NSUserInterfaceItemIdentifier("workspace.\(kind.rawValue)")
-        panel.title = kind == .tools ? String(localized: "Tools") : String(localized: "Layers")
-        panel.isFloatingPanel = true
-        panel.hidesOnDeactivate = true
-        panel.becomesKeyOnlyIfNeeded = true
-        panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.fullScreenAuxiliary]
-        if kind == .sidePanel {
-            panel.minSize = NSSize(width: WorkspaceLayout.sidePanelWidths.lowerBound, height: 260)
-            panel.maxSize = NSSize(width: WorkspaceLayout.sidePanelWidths.upperBound, height: 10_000)
+    @ViewBuilder private var floatingPanels: some View {
+        let layout = manager.layout
+        ZStack(alignment: .topLeading) {
+            // While a drag would dock, the edge it docks to lights up.
+            if let drag, wouldDock(drag) {
+                Rectangle().fill(Color.accentColor.opacity(0.35))
+                    .frame(width: 6, height: size.height)
+                    .offset(x: drag.panel == .tools ? 0 : size.width - 6)
+                    .allowsHitTesting(false)
+            }
+            if layout.floatsTools || drag?.panel == .tools {
+                let origin = self.origin(.tools)
+                ToolRail(session: session, scrolls: false, grip: grip(.tools))
+                    .floatingPanelChrome()
+                    .offset(x: origin.x, y: origin.y)
+            }
+            if layout.floatsSidePanel || drag?.panel == .sidePanel {
+                let origin = self.origin(.sidePanel)
+                LayersPanel(session: session, width: layout.sidePanelWidth, grip: grip(.sidePanel))
+                    .frame(height: floatingSidePanelHeight)
+                    .floatingPanelChrome()
+                    .offset(x: origin.x, y: origin.y)
+            }
         }
-        panel.delegate = self
-        windows[kind] = panel
-        return panel
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
     }
 
-    /// Where a panel floats the first time: inside the editor window, near the edge it docks to.
-    private func place(_ kind: Kind, panel: NSPanel) {
-        guard let window = NSApp.windows.first(where: { !($0 is NSPanel) && $0.isVisible }) else { panel.center(); return }
-        let frame = window.frame
-        let size = kind == .tools ? panel.frame.size : NSSize(width: WorkspaceLayout.shared.sidePanelWidth, height: min(620, frame.height - 120))
-        let origin = kind == .tools
-            ? NSPoint(x: frame.minX + 24, y: frame.maxY - 110 - size.height)
-            : NSPoint(x: frame.maxX - size.width - 24, y: frame.maxY - 110 - size.height)
-        panel.setFrame(NSRect(origin: origin, size: size), display: false)
+    private var floatingSidePanelHeight: CGFloat {
+        let stored = manager.layout.sidePanelFrame?.height ?? 520
+        return max(260, min(CGFloat(stored), size.height - 16))
     }
 
-    private func kind(of notification: Notification) -> Kind? {
-        guard let panel = notification.object as? NSPanel else { return nil }
-        return windows.first { $0.value === panel }?.key
-    }
-
-    private func remember(_ notification: Notification) {
-        guard !settingFrame, let kind = kind(of: notification), let panel = windows[kind], panel.isVisible else { return }
-        let frame = PanelFrame(panel.frame)
-        var layout = WorkspaceManager.shared.layout
-        switch kind {
-        case .tools: layout.toolsFrame = frame
-        case .sidePanel:
-            layout.sidePanelFrame = frame
-            layout.sidePanelWidth = frame.width
+    private func panelSize(_ panel: Panel) -> CGSize {
+        switch panel {
+        case .tools: CGSize(width: manager.layout.toolIconSize.railWidth, height: min(size.height, 640))
+        case .sidePanel: CGSize(width: manager.layout.sidePanelWidth, height: floatingSidePanelHeight)
         }
-        WorkspaceManager.shared.layout = layout
     }
 
-    func windowDidMove(_ notification: Notification) { remember(notification) }
-    func windowDidEndLiveResize(_ notification: Notification) { remember(notification) }
+    /// Where a panel's top-left corner is now: following the pointer while dragged, where it was left while floating,
+    /// or its docked place.
+    private func origin(_ panel: Panel) -> CGPoint {
+        if let drag, drag.panel == panel { return drag.origin }
+        let layout = manager.layout
+        let floats = panel == .tools ? layout.floatsTools : layout.floatsSidePanel
+        let stored = panel == .tools ? layout.toolsFrame : layout.sidePanelFrame
+        let docked = panel == .tools ? CGPoint.zero : CGPoint(x: size.width - layout.sidePanelWidth, y: 0)
+        guard floats, let stored else { return floats ? CGPoint(x: docked.x + (panel == .tools ? 24 : -24), y: 24) : docked }
+        let kept = WorkspaceDocking.clamped(stored, editorWidth: size.width, height: size.height)
+        return CGPoint(x: kept.x, y: kept.y)
+    }
 
-    /// The close button docks the panel back into the editor window.
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
-        guard let kind = windows.first(where: { $0.value === sender })?.key else { return true }
-        var layout = WorkspaceManager.shared.layout
-        if kind == .tools { layout.floatsTools = false } else { layout.floatsSidePanel = false }
-        WorkspaceManager.shared.layout = layout
-        hide(kind)
-        return false
+    private func wouldDock(_ drag: PanelDrag) -> Bool {
+        manager.layout.wouldDock(drag.panel, x: drag.origin.x, editorWidth: size.width)
+    }
+
+    private func grip(_ panel: Panel) -> PanelGrip {
+        PanelGrip(space: Self.space, onChanged: { value in
+            if drag == nil {
+                let origin = self.origin(panel)
+                drag = PanelDrag(panel: panel, grab: CGSize(width: value.startLocation.x - origin.x, height: value.startLocation.y - origin.y),
+                                 origin: origin)
+            }
+            guard let current = drag else { return }
+            drag?.origin = CGPoint(x: value.location.x - current.grab.width, y: value.location.y - current.grab.height)
+        }, onEnded: {
+            guard let drag else { return }
+            let size = panelSize(panel)
+            manager.layout.drop(panel, x: drag.origin.x, y: drag.origin.y, width: size.width, height: size.height,
+                                editorWidth: self.size.width, editorHeight: self.size.height)
+            self.drag = nil
+        })
     }
 }
 
-extension WorkspaceLayout {
-    /// The layout in use, for code that only reads it.
-    @MainActor static var shared: WorkspaceLayout { WorkspaceManager.shared.layout }
+/// The small bar along the top of a movable panel: drag it to move the panel.
+struct PanelGrip: View {
+    var space: String
+    var onChanged: (DragGesture.Value) -> Void
+    var onEnded: () -> Void
+
+    var body: some View {
+        Capsule().fill(Color.secondary.opacity(0.55))
+            .frame(width: 22, height: 4)
+            .frame(maxWidth: .infinity, minHeight: 12)
+            .contentShape(Rectangle())
+            .onHover { inside in if inside { NSCursor.openHand.push() } else { NSCursor.pop() } }
+            .gesture(DragGesture(minimumDistance: 2, coordinateSpace: .named(space))
+                .onChanged(onChanged)
+                .onEnded { _ in onEnded() })
+            .help("Drag to move this panel; let go by its edge to dock it again")
+            .accessibilityLabel("Move panel")
+    }
+}
+
+extension View {
+    /// A panel floating over the canvas: its own background, a rounded edge and a shadow.
+    func floatingPanelChrome() -> some View {
+        background(Color(white: 0.17), in: RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(Color.white.opacity(0.12)) }
+            .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
+    }
 }
 
 extension PanelFrame {
-    init(_ rect: NSRect) { self.init(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height) }
-    var rect: NSRect { NSRect(x: x, y: y, width: width, height: height) }
+    init(_ rect: CGRect) { self.init(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height) }
 }
 
 // MARK: - Tool rail
 
-/// The tools down the editor's left edge, or in their own floating window. Their size follows the workspace.
+/// The tools down the editor's left edge, or floating over the canvas. Their size follows the workspace.
 struct ToolRail: View {
     @Bindable var session: EditorSession
-    /// Docked, the rail scrolls when the window is too short for every tool; floating, its window fits them.
+    /// Docked, the rail scrolls when the window is too short for every tool; floating, it shows them all.
     var scrolls = true
+    var grip: PanelGrip? = nil
     private var size: ToolIconSize { WorkspaceManager.shared.layout.toolIconSize }
 
     var body: some View {
-        if scrolls {
-            IndicatorlessScrollView { tools }.frame(width: size.railWidth)
-        } else {
-            tools
+        VStack(spacing: 0) {
+            if let grip { grip.padding(.top, 2) }
+            if scrolls {
+                IndicatorlessScrollView { tools }
+            } else {
+                tools
+            }
         }
+        .frame(width: CGFloat(size.railWidth))
     }
 
     private var tools: some View {
@@ -263,8 +286,8 @@ struct ToolRail: View {
             }
             ColorPaletteControls(session: session).padding(.top, 6)
         }
-        .padding(.top, 12).padding(.bottom, 10)
-        .frame(width: CGFloat(size.railWidth))
+        .padding(.top, 8).padding(.bottom, 10)
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -291,8 +314,6 @@ struct WorkspaceMenu: View {
                 }
             }
         }
-        Toggle("Float Tools", isOn: Binding(get: { manager.layout.floatsTools }, set: { manager.layout.floatsTools = $0 }))
-        Toggle("Float Layers Panel", isOn: Binding(get: { manager.layout.floatsSidePanel }, set: { manager.layout.floatsSidePanel = $0 }))
     }
 }
 
@@ -307,16 +328,12 @@ struct WorkspaceSettingsSection: View {
                     ForEach(ToolIconSize.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                Toggle("Float the tools in their own window", isOn: Binding(get: { manager.layout.floatsTools },
-                                                                            set: { manager.layout.floatsTools = $0 }))
-                Toggle("Float the Layers panel in its own window", isOn: Binding(get: { manager.layout.floatsSidePanel },
-                                                                                 set: { manager.layout.floatsSidePanel = $0 }))
                 HStack {
                     Text("Tab order").foregroundStyle(.secondary)
                     Text(manager.layout.tabOrder.map { String(localized: $0.title) }.joined(separator: " · "))
                 }
                 .font(.callout)
-                Text("Drag a tab in the panel to move it. Floating panels move by their title bars and dock again when closed.")
+                Text("Drag the bar on top of the tools or the Layers panel to move it over the canvas; let go by its edge to dock it again. Drag a tab to change the order.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Picker("Saved", selection: Binding(get: { manager.library.activeName ?? "" },
