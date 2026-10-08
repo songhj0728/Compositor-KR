@@ -224,3 +224,14 @@ candidate. Production Renderer API + Metal adapter is **not ready** until:
    separately from DocumentHistory's approximate image byte accounting.
 
 Do not start a GPU or Renderer API implementation from synthetic lifetime success.
+
+## Latest main reconciliation (2026-10-08)
+
+See [synchronization and architecture reconciliation](main-sync-2026-10-08.md). Main 809e04f
+is now merged: .comp v13 optional locking, portable bevel/style kernels, live
+region/cancellable progressive cache behavior and source-profile preservation.
+PortableCore integrates with the existing contracts; it does not replace the
+snapshot/resource experiments or implement publication ownership. Earlier baseline
+freshness and v12-only statements are historical. EditorSession remains the
+selected future publication owner; native resource freezing and final Mac CI
+remain gates. No Renderer API or language decision is introduced.

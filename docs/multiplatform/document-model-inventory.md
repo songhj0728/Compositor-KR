@@ -281,3 +281,20 @@ existing CanvasDocument/ImageLayer and Core values. Serialization relevance: non
 renderer relevance: none, own flags/opacity are not effective rendering properties.
 CoreSnapshotTests has four tests pending Mac execution. Local boundary checks pass.
 No Document/Layer, geometry, image, effect or history migration is completed.
+
+## Main 809e04f inventory additions (2026-10-08)
+
+See [reconciliation](main-sync-2026-10-08.md). These are additions to the historical
+47-entry table, not a replacement count.
+
+| Type/entry | File and dependency | Classification / target | Serialization/history/render relevance | Tests / status |
+|---|---|---|---|---|
+| BevelGeometry | Core/BevelGeometry.swift, standard library | A, actual shared algorithm; preserve C hot path + Swift oracle | No stored fields; renderer distance/height/lighting | Tests/PortableCore/main.swift, LayerStyleTests; Swift local execution pending |
+| LayerLockRules | Core/LayerLockRules.swift, standard library generic ID/lookup | A, actual shared policy | ImageLayer.isLocked stored optional v13, equality/history preserved; editing gate, not visibility | PortableCore, LayerTests, TransformPressTests |
+| StylePixels functions | Core/StylePixels.c/h, C11 numeric buffers | A shared pixel execution, not model ownership | No format/history; backend-independent kernels | PortableCore/style_pixels.c, shared CMake portable_style; local pass |
+| ImageLayer.isLocked | Document/EditorSession.swift and LayerAppearance | Existing model B/C; policy already extracted | Current v13; omitted/false for older formats; undo restores | LayerTests and resize/round-trip tests; Mac pending |
+| DocumentColorProfile.matching | Document/ColorProfile.swift Apple extension | C adapter; retain base profile identity | PSD ICC read/write and document/export color; not generic byte hash | ColorProfileRoundTripTests; Mac pending |
+
+No existing Document/Layer/history migration is performed. CoreSnapshot and
+RenderSnapshot deliberately retain their earlier minimal projection fields; lock
+projection/resource payload expansion remains a separate scoped task.

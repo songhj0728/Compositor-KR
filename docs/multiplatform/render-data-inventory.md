@@ -316,3 +316,14 @@ changes); it was inspected, not merged. S0–S9 ordering is unchanged; this
 evidence does not complete S8 or authorize a renderer migration. Resolve sparse
 color/fill freezing, draft capture, native lifetime and cache quality provenance
 before the production adapter. Earlier CI statements retain their original scope.
+
+## Latest main reconciliation (2026-10-08)
+
+See [synchronization and architecture reconciliation](main-sync-2026-10-08.md). Main 809e04f
+is now merged: .comp v13 optional locking, portable bevel/style kernels, live
+region/cancellable progressive cache behavior and source-profile preservation.
+PortableCore integrates with the existing contracts; it does not replace the
+snapshot/resource experiments or implement publication ownership. Earlier baseline
+freshness and v12-only statements are historical. EditorSession remains the
+selected future publication owner; native resource freezing and final Mac CI
+remain gates. No Renderer API or language decision is introduced.
