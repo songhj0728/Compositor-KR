@@ -1613,6 +1613,16 @@
         }
       }
     },
+    "cm" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cm"
+          }
+        }
+      }
+    },
     "CMYK" : {},
     "Color" : {
       "localizations" : {

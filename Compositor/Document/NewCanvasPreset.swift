@@ -127,10 +127,26 @@ func aspectRatioText(width: Int, height: Int) -> String {
 
 /// A unit paper sizes and other physical lengths are entered in.
 enum LengthUnit: String, CaseIterable, Identifiable, Sendable {
-    case millimeters, inches
+    case millimeters, centimeters, inches
     var id: String { rawValue }
-    func millimeters(from value: Double) -> Double { self == .millimeters ? value : value * 25.4 }
-    func value(fromMillimeters millimeters: Double) -> Double { self == .millimeters ? millimeters : millimeters / 25.4 }
+    /// Millimeters in one of this unit.
+    var millimetersPerUnit: Double {
+        switch self {
+        case .millimeters: return 1
+        case .centimeters: return 10
+        case .inches: return 25.4
+        }
+    }
+    func millimeters(from value: Double) -> Double { value * millimetersPerUnit }
+    func value(fromMillimeters millimeters: Double) -> Double { millimeters / millimetersPerUnit }
+    /// The unit's symbol, the same in every language.
+    var symbol: String {
+        switch self {
+        case .millimeters: return "mm"
+        case .centimeters: return "cm"
+        case .inches: return "in"
+        }
+    }
 }
 
 /// A paper size for Print, upright (portrait) width × height in millimeters.
@@ -264,6 +280,7 @@ extension LengthUnit {
     var label: LocalizedStringKey {
         switch self {
         case .millimeters: return "mm"
+        case .centimeters: return "cm"
         case .inches: return "in"
         }
     }
