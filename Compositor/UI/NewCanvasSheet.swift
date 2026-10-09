@@ -107,6 +107,17 @@ struct NewCanvasSheet: View {
         guard (1...DocumentLimits.maxSide).contains(w), (1...DocumentLimits.maxSide).contains(h) else { return nil }
         return (w, h)
     }
+    /// Which way up the size being entered is: landscape when it's wider than tall; nil when it's square.
+    private var sizeOrientation: CanvasOrientation? {
+        let (w, h) = category == .digital ? (Double(width), Double(height)) : (paperWidth, paperHeight)
+        guard w > 0, h > 0, w != h else { return nil }
+        return w > h ? .landscape : .portrait
+    }
+
+    private func followSizeOrientation() {
+        if let shape = sizeOrientation, shape != orientation { orientation = shape }
+    }
+
     private var finalPixelSize: (width: Int, height: Int)? {
         switch category {
         case .digital: return digitalPixelSize
@@ -169,8 +180,10 @@ struct NewCanvasSheet: View {
             }
             focusedField = .width
         }
-        .onChange(of: orientation) { _, _ in
+        .onChange(of: orientation) { _, turned in
             if isApplyingPreset { isApplyingPreset = false; return }
+            // Turn the size only when it isn't already that way up, so the picker following the size is a no-op.
+            guard let shape = sizeOrientation, shape != turned else { return }
             switch category {
             case .digital:
                 swap(&width, &height)
@@ -179,6 +192,10 @@ struct NewCanvasSheet: View {
                 swap(&paperWidth, &paperHeight)
             }
         }
+        // Digital and Print keep their own sizes, so the picker follows whichever is showing, and a typed paper size.
+        .onChange(of: category) { _, _ in followSizeOrientation() }
+        .onChange(of: paperWidth) { _, _ in if category == .print { followSizeOrientation() } }
+        .onChange(of: paperHeight) { _, _ in if category == .print { followSizeOrientation() } }
         .onChange(of: locksAspectRatio) { _, isOn in
             guard isOn, height > 0 else { return }
             aspectRatio = Double(width) / Double(height)
@@ -238,7 +255,7 @@ struct NewCanvasSheet: View {
                 Picker("Unit", selection: $paperUnit) {
                     ForEach(LengthUnit.allCases) { Text($0.label).tag($0) }
                 }
-                .pickerStyle(.segmented).labelsHidden().frame(width: 140)
+                .pickerStyle(.segmented).labelsHidden().frame(width: 180)
                 Spacer()
                 orientationPicker
             }
@@ -378,11 +395,13 @@ struct NewCanvasSheet: View {
         }
     }
 
-    /// A paper's size in the unit being entered, e.g. "210 × 297 mm" or "8.5 × 11 in".
+    /// A paper's size in the unit being entered and the orientation chosen, width first: "210 × 297 mm" upright,
+    /// "29.7 × 21 cm" or "11 × 8.5 in" on its side.
     private func paperSizeText(_ paper: PaperPreset) -> String {
         let style = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...2))
-        let w = paperUnit.value(fromMillimeters: paper.width), h = paperUnit.value(fromMillimeters: paper.height)
-        return "\(w.formatted(style)) × \(h.formatted(style)) \(paperUnit == .millimeters ? "mm" : "in")"
+        var w = paperUnit.value(fromMillimeters: paper.width), h = paperUnit.value(fromMillimeters: paper.height)
+        if orientation == .landscape { swap(&w, &h) }
+        return "\(w.formatted(style)) × \(h.formatted(style)) \(paperUnit.symbol)"
     }
 
     /// The paper the Print size is, if it's one of the presets.

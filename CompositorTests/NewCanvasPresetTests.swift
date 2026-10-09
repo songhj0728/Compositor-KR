@@ -50,4 +50,12 @@ struct NewCanvasPresetTests {
         let matches = PaperPreset.all.filter { $0.matches(width: 257, height: 364) }.map(\.id)
         #expect(matches == ["B4 (JIS)"])
     }
+
+    @Test func lengthUnitsConvertThroughMillimeters() {
+        #expect(LengthUnit.allCases == [.millimeters, .centimeters, .inches])
+        #expect(LengthUnit.centimeters.value(fromMillimeters: 297) == 29.7)
+        #expect(LengthUnit.centimeters.millimeters(from: 21) == 210)
+        #expect(abs(LengthUnit.inches.millimeters(from: 11) - 279.4) < 1e-9)
+        #expect(LengthUnit.allCases.map(\.symbol) == ["mm", "cm", "in"])
+    }
 }
