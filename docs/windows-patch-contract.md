@@ -127,3 +127,32 @@ finish cache handoff without another input event. If layer geometry is unchanged
 trim empty stroke-grid padding and, if its seed was full-resolution, adopt the result under the
 committed image/mask identities, so another full render is unnecessary. If geometry
 changes, retain the placed surface while a fresh preview is built.
+
+## Upstream 1.4.7 and 1.4.8, as shared behavior
+
+What a Windows build has to reproduce from these releases, and where the shared code lives.
+
+- **Dither, Scanlines and RAW rounding** (`Rendering/DitherPixels.c`): portable C11. Upstream wrote it with Apple's
+  blocks and Grand Central Dispatch; Compositor-KR runs the same arithmetic through `ParallelFor.h` (GCD on Apple
+  platforms, OpenMP on Windows, serial elsewhere) as plain functions with a context, and uses `ptrdiff_t` for offsets
+  that can go negative (`long` is 32-bit on Windows). The rewrite was checked byte for byte against upstream's kernel
+  over 160 combinations of style, colors, displacement, color split, glow and 16-bit rounding. CI builds it with
+  `-fno-blocks -Werror` and runs `Tests/PortableCore/dither_pixels.c` (alpha kept, clear pixels untouched, the same
+  result however the bands are shared out). When merging upstream changes to this file, keep the portable form.
+- **Scanlines** settings and their ranges are `ScanlinesSettings` (spacing 2–32 px, thickness 5–100 %, wobble 0–64 px,
+  displace −100–100 px, split 0–16 px, threshold, dots, glow, black level, smoothness). Lines are drawn nearest first
+  and hide the ones behind them; displacement smooths brightness along each line (three box passes, radius
+  smoothness × spacing × 2) and then across lines (1-2-1 passes, smoothness × 2 of them).
+- **Navigator** (`Core/NavigatorLayout.swift`): the document fitted and centered in the box; a picked point is held to
+  the document's edges; centering pans so the picked pixel is in the middle at the same zoom and stops following Fit.
+  It appears from 300 % zoom. `Rendering/NavigatorGeometry.swift` only adapts it to Core Graphics.
+- **Last Filter** (⌃⌘F; Ctrl+Alt+F on Windows): repeats the last committed filter that `repeatsAsLastFilter`, with the
+  same settings, as one undo step; nothing happens (a beep) when it can't apply.
+- **Export As** (PNG, JPEG or a one-page PDF): the size scales both sides together; a PDF page is the image at its
+  printed size (pixels ÷ resolution × 72 points) with lossless pixels. The PDF writer is platform code (Core Graphics
+  here); Windows supplies its own with the same page size.
+- **Fullscreen** is F (a menu item) and Escape leaves it when nothing else is in progress to cancel
+  (`escapeHasNothingToCancel`); the command palette is ⌘F (Ctrl+F).
+- **Layers panel**: layers selected on the canvas scroll into view; the panel grays out only for lasting states (a
+  dialog, a pending transform, crop or gradient, a long operation), not for a stroke or a moment's work
+  (`layersLookEditable`), while `canEditLayers` still guards every change, lock rules included.

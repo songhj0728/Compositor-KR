@@ -2,17 +2,29 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dispatch/dispatch.h>
+#include "ParallelFor.h"
+
+// Compositor-KR: portable C11. The bands run through ParallelFor (Grand Central Dispatch on Apple platforms, OpenMP on
+// Windows, serial elsewhere) as plain functions with a context, not blocks, which only Clang with Apple's blocks runtime
+// builds; offsets that can go negative are ptrdiff_t, not long, which is 32-bit on Windows. The arithmetic is upstream's.
 
 static inline float clamp01(float v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
 
+// One band's work: items start..<end, with whatever the caller packed into `context`.
+typedef void (*band_body)(void *context, size_t start, size_t end);
+typedef struct { size_t count, size; void *context; band_body body; } Bands;
+
+static void run_band(void *bands, size_t band) {
+    const Bands *b = bands;
+    size_t start = band * b->size, end = start + b->size < b->count ? start + b->size : b->count;
+    if (start < end) b->body(b->context, start, end);
+}
+
 // Runs `body` over `count` items split into a few runs per core, each a (start, end) range, all at once.
-static void in_bands(size_t count, void (^body)(size_t start, size_t end)) {
-    size_t bands = count < 64 ? 1 : 32, size = (count + bands - 1) / bands;
-    dispatch_apply(bands, DISPATCH_APPLY_AUTO, ^(size_t band) {
-        size_t start = band * size, end = start + size < count ? start + size : count;
-        if (start < end) body(start, end);
-    });
+static void in_bands(size_t count, void *context, band_body body) {
+    size_t bands = count < 64 ? 1 : 32;
+    Bands b = { count, (count + bands - 1) / bands, context, body };
+    parallel_for(bands, &b, run_band);
 }
 
 // Density darkens (positive) or lightens as a gamma, so black and white stay put; contrast pivots on mid gray.
@@ -51,8 +63,8 @@ static void diffuse(float *plane, const uint8_t *alpha, size_t width, size_t hei
             plane[at] = q;
             float error = (old - q) * p->diffusion / k.divisor;
             for (int t = 0; t < k.count; ++t) {
-                long nx = (long)x + (reverse ? -k.taps[t].dx : k.taps[t].dx), ny = (long)y + k.taps[t].dy;
-                if (nx < 0 || nx >= (long)width || ny >= (long)height) continue;
+                ptrdiff_t nx = (ptrdiff_t)x + (reverse ? -k.taps[t].dx : k.taps[t].dx), ny = (ptrdiff_t)y + k.taps[t].dy;
+                if (nx < 0 || nx >= (ptrdiff_t)width || ny >= (ptrdiff_t)height) continue;
                 plane[(size_t)ny * width + (size_t)nx] += error * (float)k.taps[t].weight;
             }
         }
@@ -125,6 +137,38 @@ static inline void write_pixel(uint8_t *px, float r, float g, float b) {
     px[2] = (uint8_t)lroundf(clamp01(b) * a * 255.0f);
 }
 
+typedef struct {
+    const uint8_t *rgba; size_t width, stride, count;
+    uint8_t *alpha; float *tone, *source;
+    int originalColors; float gamma, contrast;
+} ReadTones;
+
+// Straight colors from premultiplied pixels, as adjusted tones (and, for Original colors, the colors themselves).
+static void read_tones(void *context, size_t first, size_t last) {
+    const ReadTones *c = context;
+    for (size_t y = first; y < last; ++y) {
+        const uint8_t *row = c->rgba + y * c->stride;
+        for (size_t x = 0; x < c->width; ++x) {
+            const uint8_t *px = row + x * 4;
+            size_t at = y * c->width + x;
+            c->alpha[at] = px[3];
+            float r = 0, g = 0, b = 0;
+            if (px[3]) {
+                float scale = 1.0f / (float)px[3];
+                r = px[0] * scale; g = px[1] * scale; b = px[2] * scale;
+            }
+            if (c->originalColors) {
+                c->tone[at] = adjust_tone(r, c->gamma, c->contrast);
+                c->tone[c->count + at] = adjust_tone(g, c->gamma, c->contrast);
+                c->tone[2 * c->count + at] = adjust_tone(b, c->gamma, c->contrast);
+                if (c->source) { c->source[at * 3] = r; c->source[at * 3 + 1] = g; c->source[at * 3 + 2] = b; }
+            } else {
+                c->tone[at] = adjust_tone(0.2126f * r + 0.7152f * g + 0.0722f * b, c->gamma, c->contrast);
+            }
+        }
+    }
+}
+
 int dither_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, const DitherParams *p) {
     size_t count = width * height;
     if (!count) return 1;
@@ -137,29 +181,8 @@ int dither_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, cons
 
     float gamma = exp2f(p->density * 1.5f);
     float contrast = p->contrast >= 0 ? 1.0f / (1.0f - 0.95f * p->contrast) : 1.0f + p->contrast;
-    in_bands(height, ^(size_t first, size_t last) {
-        for (size_t y = first; y < last; ++y) {
-            const uint8_t *row = rgba + y * stride;
-            for (size_t x = 0; x < width; ++x) {
-                const uint8_t *px = row + x * 4;
-                size_t at = y * width + x;
-                alpha[at] = px[3];
-                float r = 0, g = 0, b = 0;
-                if (px[3]) {
-                    float scale = 1.0f / (float)px[3];
-                    r = px[0] * scale; g = px[1] * scale; b = px[2] * scale;
-                }
-                if (p->originalColors) {
-                    tone[at] = adjust_tone(r, gamma, contrast);
-                    tone[count + at] = adjust_tone(g, gamma, contrast);
-                    tone[2 * count + at] = adjust_tone(b, gamma, contrast);
-                    source[at * 3] = r; source[at * 3 + 1] = g; source[at * 3 + 2] = b;
-                } else {
-                    tone[at] = adjust_tone(0.2126f * r + 0.7152f * g + 0.0722f * b, gamma, contrast);
-                }
-            }
-        }
-    });
+    ReadTones reading = { rgba, width, stride, count, alpha, tone, source, p->originalColors, gamma, contrast };
+    in_bands(height, &reading, read_tones);
 
     float dark[3] = { p->dark[0] / 255.0f, p->dark[1] / 255.0f, p->dark[2] / 255.0f };
     float light[3] = { p->light[0] / 255.0f, p->light[1] / 255.0f, p->light[2] / 255.0f };
@@ -291,23 +314,29 @@ void dither_dots(uint8_t *rgba, size_t width, size_t height, size_t stride, int 
     }
 }
 
-void dither_glow(uint8_t *rgba, const uint8_t *glow, size_t width, size_t height, size_t stride, float amount) {
-    in_bands(height, ^(size_t first, size_t last) {
-        for (size_t y = first; y < last; ++y) {
-            uint8_t *row = rgba + y * stride;
-            const uint8_t *light = glow + y * stride;
-            for (size_t x = 0; x < width * 4; x += 4) {
-                float a = row[x + 3];
-                for (int c = 0; c < 3; ++c) {
-                    // The light eases in as the pixel nears full brightness rather than clipping there, so where the
-                    // picture is bright the gaps between lines glow without filling up to the lines.
-                    float v = row[x + c], added = (float)light[x + c] * amount * a / 255.0f, room = (a - v) * 0.7f;
-                    if (room > 0) v += room * (1 - expf(-added / room));
-                    row[x + c] = (uint8_t)lroundf(v > a ? a : v);
-                }
+typedef struct { uint8_t *rgba; const uint8_t *glow; size_t width, stride; float amount; } Glow;
+
+static void glow_rows(void *context, size_t first, size_t last) {
+    const Glow *g = context;
+    for (size_t y = first; y < last; ++y) {
+        uint8_t *row = g->rgba + y * g->stride;
+        const uint8_t *light = g->glow + y * g->stride;
+        for (size_t x = 0; x < g->width * 4; x += 4) {
+            float a = row[x + 3];
+            for (int c = 0; c < 3; ++c) {
+                // The light eases in as the pixel nears full brightness rather than clipping there, so where the
+                // picture is bright the gaps between lines glow without filling up to the lines.
+                float v = row[x + c], added = (float)light[x + c] * g->amount * a / 255.0f, room = (a - v) * 0.7f;
+                if (room > 0) v += room * (1 - expf(-added / room));
+                row[x + c] = (uint8_t)lroundf(v > a ? a : v);
             }
         }
-    });
+    }
+}
+
+void dither_glow(uint8_t *rgba, const uint8_t *glow, size_t width, size_t height, size_t stride, float amount) {
+    Glow g = { rgba, glow, width, stride, amount };
+    in_bands(height, &g, glow_rows);
 }
 
 // A fixed pseudo-random value in [0, 1) for each pixel and draw.
@@ -317,25 +346,143 @@ static inline float hash_noise(size_t x, size_t y, uint32_t draw) {
     return (float)(h >> 8) / (float)(1u << 24);
 }
 
+typedef struct { const uint16_t *wide; uint8_t *rgba; size_t width, stride; } Quantize16;
+
+static void quantize16_rows(void *context, size_t first, size_t last) {
+    const Quantize16 *q = context;
+    for (size_t y = first; y < last; ++y) {
+        uint8_t *out = q->rgba + y * q->stride;
+        const uint16_t *in = q->wide + y * q->width * 4;
+        for (size_t x = 0; x < q->width; ++x) {
+            const uint16_t *p = in + x * 4;
+            ptrdiff_t alpha = (ptrdiff_t)lroundf((float)p[3] * (255.0f / 65535.0f));
+            for (uint32_t c = 0; c < 3; ++c) {
+                // Two uniform draws added: noise that's strongest at zero and gone past one step.
+                float value = (float)p[c] * (255.0f / 65535.0f) + hash_noise(x, y, c) + hash_noise(x, y, c + 3) - 1.0f;
+                ptrdiff_t rounded = (ptrdiff_t)lroundf(value);
+                // Premultiplied: the noise mustn't lift a color past its own alpha.
+                out[x * 4 + c] = (uint8_t)(rounded < 0 ? 0 : rounded > alpha ? alpha : rounded);
+            }
+            out[x * 4 + 3] = (uint8_t)alpha;
+        }
+    }
+}
+
 void dither_quantize16(const uint16_t *wide, uint8_t *rgba, size_t width, size_t height, size_t stride) {
-    in_bands(height, ^(size_t first, size_t last) {
-        for (size_t y = first; y < last; ++y) {
-            uint8_t *out = rgba + y * stride;
-            const uint16_t *in = wide + y * width * 4;
+    Quantize16 q = { wide, rgba, width, stride };
+    in_bands(height, &q, quantize16_rows);
+}
+
+typedef struct { float *lift; size_t width; ptrdiff_t radius; int failed; } SmoothAlong;
+
+// Three box passes along each line, close to a Gaussian.
+static void smooth_along(void *context, size_t firstLine, size_t lastLine) {
+    SmoothAlong *s = context;
+    size_t width = s->width;
+    ptrdiff_t radius = s->radius;
+    float *copy = malloc(width * sizeof(float));
+    if (!copy) { s->failed = 1; return; }
+    for (size_t line = firstLine; line < lastLine; ++line) {
+        float *row = s->lift + line * width;
+        for (int pass = 0; pass < 3; ++pass) {
+            memcpy(copy, row, width * sizeof(float));
+            float sum = 0;
+            for (ptrdiff_t x = -radius; x <= radius; ++x) sum += copy[x < 0 ? 0 : x >= (ptrdiff_t)width ? width - 1 : (size_t)x];
             for (size_t x = 0; x < width; ++x) {
-                const uint16_t *p = in + x * 4;
-                long alpha = lroundf((float)p[3] * (255.0f / 65535.0f));
-                for (uint32_t c = 0; c < 3; ++c) {
-                    // Two uniform draws added: noise that's strongest at zero and gone past one step.
-                    float value = (float)p[c] * (255.0f / 65535.0f) + hash_noise(x, y, c) + hash_noise(x, y, c + 3) - 1.0f;
-                    long rounded = lroundf(value);
-                    // Premultiplied: the noise mustn't lift a color past its own alpha.
-                    out[x * 4 + c] = (uint8_t)(rounded < 0 ? 0 : rounded > alpha ? alpha : rounded);
-                }
-                out[x * 4 + 3] = (uint8_t)alpha;
+                row[x] = sum / (float)(2 * radius + 1);
+                ptrdiff_t out = (ptrdiff_t)x - radius, in = (ptrdiff_t)x + radius + 1;
+                sum += copy[in >= (ptrdiff_t)width ? width - 1 : (size_t)in] - copy[out < 0 ? 0 : (size_t)out];
             }
         }
-    });
+    }
+    free(copy);
+}
+
+typedef struct { const float *lift; float *spread; size_t width, lines; } SmoothAcross;
+
+// One 1-2-1 pass across neighboring lines.
+static void smooth_across(void *context, size_t firstLine, size_t lastLine) {
+    const SmoothAcross *s = context;
+    size_t width = s->width;
+    for (size_t line = firstLine; line < lastLine; ++line) {
+        const float *above = s->lift + (line ? line - 1 : 0) * width, *here = s->lift + line * width;
+        const float *below = s->lift + (line + 1 < s->lines ? line + 1 : line) * width;
+        for (size_t x = 0; x < width; ++x) s->spread[line * width + x] = (above[x] + 2 * here[x] + below[x]) / 4;
+    }
+}
+
+typedef struct {
+    uint8_t *rgba; size_t width, height, stride, lines, spacing, plane;
+    const float *tone, *lift, *scan; const uint8_t *alpha;
+    float middle, dots, threshold, displace, thickness, blackLevel;
+    int rising, original;
+    const float *screen, *phosphor;
+    int failed;
+} DrawColumns;
+
+static void draw_columns(void *context, size_t first, size_t last) {
+    DrawColumns *d = context;
+    size_t width = d->width, height = d->height, lines = d->lines, plane = d->plane;
+    const float *tone = d->tone, *lift = d->lift, *scan = d->scan, *screen = d->screen, *phosphor = d->phosphor;
+    float middle = d->middle, dots = d->dots, threshold = d->threshold, displace = d->displace;
+    float thickness = d->thickness, blackLevel = d->blackLevel;
+    int rising = d->rising, original = d->original;
+    float *cover = malloc(height * sizeof(float) * 4);
+    if (!cover) { d->failed = 1; return; }
+    float *color = cover + height;
+    for (size_t x = first; x < last; ++x) {
+        memset(cover, 0, height * sizeof(float));
+        float along = fmodf((float)x + 0.5f, (float)d->spacing) - middle;
+        // The edge of everything drawn so far in this column; lines further back show only beyond it.
+        float horizon = rising ? INFINITY : -INFINITY;
+        for (size_t step = 0; step < lines; ++step) {
+            size_t line = rising ? lines - 1 - step : step;
+            // Dots: darker than the Dots level, the line breaks into beads, one every line spacing, each lit in the
+            // tone at its middle; just above it, into dashes that close up into the solid line.
+            float beading = dots > 0 ? clamp01((dots - tone[line * width + x]) / 0.2f) : 0, across = along * beading;
+            ptrdiff_t centered = (ptrdiff_t)lroundf((float)x - across);
+            size_t at = centered < 0 ? 0 : (size_t)centered >= width ? width - 1 : (size_t)centered;
+            size_t i = line * width + at;
+            float t = tone[i];
+            float lit = threshold > 0 ? clamp01((t - threshold) / 0.04f) : 1;
+            if (lit <= 0) continue;
+            // Drawn between this column's height and the last's, so a steep climb never breaks the line.
+            float base = (float)line * (float)d->spacing + middle;
+            float here = base - displace * lift[i], before = at > 0 ? base - displace * lift[i - 1] : here;
+            float lo = fminf(here, before), hi = fmaxf(here, before);
+            // Black Level: the line's least brightness, so it still shows where the picture is black.
+            float level = blackLevel + (1 - blackLevel) * t, c[3];
+            for (int k = 0; k < 3; ++k)
+                c[k] = original ? blackLevel + (1 - blackLevel) * scan[(size_t)k * plane + i] : screen[k] + (phosphor[k] - screen[k]) * level;
+            // Half the line's height: thinner where the picture is dim.
+            float beam = middle * thickness * (0.29f + 0.71f * sqrtf(clamp01(level)));
+            ptrdiff_t top = (ptrdiff_t)floorf(rising ? lo - beam - 1 : fmaxf(lo - beam - 1, horizon - 1));
+            ptrdiff_t bottom = (ptrdiff_t)ceilf(rising ? fminf(hi + beam + 1, horizon + 1) : hi + beam + 1);
+            if (top < 0) top = 0;
+            if (bottom > (ptrdiff_t)height) bottom = (ptrdiff_t)height;
+            for (ptrdiff_t y = top; y < bottom; ++y) {
+                float yy = (float)y + 0.5f;
+                float off = yy < lo ? lo - yy : yy > hi ? yy - hi : 0;
+                float distance = sqrtf(off * off + across * across);
+                float hidden = rising ? clamp01(horizon - yy + 0.5f) : clamp01(yy - horizon + 0.5f);
+                float shown = clamp01(beam - distance + 0.5f) * lit * hidden;
+                if (shown > cover[y]) {
+                    cover[y] = shown;
+                    color[y * 3] = c[0]; color[y * 3 + 1] = c[1]; color[y * 3 + 2] = c[2];
+                }
+            }
+            if (lit > 0.5f) horizon = rising ? fminf(horizon, lo - beam) : fmaxf(horizon, hi + beam);
+        }
+        for (size_t y = 0; y < height; ++y) {
+            if (!d->alpha[y * width + x]) continue;
+            // The beam is driven brighter than the picture, making up for the dark screen between lines.
+            float shown = cover[y];
+            write_pixel(d->rgba + y * d->stride + x * 4, screen[0] + (color[y * 3] * 1.35f - screen[0]) * shown,
+                        screen[1] + (color[y * 3 + 1] * 1.35f - screen[1]) * shown,
+                        screen[2] + (color[y * 3 + 2] * 1.35f - screen[2]) * shown);
+        }
+    }
+    free(cover);
 }
 
 // Draws the lines over the scanned tones, a column at a time. Displaced, they're a landscape seen from the front, after
@@ -353,38 +500,16 @@ static int draw_lines(uint8_t *rgba, size_t width, size_t height, size_t stride,
     // The height: brightness blurred along each line (three box passes, close to a Gaussian) and then across its
     // neighbors, so a face rises as one rounded hill instead of a staircase of the pixels under it.
     float smoothness = clamp01(p->smoothness);
-    long radius = lroundf(smoothness * (float)spacing * 2);
+    ptrdiff_t radius = (ptrdiff_t)lroundf(smoothness * (float)spacing * 2);
     memcpy(lift, tone, plane * sizeof(float));
     if (radius > 0 && p->displace != 0) {
-        __block int failed = 0;
-        in_bands(lines, ^(size_t firstLine, size_t lastLine) {
-            float *copy = malloc(width * sizeof(float));
-            if (!copy) { failed = 1; return; }
-            for (size_t line = firstLine; line < lastLine; ++line) {
-                float *row = lift + line * width;
-                for (int pass = 0; pass < 3; ++pass) {
-                    memcpy(copy, row, width * sizeof(float));
-                    float sum = 0;
-                    for (long x = -radius; x <= radius; ++x) sum += copy[x < 0 ? 0 : x >= (long)width ? width - 1 : (size_t)x];
-                    for (size_t x = 0; x < width; ++x) {
-                        row[x] = sum / (float)(2 * radius + 1);
-                        long out = (long)x - radius, in = (long)x + radius + 1;
-                        sum += copy[in >= (long)width ? width - 1 : (size_t)in] - copy[out < 0 ? 0 : (size_t)out];
-                    }
-                }
-            }
-            free(copy);
-        });
-        if (failed) { free(tone); free(lift); free(spread); return 0; }
-        long across = lroundf(smoothness * 2);
-        for (long step = 0; step < across; ++step) {
-            in_bands(lines, ^(size_t firstLine, size_t lastLine) {
-                for (size_t line = firstLine; line < lastLine; ++line) {
-                    const float *above = lift + (line ? line - 1 : 0) * width, *here = lift + line * width;
-                    const float *below = lift + (line + 1 < lines ? line + 1 : line) * width;
-                    for (size_t x = 0; x < width; ++x) spread[line * width + x] = (above[x] + 2 * here[x] + below[x]) / 4;
-                }
-            });
+        SmoothAlong along = { lift, width, radius, 0 };
+        in_bands(lines, &along, smooth_along);
+        if (along.failed) { free(tone); free(lift); free(spread); return 0; }
+        ptrdiff_t across = (ptrdiff_t)lroundf(smoothness * 2);
+        SmoothAcross spreading = { lift, spread, width, lines };
+        for (ptrdiff_t step = 0; step < across; ++step) {
+            in_bands(lines, &spreading, smooth_across);
             memcpy(lift, spread, plane * sizeof(float));
         }
     }
@@ -397,67 +522,62 @@ static int draw_lines(uint8_t *rgba, size_t width, size_t height, size_t stride,
     float light[3] = { p->light[0] / 255.0f, p->light[1] / 255.0f, p->light[2] / 255.0f };
     if (original) dark[0] = dark[1] = dark[2] = 0;
     const float *screen = dark, *phosphor = light;
-    __block int failed = 0;
-    in_bands(width, ^(size_t first, size_t last) {
-        float *cover = malloc(height * sizeof(float) * 4);
-        if (!cover) { failed = 1; return; }
-        float *color = cover + height;
-        for (size_t x = first; x < last; ++x) {
-            memset(cover, 0, height * sizeof(float));
-            float along = fmodf((float)x + 0.5f, (float)spacing) - middle;
-            // The edge of everything drawn so far in this column; lines further back show only beyond it.
-            float horizon = rising ? INFINITY : -INFINITY;
-            for (size_t step = 0; step < lines; ++step) {
-                size_t line = rising ? lines - 1 - step : step;
-                // Dots: darker than the Dots level, the line breaks into beads, one every line spacing, each lit in the
-                // tone at its middle; just above it, into dashes that close up into the solid line.
-                float beading = dots > 0 ? clamp01((dots - tone[line * width + x]) / 0.2f) : 0, across = along * beading;
-                long centered = lroundf((float)x - across);
-                size_t at = centered < 0 ? 0 : (size_t)centered >= width ? width - 1 : (size_t)centered;
-                size_t i = line * width + at;
-                float t = tone[i];
-                float lit = threshold > 0 ? clamp01((t - threshold) / 0.04f) : 1;
-                if (lit <= 0) continue;
-                // Drawn between this column's height and the last's, so a steep climb never breaks the line.
-                float base = (float)line * (float)spacing + middle;
-                float here = base - displace * lift[i], before = at > 0 ? base - displace * lift[i - 1] : here;
-                float lo = fminf(here, before), hi = fmaxf(here, before);
-                // Black Level: the line's least brightness, so it still shows where the picture is black.
-                float level = blackLevel + (1 - blackLevel) * t, c[3];
-                for (int k = 0; k < 3; ++k)
-                    c[k] = original ? blackLevel + (1 - blackLevel) * scan[(size_t)k * plane + i] : screen[k] + (phosphor[k] - screen[k]) * level;
-                // Half the line's height: thinner where the picture is dim.
-                float beam = middle * thickness * (0.29f + 0.71f * sqrtf(clamp01(level)));
-                long top = (long)floorf(rising ? lo - beam - 1 : fmaxf(lo - beam - 1, horizon - 1));
-                long bottom = (long)ceilf(rising ? fminf(hi + beam + 1, horizon + 1) : hi + beam + 1);
-                if (top < 0) top = 0;
-                if (bottom > (long)height) bottom = (long)height;
-                for (long y = top; y < bottom; ++y) {
-                    float yy = (float)y + 0.5f;
-                    float off = yy < lo ? lo - yy : yy > hi ? yy - hi : 0;
-                    float distance = sqrtf(off * off + across * across);
-                    float hidden = rising ? clamp01(horizon - yy + 0.5f) : clamp01(yy - horizon + 0.5f);
-                    float shown = clamp01(beam - distance + 0.5f) * lit * hidden;
-                    if (shown > cover[y]) {
-                        cover[y] = shown;
-                        color[y * 3] = c[0]; color[y * 3 + 1] = c[1]; color[y * 3 + 2] = c[2];
-                    }
-                }
-                if (lit > 0.5f) horizon = rising ? fminf(horizon, lo - beam) : fmaxf(horizon, hi + beam);
-            }
-            for (size_t y = 0; y < height; ++y) {
-                if (!alpha[y * width + x]) continue;
-                // The beam is driven brighter than the picture, making up for the dark screen between lines.
-                float shown = cover[y];
-                write_pixel(rgba + y * stride + x * 4, screen[0] + (color[y * 3] * 1.35f - screen[0]) * shown,
-                            screen[1] + (color[y * 3 + 1] * 1.35f - screen[1]) * shown,
-                            screen[2] + (color[y * 3 + 2] * 1.35f - screen[2]) * shown);
-            }
-        }
-        free(cover);
-    });
+    DrawColumns drawing = { rgba, width, height, stride, lines, spacing, plane, tone, lift, scan, alpha,
+                            middle, dots, threshold, displace, thickness, blackLevel, rising, original, screen, phosphor, 0 };
+    in_bands(width, &drawing, draw_columns);
     free(tone); free(lift);
-    return !failed;
+    return !drawing.failed;
+}
+
+typedef struct {
+    const float *tone; const uint8_t *alpha; float *scan;
+    size_t width, height, count, lines, spacing; int planes; float wobble;
+} SampleLines;
+
+// Each line's tone along it: the average of the rows it covers, sampled where its wobble moves it from.
+static void sample_lines(void *context, size_t firstLine, size_t lastLine) {
+    const SampleLines *s = context;
+    size_t width = s->width, count = s->count, lines = s->lines;
+    for (size_t line = firstLine; line < lastLine; ++line) {
+        size_t top = line * s->spacing, bottom = top + s->spacing < s->height ? top + s->spacing : s->height;
+        // A slow wave down the screen with a quicker one over it, as a CRT's picture wavers when its sync drifts.
+        float wave = sinf((float)line * 0.45f) * 0.7f + sinf((float)line * 1.7f + 1.3f) * 0.3f;
+        ptrdiff_t shift = (ptrdiff_t)lroundf(s->wobble * wave);
+        for (size_t x = 0; x < width; ++x) {
+            float sum[3] = { 0, 0, 0 }; int n = 0;
+            ptrdiff_t sx = (ptrdiff_t)x - shift;
+            if (sx >= 0 && sx < (ptrdiff_t)width)
+                for (size_t y = top; y < bottom; ++y) {
+                    size_t at = y * width + (size_t)sx;
+                    if (!s->alpha[at]) continue;
+                    for (int c = 0; c < s->planes; ++c) sum[c] += s->tone[(size_t)c * count + at];
+                    ++n;
+                }
+            for (int c = 0; c < s->planes; ++c) s->scan[((size_t)c * lines + line) * width + x] = n ? sum[c] / (float)n : 0;
+        }
+    }
+}
+
+typedef struct { uint8_t *rgba; size_t width, stride; ptrdiff_t split; int failed; } ColorSplit;
+
+// Red moved one way and blue the other, for colored fringes on the lines' edges.
+static void split_rows(void *context, size_t first, size_t last) {
+    ColorSplit *s = context;
+    size_t width = s->width;
+    uint8_t *copy = malloc(width * 4);
+    if (!copy) { s->failed = 1; return; }
+    for (size_t y = first; y < last; ++y) {
+        uint8_t *row = s->rgba + y * s->stride;
+        memcpy(copy, row, width * 4);
+        for (size_t x = 0; x < width; ++x) {
+            ptrdiff_t from = (ptrdiff_t)x - s->split, to = (ptrdiff_t)x + s->split;
+            uint8_t a = row[x * 4 + 3];
+            uint8_t r = from >= 0 ? copy[from * 4] : 0, b = to < (ptrdiff_t)width ? copy[to * 4 + 2] : 0;
+            row[x * 4] = r > a ? a : r;
+            row[x * 4 + 2] = b > a ? a : b;
+        }
+    }
+    free(copy);
 }
 
 int scanlines_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, const ScanlinesParams *p) {
@@ -474,73 +594,22 @@ int scanlines_apply(uint8_t *rgba, size_t width, size_t height, size_t stride, c
 
     float gamma = exp2f(p->density * 1.5f);
     float contrast = p->contrast >= 0 ? 1.0f / (1.0f - 0.95f * p->contrast) : 1.0f + p->contrast;
-    int original = p->originalColors;
-    in_bands(height, ^(size_t first, size_t last) {
-        for (size_t y = first; y < last; ++y) {
-            const uint8_t *row = rgba + y * stride;
-            for (size_t x = 0; x < width; ++x) {
-                const uint8_t *px = row + x * 4;
-                size_t at = y * width + x;
-                alpha[at] = px[3];
-                float r = 0, g = 0, b = 0;
-                if (px[3]) { float scale = 1.0f / (float)px[3]; r = px[0] * scale; g = px[1] * scale; b = px[2] * scale; }
-                if (original) {
-                    tone[at] = adjust_tone(r, gamma, contrast);
-                    tone[count + at] = adjust_tone(g, gamma, contrast);
-                    tone[2 * count + at] = adjust_tone(b, gamma, contrast);
-                } else {
-                    tone[at] = adjust_tone(0.2126f * r + 0.7152f * g + 0.0722f * b, gamma, contrast);
-                }
-            }
-        }
-    });
-    float wobble = p->wobble;
-    in_bands(lines, ^(size_t firstLine, size_t lastLine) {
-        for (size_t line = firstLine; line < lastLine; ++line) {
-            size_t top = line * spacing, bottom = top + spacing < height ? top + spacing : height;
-            // A slow wave down the screen with a quicker one over it, as a CRT's picture wavers when its sync drifts.
-            float wave = sinf((float)line * 0.45f) * 0.7f + sinf((float)line * 1.7f + 1.3f) * 0.3f;
-            long shift = lroundf(wobble * wave);
-            for (size_t x = 0; x < width; ++x) {
-                float sum[3] = { 0, 0, 0 }; int n = 0;
-                long sx = (long)x - shift;
-                if (sx >= 0 && sx < (long)width)
-                    for (size_t y = top; y < bottom; ++y) {
-                        size_t at = y * width + (size_t)sx;
-                        if (!alpha[at]) continue;
-                        for (int c = 0; c < planes; ++c) sum[c] += tone[(size_t)c * count + at];
-                        ++n;
-                    }
-                for (int c = 0; c < planes; ++c) scan[((size_t)c * lines + line) * width + x] = n ? sum[c] / (float)n : 0;
-            }
-        }
-    });
+    // The same reading as Dither's, without keeping the colors themselves.
+    ReadTones reading = { rgba, width, stride, count, alpha, tone, NULL, p->originalColors, gamma, contrast };
+    in_bands(height, &reading, read_tones);
+    SampleLines sampling = { tone, alpha, scan, width, height, count, lines, spacing, planes, p->wobble };
+    in_bands(lines, &sampling, sample_lines);
 
     int drawn = draw_lines(rgba, width, height, stride, p, scan, alpha, lines, spacing);
     free(tone); free(alpha); free(scan);
     if (!drawn) return 0;
 
     // Color split: red moved one way and blue the other, for colored fringes on the lines' edges.
-    long split = lroundf(p->split);
+    ptrdiff_t split = (ptrdiff_t)lroundf(p->split);
     if (split > 0) {
-        __block int failed = 0;
-        in_bands(height, ^(size_t first, size_t last) {
-            uint8_t *copy = malloc(width * 4);
-            if (!copy) { failed = 1; return; }
-            for (size_t y = first; y < last; ++y) {
-                uint8_t *row = rgba + y * stride;
-                memcpy(copy, row, width * 4);
-                for (size_t x = 0; x < width; ++x) {
-                    long from = (long)x - split, to = (long)x + split;
-                    uint8_t a = row[x * 4 + 3];
-                    uint8_t r = from >= 0 ? copy[from * 4] : 0, b = to < (long)width ? copy[to * 4 + 2] : 0;
-                    row[x * 4] = r > a ? a : r;
-                    row[x * 4 + 2] = b > a ? a : b;
-                }
-            }
-            free(copy);
-        });
-        if (failed) return 0;
+        ColorSplit splitting = { rgba, width, stride, split, 0 };
+        in_bands(height, &splitting, split_rows);
+        if (splitting.failed) return 0;
     }
     return 1;
 }

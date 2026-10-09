@@ -125,8 +125,13 @@ struct ExportAsSheet: View {
                 }
             }
             HStack(spacing: 12) {
-                Text(format == .png ? "Transparency kept · sRGB" : "sRGB")
-                    .foregroundStyle(.secondary)
+                // Compositor-KR: the project's profile, which the file carries (a CMYK project's JPEG is CMYK, its other
+                // files its working RGB).
+                let profile = format == .jpeg || !raster.profile.editsInRGB ? raster.profile.rawValue : DocumentColorProfile.sRGB.rawValue
+                Group {
+                    if format == .png { Text("Transparency kept · \(profile)") } else { Text(verbatim: profile) }
+                }
+                .foregroundStyle(.secondary)
                 Spacer()
                 if let error { Text(error).foregroundStyle(.red) }
                 else if isReady, let result {

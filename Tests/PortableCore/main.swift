@@ -154,3 +154,15 @@ precondition(WorkspaceDocking.sidePanelDocks(right: 990, editorWidth: 1000) && !
 let kept = WorkspaceDocking.clamped(PanelFrame(x: 5000, y: -50, width: 44, height: 600), editorWidth: 1000, height: 700)
 precondition(kept.x == 960 && kept.y == 0, "a panel dragged off the editor stays within reach")
 print("Portable docking tests passed: insertion points, snapping and keeping panels in reach")
+
+// The Navigator minimap: the document fitted in its box, and the canvas centered on a picked pixel.
+let navImage = NavigatorLayout.imageRect(documentWidth: 400, documentHeight: 200, boxWidth: 200, boxHeight: 200)
+precondition(navImage == PlaneRect(x: 0, y: 50, width: 200, height: 100), "fitted to the longer side and centered")
+precondition(NavigatorLayout.imageRect(documentWidth: 0, documentHeight: 10, boxWidth: 10, boxHeight: 10) == .zero)
+precondition(NavigatorLayout.thumbnailRect(for: PlaneRect(x: 100, y: 0, width: 200, height: 100), documentWidth: 400, imageRect: navImage)
+             == PlaneRect(x: 50, y: 50, width: 100, height: 50))
+let picked = NavigatorLayout.documentPoint(x: 300, y: -20, documentWidth: 400, documentHeight: 200, imageRect: navImage)
+precondition(picked.x == 400 && picked.y == 0, "held to the document's edges")
+let pan = NavigatorLayout.centeredPan(onX: 100, y: 50, documentWidth: 400, documentHeight: 200, pointsPerPixel: 2)
+precondition(pan.width == 200 && pan.height == 100)
+print("Portable navigator tests passed: fitting, thumbnails, picking and centering")

@@ -121,14 +121,16 @@ actor ImageExporter {
               width * height <= DocumentLimits.maxSurfacePixels else { throw ExportError.tooLarge }
         try Task.checkCancellation()
         return try autoreleasepool {
-            guard let space = CGColorSpace(name: CGColorSpace.sRGB),
-                  let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
+            // Compositor-KR: resampled in the project's own space and handed on with its profile, so a scaled P3 export
+            // isn't clipped to sRGB and a CMYK project's JPEG still comes out CMYK.
+            let space = raster.profile.workingSpace
+            guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
                                           bytesPerRow: width * 4, space: space,
                                           bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { throw ExportError.render }
             context.interpolationQuality = .high
             context.draw(raster.image, in: CGRect(x: 0, y: 0, width: width, height: height))
             guard let image = context.makeImage() else { throw ExportError.render }
-            return ExportRaster(image: image, resolution: raster.resolution)
+            return ExportRaster(image: image, resolution: raster.resolution, profile: raster.profile)
         }
     }
 
