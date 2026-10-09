@@ -79,128 +79,171 @@ final class WorkspaceManager {
 
 // MARK: - Panels that move around the editor
 
+/// A panel drag under way. Only the small views that place panels read it, so moving the pointer redraws a panel's
+/// position and nothing else: not the canvas, not the panel's contents.
+@MainActor @Observable
+final class PanelDragModel {
+    /// The panel being dragged, if any.
+    private(set) var panel: WorkspacePanel?
+    /// Dragged out of its docked place: a light outline follows the pointer and the panel stays put until let go.
+    private(set) var fromDock = false
+    /// The dragged panel's top-left corner, following the pointer.
+    private(set) var origin: CGPoint = .zero
+    private(set) var size: CGSize = .zero
+    @ObservationIgnored private var grab: CGSize = .zero
+    /// The editor area's size, kept up to date by the layout. Read by the floating panels' placement, so they follow a
+    /// window resize; the editor itself only writes it.
+    var editorSize: CGSize = .zero
+
+    private var manager: WorkspaceManager { .shared }
+
+    /// Where a panel's top-left corner rests when nothing is dragging it.
+    func restingOrigin(_ panel: WorkspacePanel) -> CGPoint {
+        let layout = manager.layout
+        let floats = panel == .tools ? layout.floatsTools : layout.floatsSidePanel
+        let docked = panel == .tools ? CGPoint.zero : CGPoint(x: editorSize.width - layout.sidePanelWidth, y: 0)
+        guard floats else { return docked }
+        guard let stored = panel == .tools ? layout.toolsFrame : layout.sidePanelFrame else {
+            return CGPoint(x: panel == .tools ? 24 : editorSize.width - layout.sidePanelWidth - 24, y: 24)
+        }
+        let kept = WorkspaceDocking.clamped(stored, editorWidth: editorSize.width, height: editorSize.height)
+        return CGPoint(x: kept.x, y: kept.y)
+    }
+
+    func panelSize(_ panel: WorkspacePanel) -> CGSize {
+        let layout = manager.layout
+        switch panel {
+        case .tools: return CGSize(width: layout.toolIconSize.railWidth, height: min(editorSize.height, 640))
+        case .sidePanel:
+            let stored = layout.sidePanelFrame?.height ?? 520
+            return CGSize(width: layout.sidePanelWidth, height: max(260, min(CGFloat(stored), editorSize.height - 16)))
+        }
+    }
+
+    /// Whether letting go now would dock the panel: exactly what `end` decides, so the edge lights up only when it will.
+    var wouldDock: Bool {
+        guard let panel else { return false }
+        return manager.layout.wouldDock(panel, x: origin.x, editorWidth: editorSize.width)
+    }
+
+    func moved(_ panel: WorkspacePanel, start: CGPoint, location: CGPoint) {
+        if self.panel != panel {
+            let layout = manager.layout
+            let resting = restingOrigin(panel)
+            self.panel = panel
+            fromDock = !(panel == .tools ? layout.floatsTools : layout.floatsSidePanel)
+            size = panelSize(panel)
+            grab = CGSize(width: start.x - resting.x, height: start.y - resting.y)
+        }
+        origin = CGPoint(x: location.x - grab.width, y: location.y - grab.height)
+    }
+
+    func ended() {
+        guard let panel else { return }
+        let size = panelSize(panel)
+        manager.layout.drop(panel, x: origin.x, y: origin.y, width: size.width, height: size.height,
+                            editorWidth: editorSize.width, editorHeight: editorSize.height)
+        self.panel = nil
+        fromDock = false
+    }
+}
+
 /// The editor's middle: the tool rail, the canvas and the side panel, docked along the edges or floating over the
-/// canvas. Each panel has a grab bar on top; dragging it lifts the panel out, and letting go near its edge docks it
-/// again, the edge lighting up while it would.
+/// canvas. Each panel has a grab bar on top; dragging it moves the panel, and letting go right against its edge docks
+/// it again, the edge lighting up when it would.
 struct WorkspaceEditorArea<Canvas: View>: View {
     @Bindable var session: EditorSession
     /// Canvas Only: just the canvas.
     var hidesPanels: Bool
     @ViewBuilder var canvas: Canvas
     private var manager: WorkspaceManager { .shared }
-    @State private var size: CGSize = .zero
-    @State private var drag: PanelDrag?
+    @State private var drag = PanelDragModel()
     static var space: String { "workspaceEditorArea" }
-
-    typealias Panel = WorkspacePanel
-    private struct PanelDrag {
-        var panel: Panel
-        /// Where the pointer took hold, from the panel's top-left corner.
-        var grab: CGSize
-        var origin: CGPoint
-    }
 
     var body: some View {
         let layout = manager.layout
-        HStack(spacing: 0) {
-            if !hidesPanels, !layout.floatsTools, drag?.panel != .tools {
-                ToolRail(session: session, grip: grip(.tools))
-                Divider()
+        // One coordinate space around the docked row and the floating layer alike, so a grab bar reports the same
+        // positions wherever its panel is.
+        ZStack(alignment: .topLeading) {
+            HStack(spacing: 0) {
+                if !hidesPanels, !layout.floatsTools {
+                    ToolRail(session: session, grip: PanelGrip(drag: drag, panel: .tools))
+                    Divider()
+                }
+                canvas
+                if !hidesPanels, !layout.floatsSidePanel {
+                    PanelResizeEdge(width: Binding(get: { manager.layout.sidePanelWidth }, set: { manager.layout.sidePanelWidth = $0 }),
+                                    range: LayersPanel.widths)
+                    LayersPanel(session: session, width: layout.sidePanelWidth, grip: PanelGrip(drag: drag, panel: .sidePanel))
+                }
             }
-            canvas
-            if !hidesPanels, !layout.floatsSidePanel, drag?.panel != .sidePanel {
-                PanelResizeEdge(width: Binding(get: { manager.layout.sidePanelWidth }, set: { manager.layout.sidePanelWidth = $0 }),
-                                range: LayersPanel.widths)
-                LayersPanel(session: session, width: layout.sidePanelWidth, grip: grip(.sidePanel))
+            if !hidesPanels {
+                if layout.floatsTools {
+                    PanelPlacement(drag: drag, panel: .tools) {
+                        ToolRail(session: session, scrolls: false, grip: PanelGrip(drag: drag, panel: .tools))
+                    }
+                }
+                if layout.floatsSidePanel {
+                    PanelPlacement(drag: drag, panel: .sidePanel) {
+                        LayersPanel(session: session, width: layout.sidePanelWidth, grip: PanelGrip(drag: drag, panel: .sidePanel))
+                    }
+                }
+                PanelDragFeedback(drag: drag)
             }
         }
         .coordinateSpace(name: Self.space)
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
-        .overlay(alignment: .topLeading) {
-            if !hidesPanels { floatingPanels }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { drag.editorSize = $0 }
+    }
+}
+
+/// A floating panel, placed where it rests or where it's being dragged. Only this reads the drag, so the panel's own
+/// contents aren't redrawn as it moves.
+private struct PanelPlacement<Content: View>: View {
+    var drag: PanelDragModel
+    var panel: WorkspacePanel
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        let moving = drag.panel == panel && !drag.fromDock
+        let origin = moving ? drag.origin : drag.restingOrigin(panel)
+        let height = drag.panelSize(panel).height
+        content
+            .frame(height: panel == .sidePanel ? height : nil)
+            .floatingPanelChrome()
+            .offset(x: origin.x, y: origin.y)
+    }
+}
+
+/// While a docked panel is dragged out, a light outline of it follows the pointer; while any drag would dock, the edge
+/// it docks to lights up.
+private struct PanelDragFeedback: View {
+    var drag: PanelDragModel
+
+    var body: some View {
+        if let panel = drag.panel {
+            ZStack(alignment: .topLeading) {
+                if drag.wouldDock {
+                    Rectangle().fill(Color.accentColor.opacity(0.45))
+                        .frame(width: 4, height: drag.editorSize.height)
+                        .offset(x: panel == .tools ? 0 : drag.editorSize.width - 4)
+                }
+                if drag.fromDock {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.06))
+                        .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor.opacity(0.8), lineWidth: 1.5) }
+                        .frame(width: drag.size.width, height: drag.size.height)
+                        .offset(x: drag.origin.x, y: drag.origin.y)
+                }
+            }
+            .allowsHitTesting(false)
         }
-    }
-
-    @ViewBuilder private var floatingPanels: some View {
-        let layout = manager.layout
-        ZStack(alignment: .topLeading) {
-            // While a drag would dock, the edge it docks to lights up.
-            if let drag, wouldDock(drag) {
-                Rectangle().fill(Color.accentColor.opacity(0.35))
-                    .frame(width: 6, height: size.height)
-                    .offset(x: drag.panel == .tools ? 0 : size.width - 6)
-                    .allowsHitTesting(false)
-            }
-            if layout.floatsTools || drag?.panel == .tools {
-                let origin = self.origin(.tools)
-                ToolRail(session: session, scrolls: false, grip: grip(.tools))
-                    .floatingPanelChrome()
-                    .offset(x: origin.x, y: origin.y)
-            }
-            if layout.floatsSidePanel || drag?.panel == .sidePanel {
-                let origin = self.origin(.sidePanel)
-                LayersPanel(session: session, width: layout.sidePanelWidth, grip: grip(.sidePanel))
-                    .frame(height: floatingSidePanelHeight)
-                    .floatingPanelChrome()
-                    .offset(x: origin.x, y: origin.y)
-            }
-        }
-        .frame(width: size.width, height: size.height, alignment: .topLeading)
-    }
-
-    private var floatingSidePanelHeight: CGFloat {
-        let stored = manager.layout.sidePanelFrame?.height ?? 520
-        return max(260, min(CGFloat(stored), size.height - 16))
-    }
-
-    private func panelSize(_ panel: Panel) -> CGSize {
-        switch panel {
-        case .tools: CGSize(width: manager.layout.toolIconSize.railWidth, height: min(size.height, 640))
-        case .sidePanel: CGSize(width: manager.layout.sidePanelWidth, height: floatingSidePanelHeight)
-        }
-    }
-
-    /// Where a panel's top-left corner is now: following the pointer while dragged, where it was left while floating,
-    /// or its docked place.
-    private func origin(_ panel: Panel) -> CGPoint {
-        if let drag, drag.panel == panel { return drag.origin }
-        let layout = manager.layout
-        let floats = panel == .tools ? layout.floatsTools : layout.floatsSidePanel
-        let stored = panel == .tools ? layout.toolsFrame : layout.sidePanelFrame
-        let docked = panel == .tools ? CGPoint.zero : CGPoint(x: size.width - layout.sidePanelWidth, y: 0)
-        guard floats, let stored else { return floats ? CGPoint(x: docked.x + (panel == .tools ? 24 : -24), y: 24) : docked }
-        let kept = WorkspaceDocking.clamped(stored, editorWidth: size.width, height: size.height)
-        return CGPoint(x: kept.x, y: kept.y)
-    }
-
-    private func wouldDock(_ drag: PanelDrag) -> Bool {
-        manager.layout.wouldDock(drag.panel, x: drag.origin.x, editorWidth: size.width)
-    }
-
-    private func grip(_ panel: Panel) -> PanelGrip {
-        PanelGrip(space: Self.space, onChanged: { value in
-            if drag == nil {
-                let origin = self.origin(panel)
-                drag = PanelDrag(panel: panel, grab: CGSize(width: value.startLocation.x - origin.x, height: value.startLocation.y - origin.y),
-                                 origin: origin)
-            }
-            guard let current = drag else { return }
-            drag?.origin = CGPoint(x: value.location.x - current.grab.width, y: value.location.y - current.grab.height)
-        }, onEnded: {
-            guard let drag else { return }
-            let size = panelSize(panel)
-            manager.layout.drop(panel, x: drag.origin.x, y: drag.origin.y, width: size.width, height: size.height,
-                                editorWidth: self.size.width, editorHeight: self.size.height)
-            self.drag = nil
-        })
     }
 }
 
 /// The small bar along the top of a movable panel: drag it to move the panel.
 struct PanelGrip: View {
-    var space: String
-    var onChanged: (DragGesture.Value) -> Void
-    var onEnded: () -> Void
+    var drag: PanelDragModel
+    var panel: WorkspacePanel
 
     var body: some View {
         Capsule().fill(Color.secondary.opacity(0.55))
@@ -208,9 +251,9 @@ struct PanelGrip: View {
             .frame(maxWidth: .infinity, minHeight: 12)
             .contentShape(Rectangle())
             .onHover { inside in if inside { NSCursor.openHand.push() } else { NSCursor.pop() } }
-            .gesture(DragGesture(minimumDistance: 2, coordinateSpace: .named(space))
-                .onChanged(onChanged)
-                .onEnded { _ in onEnded() })
+            .gesture(DragGesture(minimumDistance: 2, coordinateSpace: .named(WorkspaceEditorArea<EmptyView>.space))
+                .onChanged { value in drag.moved(panel, start: value.startLocation, location: value.location) }
+                .onEnded { _ in drag.ended() })
             .help("Drag to move this panel; let go by its edge to dock it again")
             .accessibilityLabel("Move panel")
     }

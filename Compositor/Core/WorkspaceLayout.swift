@@ -163,8 +163,8 @@ extension WorkspaceLayout {
 
 /// The rules for dragging panels and tabs around the editor, as plain arithmetic.
 nonisolated enum WorkspaceDocking {
-    /// How close to its edge, in points, a dragged panel has to be let go to dock there.
-    static let snapDistance = 48.0
+    /// How close to its edge, in points, a dragged panel has to be let go to dock there: right up against it.
+    static let snapDistance = 16.0
     /// How much of a floating panel has to stay inside the editor, so its grab bar can always be reached.
     static let keptVisible = 40.0
 

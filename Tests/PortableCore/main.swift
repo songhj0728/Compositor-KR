@@ -149,8 +149,8 @@ precondition(WorkspaceDocking.insertionIndex(forX: 60, midpoints: [30, 90]) == 1
 var order = WorkspaceLayout.standard
 order.move(.layers, toIndex: 2)
 precondition(order.tabOrder == [.channels, .paths, .layers])
-precondition(WorkspaceDocking.toolsDock(atX: 30) && !WorkspaceDocking.toolsDock(atX: 120))
-precondition(WorkspaceDocking.sidePanelDocks(right: 980, editorWidth: 1000) && !WorkspaceDocking.sidePanelDocks(right: 700, editorWidth: 1000))
+precondition(WorkspaceDocking.toolsDock(atX: 10) && !WorkspaceDocking.toolsDock(atX: 30), "only right against the edge")
+precondition(WorkspaceDocking.sidePanelDocks(right: 990, editorWidth: 1000) && !WorkspaceDocking.sidePanelDocks(right: 970, editorWidth: 1000))
 let kept = WorkspaceDocking.clamped(PanelFrame(x: 5000, y: -50, width: 44, height: 600), editorWidth: 1000, height: 700)
 precondition(kept.x == 960 && kept.y == 0, "a panel dragged off the editor stays within reach")
 print("Portable docking tests passed: insertion points, snapping and keeping panels in reach")

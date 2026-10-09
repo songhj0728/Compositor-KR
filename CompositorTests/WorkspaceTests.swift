@@ -95,9 +95,12 @@ struct WorkspaceTests {
         manager.layout.drop(.sidePanel, x: 400, y: 40, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
         #expect(manager.layout.floatsSidePanel && manager.layout.sidePanelFrame?.x == 400)
         #expect(WorkspaceManager(defaults: store).layout.floatsTools, "remembered across launches")
-        manager.layout.drop(.tools, x: 20, y: 10, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
-        #expect(!manager.layout.floatsTools, "let go by the left edge, the tools dock")
-        manager.layout.drop(.sidePanel, x: 1200 - 252 - 30, y: 10, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
+        manager.layout.drop(.tools, x: 8, y: 10, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        #expect(!manager.layout.floatsTools, "let go against the left edge, the tools dock")
+        manager.layout.drop(.tools, x: 30, y: 10, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        #expect(manager.layout.floatsTools, "30 points away isn't against the edge: it floats there")
+        manager.layout.drop(.tools, x: 4, y: 10, width: 44, height: 600, editorWidth: 1200, editorHeight: 700)
+        manager.layout.drop(.sidePanel, x: 1200 - 252 - 8, y: 10, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
         #expect(!manager.layout.floatsSidePanel, "let go by the right edge, the panel docks")
         manager.layout.drop(.sidePanel, x: 400, y: 40, width: 252, height: 500, editorWidth: 1200, editorHeight: 700)
         manager.reset()
@@ -125,5 +128,31 @@ struct WorkspaceTests {
         manager.layout.drop(.tools, x: 300, y: 50, width: 44, height: 600, editorWidth: 1000, editorHeight: 700)
         let floating = try canvasWidth()
         #expect(floating > docked, "floating, the rail no longer takes room from the canvas (\(docked) → \(floating))")
+    }
+
+    /// A drag keeps the point the pointer took hold of under it (no jump), lights the edge exactly when letting go
+    /// would dock, and a docked panel stays put under its outline until it's let go.
+    @Test func panelDragsFollowThePointerAndDockOnlyAgainstTheEdge() {
+        let manager = WorkspaceManager.shared
+        let before = manager.layout
+        defer { manager.layout = before }
+        manager.layout = .standard
+        let drag = PanelDragModel()
+        drag.editorSize = CGSize(width: 1000, height: 700)
+        // Docked side panel (252 wide, at x 748): taken 30 points into it, dragged left.
+        drag.moved(.sidePanel, start: CGPoint(x: 778, y: 6), location: CGPoint(x: 778, y: 6))
+        #expect(drag.fromDock && drag.origin == CGPoint(x: 748, y: 0) && drag.wouldDock, "where it started is its dock")
+        drag.moved(.sidePanel, start: CGPoint(x: 778, y: 6), location: CGPoint(x: 500, y: 106))
+        #expect(drag.origin == CGPoint(x: 470, y: 100), "the grab point stays under the pointer")
+        #expect(!drag.wouldDock && !manager.layout.floatsSidePanel, "docked until let go")
+        drag.ended()
+        #expect(manager.layout.floatsSidePanel && manager.layout.sidePanelFrame?.x == 470 && drag.panel == nil)
+        // Floating now: 20 points short of the right edge doesn't dock, 6 does.
+        drag.moved(.sidePanel, start: CGPoint(x: 480, y: 110), location: CGPoint(x: 480 + 258, y: 110))
+        #expect(!drag.fromDock && drag.origin.x == 728 && !drag.wouldDock)
+        drag.moved(.sidePanel, start: CGPoint(x: 480, y: 110), location: CGPoint(x: 480 + 272, y: 110))
+        #expect(drag.wouldDock)
+        drag.ended()
+        #expect(!manager.layout.floatsSidePanel)
     }
 }

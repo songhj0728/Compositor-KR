@@ -40,7 +40,9 @@ struct IndicatorlessScrollView<Content: View>: NSViewRepresentable {
 
         func updateDocumentSize() {
             let height = host.fittingSize.height
-            let size = NSSize(width: 56, height: height)
+            // Compositor-KR: as wide as the scroll view itself, so the rail stays centered at every tool icon size
+            // (a fixed 56 pushed narrower rails' tools to the right).
+            let size = NSSize(width: max(1, contentView.bounds.width), height: height)
             if host.frame.size != size { host.setFrameSize(size) }
             verticalScrollElasticity = height > contentView.bounds.height + 1 ? .allowed : .none
         }
