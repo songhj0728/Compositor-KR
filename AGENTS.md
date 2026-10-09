@@ -49,6 +49,8 @@ This repository is **Compositor-KR** (github.com/songhj0728/Compositor-KR), a Ko
 - **Windows port in mind.**
   - Platform-neutral logic (Foundation / plain C) goes first in a file or in `Compositor/Core`, with an "Apple platform layer" section below it.
   - Fork C kernels use `Rendering/ParallelFor.h` (no blocks) and `ptrdiff_t`, not `long`. `Tests/PortableCore` checks them in CI.
+  - `Rendering/DitherPixels.c` (Dither, Scanlines, RAW rounding) is upstream's arithmetic in that portable form. When merging upstream changes to it, keep the portable form (no `^` blocks or `dispatch_apply`) and rerun `Tests/PortableCore/dither_pixels.c`.
+  - Pure geometry upstream writes against Core Graphics types goes in `Compositor/Core` with Doubles, with the upstream type kept as a thin adapter (as `NavigatorGeometry` over `Core/NavigatorLayout.swift`).
   - See `docs/windows-patch-contract.md`.
 - **Legal (the app may be sold later).**
   - Don't copy Adobe's (or anyone's) icons, artwork or documentation text.

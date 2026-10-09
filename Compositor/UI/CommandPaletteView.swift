@@ -75,7 +75,7 @@ final class CommandPaletteController {
     /// Compositor-KR: by their English titles, their translations, and the titles macOS gives its own Window, Help and
     /// Services menus in the running language, so the palette leaves them out in Korean too.
     static var skipped: Set<String> {
-        let names = ["Command Palette…", "Window", "Help", "Services"]
+        let names = ["Search Commands…", "Window", "Help", "Services"]
         var titles = Set(names).union(names.map { String(localized: String.LocalizationValue($0)) })
         for menu in [NSApp.windowsMenu, NSApp.helpMenu, NSApp.servicesMenu].compactMap({ $0 }) where !menu.title.isEmpty {
             titles.insert(menu.title)
@@ -101,11 +101,11 @@ final class CommandPaletteController {
                                                              close: { [weak self] in self?.close() }))
         // The panel keeps the size given below rather than growing to what SwiftUI would like.
         host.sizingOptions = []
-        host.frame = NSRect(x: 0, y: 0, width: 410, height: 290)
+        host.frame = NSRect(x: 0, y: 0, width: 460, height: 290)
         panel.contentView = host
-        panel.setContentSize(NSSize(width: 410, height: 290))
+        panel.setContentSize(NSSize(width: 460, height: 290))
         if let frame = window?.frame {
-            panel.setFrameOrigin(NSPoint(x: frame.midX - 205, y: frame.midY - 145))
+            panel.setFrameOrigin(NSPoint(x: frame.midX - 230, y: frame.midY - 145))
         } else {
             panel.center()
         }

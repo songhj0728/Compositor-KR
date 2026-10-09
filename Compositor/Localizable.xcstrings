@@ -147,16 +147,6 @@
         }
       }
     },
-    "%@ × %@ px · sRGB" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ × %2$@ px · sRGB"
-          }
-        }
-      }
-    },
     "%@ color" : {
       "localizations" : {
         "ko" : {
@@ -306,6 +296,7 @@
         }
       }
     },
+    "×" : {},
     "1:1" : {
       "localizations" : {
         "ko" : {
@@ -810,6 +801,7 @@
       }
     },
     "Background for transparency" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1069,7 +1061,18 @@
         }
       }
     },
+    "Break the lines into beads where the picture is darker than this, blending into solid lines where it's brighter" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그림이 이 값보다 어두운 곳에서는 선이 점으로 끊기고, 밝은 곳에서는 이어진 선으로 바뀝니다"
+          }
+        }
+      }
+    },
     "Break the lines into glowing beads" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1181,6 +1184,7 @@
       }
     },
     "Canvas Only (F)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1449,6 +1453,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "단축키를 클릭한 다음 새 키 조합을 누릅니다. 변경 사항은 저장하면 적용됩니다."
+          }
+        }
+      }
+    },
+    "Click or drag to move the view" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클릭하거나 끌어서 보이는 영역을 옮깁니다"
           }
         }
       }
@@ -1787,6 +1801,7 @@
       }
     },
     "Command Palette…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -2262,6 +2277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "어둡게 하기"
+          }
+        }
+      }
+    },
+    "Darker or lighter before the lines are drawn" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선을 그리기 전에 어둡게 또는 밝게 합니다"
           }
         }
       }
@@ -2847,6 +2872,16 @@
         }
       }
     },
+    "Draw no line where the picture is darker than this, leaving the screen dark" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그림이 이 값보다 어두운 곳에는 선을 그리지 않아 화면이 어둡게 남습니다"
+          }
+        }
+      }
+    },
     "Draw one with the Pen (P), or make one from a selection." : {
       "localizations" : {
         "ko" : {
@@ -3171,7 +3206,28 @@
         }
       }
     },
+    "Export As" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 이름으로 내보내기"
+          }
+        }
+      }
+    },
+    "Export As…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 이름으로 내보내기…"
+          }
+        }
+      }
+    },
     "Export JPEG" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -3649,6 +3705,16 @@
         }
       }
     },
+    "Format" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "형식"
+          }
+        }
+      }
+    },
     "Forward Warp" : {
       "localizations" : {
         "ko" : {
@@ -4032,6 +4098,16 @@
         }
       }
     },
+    "Height in pixels; the width follows, keeping the proportions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "높이(픽셀). 비율을 유지하도록 너비가 함께 바뀝니다"
+          }
+        }
+      }
+    },
     "Hex" : {
       "localizations" : {
         "ko" : {
@@ -4268,6 +4344,16 @@
         }
       }
     },
+    "How bright the lines are where the picture is black, so they show even over black" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그림이 검은 곳에서의 선 밝기. 검은 곳에서도 선이 보이게 합니다"
+          }
+        }
+      }
+    },
     "How far a color may be from the picked ones and still be selected" : {
       "localizations" : {
         "ko" : {
@@ -4328,6 +4414,16 @@
         }
       }
     },
+    "How far the brightness is smoothed before it displaces the lines, from sharp ridges to rounded hills" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선을 밀어 올리기 전에 밝기를 얼마나 부드럽게 할지. 날카로운 능선부터 둥근 언덕까지"
+          }
+        }
+      }
+    },
     "How fast Reconstruct, Twirl, Pucker and Bloat work while the brush is held still" : {
       "localizations" : {
         "ko" : {
@@ -4354,6 +4450,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "각 픽셀의 오차가 주변 픽셀로 얼마나 퍼지는지를 나타냅니다. 값이 작을수록 더 평평한 영역이 됩니다."
+          }
+        }
+      }
+    },
+    "How much of the gap a bright line fills; dimmer parts draw it thinner" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "밝은 선이 간격을 채우는 정도. 어두운 부분은 더 가늘게 그립니다"
           }
         }
       }
@@ -4945,6 +5051,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "레벨…"
+          }
+        }
+      }
+    },
+    "Lift the lines where the picture is bright, or lower them when negative, so they swell into its shapes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그림이 밝은 곳에서 선을 들어 올립니다(음수면 내립니다). 선이 형태를 따라 부풀어 오릅니다"
           }
         }
       }
@@ -5610,6 +5726,16 @@
         }
       }
     },
+    "Move the red and blue apart, for colored fringes on the lines" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빨강과 파랑을 서로 어긋나게 해 선 가장자리에 색 번짐을 만듭니다"
+          }
+        }
+      }
+    },
     "Multiply" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5637,6 +5763,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "이름"
+          }
+        }
+      }
+    },
+    "Navigator" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내비게이터"
+          }
+        }
+      }
+    },
+    "Navigator (300% and above)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내비게이터 (300% 이상)"
           }
         }
       }
@@ -6250,6 +6396,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "오버레이"
+          }
+        }
+      }
+    },
+    "Page" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페이지"
           }
         }
       }
@@ -7744,6 +7900,16 @@
         }
       }
     },
+    "Scale the export: the document stays as it is" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내보낼 크기를 조절합니다. 문서는 그대로입니다"
+          }
+        }
+      }
+    },
     "Scale width and height together, about the center" : {
       "localizations" : {
         "ko" : {
@@ -7754,7 +7920,18 @@
         }
       }
     },
+    "Scanlines" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스캔라인"
+          }
+        }
+      }
+    },
     "Scanlines (CRT)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -7781,6 +7958,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "명령과 도구 검색"
+          }
+        }
+      }
+    },
+    "Search Commands…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "명령 검색…"
           }
         }
       }
@@ -8854,6 +9041,16 @@
         }
       }
     },
+    "Toggle Fullscreen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체 화면 전환"
+          }
+        }
+      }
+    },
     "Tolerance" : {
       "localizations" : {
         "ko" : {
@@ -8982,6 +9179,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택 영역 변형"
+          }
+        }
+      }
+    },
+    "Transparency kept · %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "투명도 유지 · %@"
           }
         }
       }
@@ -9504,6 +9711,16 @@
         }
       }
     },
+    "Width in pixels; the height follows, keeping the proportions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "너비(픽셀). 비율을 유지하도록 높이가 함께 바뀝니다"
+          }
+        }
+      }
+    },
     "Working…" : {
       "localizations" : {
         "ko" : {
@@ -9574,7 +9791,18 @@
         }
       }
     },
+    "Zoom in (⌘+), now %@. At 100%% each pixel of the export is one pixel of the screen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확대(⌘+), 현재 %@. 100%%에서는 내보낼 이미지의 한 픽셀이 화면의 한 픽셀입니다"
+          }
+        }
+      }
+    },
     "Zoom in (⌘+), now %@. At 100%% each pixel of the JPEG is one pixel of the screen, as on the canvas" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {

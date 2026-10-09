@@ -77,4 +77,20 @@ struct ColorProfileRoundTripTests {
                 "bevel output tagged \(String(describing: styled.colorSpace))")
         expectFillNumbers(try centerPixel(styled), "bevel \(profile.rawValue)")
     }
+
+    /// Export As at another size keeps the project's space: a scaled P3 picture isn't converted to sRGB, and a CMYK
+    /// project's scaled JPEG is still CMYK.
+    @Test func scaledExportsKeepTheProjectsProfile() async throws {
+        for profile in [DocumentColorProfile.displayP3, .cmyk] {
+            let raster = try await ImageExporter.shared.render(try snapshot(profile))
+            let half = try await ImageExporter.shared.resized(raster, width: 8, height: 8)
+            #expect(half.profile == profile)
+            if profile == .displayP3 {
+                #expect(half.image.colorSpace.flatMap(DocumentColorProfile.init(matching:)) == .displayP3)
+                expectFillNumbers(try centerPixel(half.image), "scaled P3")
+            }
+            let jpeg = try decode(try await ImageExporter.shared.jpeg(half, options: JPEGOptions()).data)
+            #expect(jpeg.colorSpace?.model == (profile == .cmyk ? .cmyk : .rgb))
+        }
+    }
 }

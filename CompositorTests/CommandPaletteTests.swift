@@ -70,7 +70,7 @@ struct CommandPaletteTests {
         }
         let listed = entries()
         let titles = Set(listed.map(\.title))
-        #expect(titles.contains { $0.hasSuffix(" › " + loc("Gaussian Blur") + "…") && $0.components(separatedBy: " › ").count == 2 } && !titles.contains { topLevel($0, named: "Command Palette…") })
+        #expect(titles.contains { $0.hasSuffix(" › " + loc("Gaussian Blur") + "…") && $0.components(separatedBy: " › ").count == 2 } && !titles.contains { topLevel($0, named: "Search Commands…") })
         // The test host has no document open, so Zoom In is disabled: listed, greyed.
         let zoom = try #require(listed.first { topLevel($0.title, named: "Zoom In") })
         #expect(!zoom.isEnabled)

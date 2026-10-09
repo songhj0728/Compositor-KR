@@ -4,6 +4,7 @@ import Sparkle
 @main
 struct CompositorApp: App {
     @NSApplicationDelegateAdaptor(CompositorApplicationDelegate.self) private var applicationDelegate
+    @AppStorage("navigator.visible") private var showsNavigator = false
     private var session: EditorSession { applicationDelegate.session }
     var body: some Scene {
         Window("Compositor", id: "editor") {
@@ -96,8 +97,13 @@ struct CompositorApp: App {
                     Button("Export PNG…") { Task { await applicationDelegate.projects.exportPNG() } }
                         .configuredKeyboardShortcut("e", modifiers: [.command, .shift])
                         .disabled(session.document == nil || !applicationDelegate.projects.canStart)
-                    Button("Export JPEG…") { Task { await applicationDelegate.projects.exportJPEG() } }
+                    // Export As on JPEG.
+                    Button("Export JPEG…") { Task { await applicationDelegate.projects.exportAs(start: .jpeg) } }
                         .configuredKeyboardShortcut("s", modifiers: [.command, .option, .shift])
+                        .disabled(session.document == nil || !applicationDelegate.projects.canStart)
+                    // PNG, JPEG or PDF, sized and previewed; ⌥⇧⌘W, as Photoshop's Export As.
+                    Button("Export As…") { Task { await applicationDelegate.projects.exportAs() } }
+                        .configuredKeyboardShortcut("w", modifiers: [.command, .option, .shift])
                         .disabled(session.document == nil || !applicationDelegate.projects.canStart)
                     Button("Export PSD…") { Task { await applicationDelegate.projects.exportPSD() } }
                         .disabled(session.document == nil || !applicationDelegate.projects.canStart)
@@ -114,17 +120,18 @@ struct CompositorApp: App {
                         Button("Check for Updates…") { applicationDelegate.updater.checkForUpdates(nil) }
                     }
                     CommandGroup(after: .toolbar) {
-                        Button("Command Palette…") {
+                        Button("Search Commands…") {
                             CommandPaletteController.shared.toggle(session: session, over: applicationDelegate.projects.window)
                         }
                         .configuredKeyboardShortcut("f", modifiers: [.command])
-                        // F, handled by the app rather than as the menu's key: a plain letter here would fire while
-                        // typing too.
-                        Toggle("Canvas Only (F)", isOn: Binding(get: { session.canvasOnly },
-                                                                set: { _ in applicationDelegate.toggleCanvasOnly() }))
-                            .disabled(session.document == nil)
+                        // A plain F, shown as menus show keys; the app hands an F meant for a text field to the field
+                        // first (see CompositorApplicationDelegate).
+                        Toggle("Toggle Fullscreen", isOn: Binding(get: { session.canvasOnly },
+                                                            set: { _ in applicationDelegate.toggleCanvasOnly() }))
+                            .keyboardShortcut("f", modifiers: [])
+                            .disabled(!session.canToggleCanvasOnly)
                         Divider()
-                        // With a dialog's preview open (Export JPEG), these zoom that preview rather than the canvas.
+                        // With a dialog's preview open (Export As), these zoom that preview rather than the canvas.
                         Button("Fit Canvas") {
                             if let preview = session.previewZoom { preview(.fit) } else { session.fit() }
                         }.configuredKeyboardShortcut("0").disabled(session.document == nil)
@@ -141,6 +148,7 @@ struct CompositorApp: App {
                             if let preview = session.previewZoom { preview(.zoomOut) } else { session.zoomKeyboard(by: -1) }
                         }
                             .configuredKeyboardShortcut("-").disabled(session.document == nil)
+                        Toggle("Navigator (300% and above)", isOn: $showsNavigator)
                         Toggle("Pixel Grid (800% and above)", isOn: Binding(get: { session.showsPixelGrid },
                                                                               set: { session.showsPixelGrid = $0 }))
                         Toggle("Show Transform Controls", isOn: Binding(get: { session.showsTransformControls },
@@ -323,6 +331,11 @@ struct CompositorApp: App {
                     }
                 }
                 CommandMenu("Filter") {
+                    Button(session.lastFilter.map { "Last Filter: " + $0.rawValue } ?? "Last Filter") {
+                        Task { await session.repeatLastFilter() }
+                    }
+                        // ⌃⌘F, as in Photoshop; ⌘F is the command palette.
+                        .configuredKeyboardShortcut("f", modifiers: [.command, .control]).disabled(!session.canRepeatLastFilter)
                     Button("Liquify…") { session.beginLiquify() }
                         .configuredKeyboardShortcut("x", modifiers: [.command, .shift])
                         .disabled(!session.canLiquify)
