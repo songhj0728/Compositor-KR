@@ -1,4 +1,6 @@
-// Compile with Compositor/Core/*.swift. This harness uses only the Swift standard library.
+// Compile with Compositor/Core/*.swift. This harness uses only the Swift standard library and Foundation, which
+// Swift ships on Windows and Linux too.
+import Foundation
 let locks: [Int: (locked: Bool, parent: Int?)] = [
     1: (true, nil), 2: (false, 1), 3: (false, 2), 4: (false, nil)
 ]
@@ -85,3 +87,70 @@ precondition(shadeA.shadow < shadeB.shadow && shadeB.shadow < 1)
 precondition(BevelGeometry.shading(lit: 0.5, flat: 0.5).shadow == 0)
 precondition(BevelGeometry.shading(lit: -1, flat: 0.5).shadow == 1)
 print("Diffuse shadows remain graded below the horizon")
+
+// Vector paths: the editing rules the Pen and the path selection tools share.
+var path = VectorPath(name: "Path 1", contours: [PathContour(anchors: [
+    PathAnchor(PathVector(0, 0)), PathAnchor(PathVector(100, 0)), PathAnchor(PathVector(100, 100))
+])])
+if case .anchor(let ref)? = PathEditing.hitTest(path, at: PathVector(99, 1), tolerance: 4) {
+    precondition(ref == PathAnchorRef(contour: 0, anchor: 1))
+} else { preconditionFailure("an anchor under the pointer is hit") }
+if case .segment(0, 0, let t)? = PathEditing.hitTest(path, at: PathVector(50, 2), tolerance: 4) {
+    precondition(abs(t - 0.5) < 0.01)
+    let added = PathEditing.insertAnchor(contour: 0, segment: 0, at: t, in: &path)
+    precondition(added == PathAnchorRef(contour: 0, anchor: 1) && path.contours[0].anchors.count == 4)
+    precondition(path.contours[0].anchors[1].point.distance(to: PathVector(50, 0)) < 0.6, "a split keeps the curve")
+} else { preconditionFailure("a segment under the pointer is hit") }
+PathEditing.dragOutHandles(PathAnchorRef(contour: 0, anchor: 3), to: PathVector(130, 100), in: &path)
+let dragged = path.contours[0].anchors[3]
+precondition(dragged.isSmooth && dragged.inHandle == PathVector(70, 100), "the Pen's drag mirrors the handles")
+PathEditing.setHandle(PathAnchorRef(contour: 0, anchor: 3), outgoing: true, to: PathVector(100, 140), breaking: false, in: &path)
+precondition(path.contours[0].anchors[3].inHandle.distance(to: PathVector(100, 70)) < 0.0001, "a smooth anchor keeps its handles in line")
+PathEditing.setHandle(PathAnchorRef(contour: 0, anchor: 3), outgoing: true, to: PathVector(140, 140), breaking: true, in: &path)
+precondition(!path.contours[0].anchors[3].isSmooth && path.contours[0].anchors[3].inHandle.distance(to: PathVector(100, 70)) < 0.0001)
+PathEditing.moveContours([0], by: PathVector(10, 5), in: &path)
+precondition(path.contours[0].anchors[0].point == PathVector(10, 5) && path.contours[0].anchors[3].outHandle == PathVector(150, 145))
+PathEditing.delete([PathAnchorRef(contour: 0, anchor: 0), PathAnchorRef(contour: 0, anchor: 1)], in: &path)
+precondition(path.contours[0].anchors.count == 2)
+PathEditing.delete([PathAnchorRef(contour: 0, anchor: 0), PathAnchorRef(contour: 0, anchor: 1)], in: &path)
+precondition(path.contours.isEmpty, "a contour with nothing left goes")
+print("Portable path tests passed: hits, splits, handles, moves and deletes")
+
+// Workspaces: the side panel's tab order, saved layouts and Reset Workspace.
+var layout = WorkspaceLayout.standard
+precondition(layout.tabOrder == [.layers, .channels, .paths] && layout.toolIconSize == .small && !layout.floatsTools)
+layout.move(.paths, to: .layers)
+precondition(layout.tabOrder == [.paths, .layers, .channels], "a dragged tab takes the place it's dropped on")
+layout.move(.channels, by: -1)
+precondition(layout.tabOrder == [.paths, .channels, .layers])
+var broken = layout
+broken.tabOrder = [.layers, .layers]
+broken.sidePanelWidth = 9_000
+broken.toolsFrame = PanelFrame(x: 0, y: 0, width: .nan, height: 10)
+let fixed = broken.normalized()
+precondition(fixed.tabOrder == [.layers, .channels, .paths] && fixed.sidePanelWidth == 352 && fixed.toolsFrame == nil)
+var library = WorkspaceLibrary()
+library.current = layout
+precondition(library.save(as: "  Painting  ") && library.activeName == "Painting" && !library.save(as: "   "))
+library.reset()
+precondition(library.current == .standard && library.activeName == nil && library.saved.count == 1, "reset keeps saved workspaces")
+precondition(library.choose("Painting") && library.current.tabOrder == [.paths, .channels, .layers])
+let reread = WorkspaceLibrary.decoded(library.encoded())
+precondition(reread == library, "a library survives being stored")
+let newer = #"{"current":{"tabOrder":["history","paths","layers"],"toolIconSize":"large"},"saved":[]}"#.data(using: .utf8)!
+precondition(WorkspaceLibrary.decoded(newer).current.tabOrder == [.paths, .layers, .channels], "unknown tabs are skipped, missing ones added")
+precondition(WorkspaceLibrary.decoded(Data("garbage".utf8)) == WorkspaceLibrary())
+print("Portable workspace tests passed: tab order, normalizing, save, choose, reset and storage")
+
+// Dragging panels and tabs: generous drop targets.
+precondition(WorkspaceDocking.insertionIndex(forX: 500, midpoints: [30, 90]) == 2, "anywhere past the last tab's middle is the end")
+precondition(WorkspaceDocking.insertionIndex(forX: 10, midpoints: [30, 90]) == 0)
+precondition(WorkspaceDocking.insertionIndex(forX: 60, midpoints: [30, 90]) == 1, "between two tabs, by their middles")
+var order = WorkspaceLayout.standard
+order.move(.layers, toIndex: 2)
+precondition(order.tabOrder == [.channels, .paths, .layers])
+precondition(WorkspaceDocking.toolsDock(atX: 10) && !WorkspaceDocking.toolsDock(atX: 30), "only right against the edge")
+precondition(WorkspaceDocking.sidePanelDocks(right: 990, editorWidth: 1000) && !WorkspaceDocking.sidePanelDocks(right: 970, editorWidth: 1000))
+let kept = WorkspaceDocking.clamped(PanelFrame(x: 5000, y: -50, width: 44, height: 600), editorWidth: 1000, height: 700)
+precondition(kept.x == 960 && kept.y == 0, "a panel dragged off the editor stays within reach")
+print("Portable docking tests passed: insertion points, snapping and keeping panels in reach")

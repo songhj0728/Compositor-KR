@@ -12,7 +12,7 @@ extension UTType {
 
 nonisolated struct ProjectManifest: Codable, Sendable {
     /// The newest format version: what a save writes when the project needs it.
-    static let current = 13
+    static let current = 14
     /// What a save writes when nothing in the project needs `current`: the version before Photoshop's Layer Style,
     /// which Compositor-KR 1.4.5 and earlier open. A project is written in the oldest version that holds it, so it keeps
     /// opening in older copies of the app until it uses something they can't keep.
@@ -20,8 +20,9 @@ nonisolated struct ProjectManifest: Codable, Sendable {
     /// Every version `load` accepts. The package-header check, the manifest check and the error
     /// message all read this, so they cannot drift apart when `current` is bumped.
     static let supported = 1...ProjectManifest.current
-    /// The oldest version that holds this manifest: 13 for locks, 12 for Layer Style, 11 otherwise.
+    /// The oldest version that holds this manifest: 14 for paths, 13 for locks, 12 for Layer Style, 11 otherwise.
     var neededVersion: Int {
+        if paths?.isEmpty == false { return 14 }
         if layers.contains(where: { $0.isLocked == true }) { return 13 }
         return layers.contains { $0.effects?.usesLayerStyle == true } ? 12 : ProjectManifest.compatible
     }
@@ -37,6 +38,8 @@ nonisolated struct ProjectManifest: Codable, Sendable {
     var layers: [ProjectLayerRecord]
     /// Alignment guides. Missing on versions 1–7.
     var guides: [CanvasGuide]? = nil
+    /// The Paths panel's vector paths, in document pixels. Missing before version 14.
+    var paths: [VectorPath]? = nil
 }
 
 nonisolated struct ProjectLayerRecord: Codable, Sendable {
@@ -262,6 +265,22 @@ actor ProjectStore {
         }
         if let id = manifest.activeLayerID, !ids.contains(id) { throw ProjectError.invalid }
         try validateGuides(manifest)
+        try validatePaths(manifest)
+    }
+
+    private func validatePaths(_ manifest: ProjectManifest) throws {
+        let paths = manifest.paths ?? []
+        if manifest.version < 14 {
+            guard paths.isEmpty else { throw ProjectError.invalid }
+            return
+        }
+        guard paths.count <= 1_000, paths.reduce(0, { $0 + $1.contours.reduce(0) { $0 + $1.anchors.count } }) <= 1_000_000 else {
+            throw ProjectError.tooLarge
+        }
+        var ids = Set<UUID>()
+        for path in paths {
+            guard ids.insert(path.id).inserted, path.name.utf8.count <= 16_384, path.isWellFormed() else { throw ProjectError.invalid }
+        }
     }
 
     private func validateGuides(_ manifest: ProjectManifest) throws {

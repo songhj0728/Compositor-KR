@@ -114,6 +114,16 @@ struct CompositorApp: App {
                         Button("Check for Updates…") { applicationDelegate.updater.checkForUpdates(nil) }
                     }
                     CommandGroup(after: .toolbar) {
+                        Button("Command Palette…") {
+                            CommandPaletteController.shared.toggle(session: session, over: applicationDelegate.projects.window)
+                        }
+                        .configuredKeyboardShortcut("f", modifiers: [.command])
+                        // F, handled by the app rather than as the menu's key: a plain letter here would fire while
+                        // typing too.
+                        Toggle("Canvas Only (F)", isOn: Binding(get: { session.canvasOnly },
+                                                                set: { _ in applicationDelegate.toggleCanvasOnly() }))
+                            .disabled(session.document == nil)
+                        Divider()
                         // With a dialog's preview open (Export JPEG), these zoom that preview rather than the canvas.
                         Button("Fit Canvas") {
                             if let preview = session.previewZoom { preview(.fit) } else { session.fit() }
@@ -133,8 +143,6 @@ struct CompositorApp: App {
                             .configuredKeyboardShortcut("-").disabled(session.document == nil)
                         Toggle("Pixel Grid (800% and above)", isOn: Binding(get: { session.showsPixelGrid },
                                                                               set: { session.showsPixelGrid = $0 }))
-                        Toggle("Snap", isOn: Binding(get: { session.snappingEnabled },
-                                                     set: { session.snappingEnabled = $0 }))
                         Toggle("Show Transform Controls", isOn: Binding(get: { session.showsTransformControls },
                                                                           set: { session.showsTransformControls = $0 }))
                             .configuredKeyboardShortcut("h").disabled(session.tool != .move || session.document == nil)
@@ -182,6 +190,11 @@ struct CompositorApp: App {
                     // No service providers are registered, and the submenu only ever offered
                     // unrelated system items (Finder tags, dictionary lookups, and the like).
                     CommandGroup(replacing: .systemServices) { }
+                    // Compositor-KR: Window ▸ Workspace, and floating the tools and the side panel.
+                    CommandGroup(after: .windowArrangement) {
+                        Divider()
+                        WorkspaceMenu()
+                    }
                     CommandGroup(replacing: .appSettings) {
                         Button("Settings…") { AppSettings.shared.show() }
                             .keyboardShortcut(",")
@@ -299,6 +312,10 @@ struct CompositorApp: App {
                         .disabled(session.document == nil || !applicationDelegate.projects.canStart)
                     Group {
                         Divider()
+                        Button("Rotate Canvas 90° Clockwise") { session.rotateCanvas(clockwise: true) }
+                            .disabled(!session.canEditLayers)
+                        Button("Rotate Canvas 90° Counterclockwise") { session.rotateCanvas(clockwise: false) }
+                            .disabled(!session.canEditLayers)
                         Button("Flip Canvas Horizontal") { session.flipCanvas(horizontally: true) }
                             .disabled(!session.canEditLayers)
                         Button("Flip Canvas Vertical") { session.flipCanvas(horizontally: false) }

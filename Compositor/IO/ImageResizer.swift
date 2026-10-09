@@ -17,7 +17,7 @@ actor ImageResizer {
         let old = snapshot.manifest
         var manifest = ProjectManifest(colorSpace: old.colorSpace, resolution: options.resolution, documentID: old.documentID,
             width: options.width, height: options.height, activeLayerID: old.activeLayerID, layers: [],
-            guides: old.guides)
+            guides: old.guides, paths: old.paths)
         if old.width == options.width && old.height == options.height {
             manifest.layers = old.layers
             return ProjectSnapshot(manifest: manifest, images: snapshot.images, masks: snapshot.masks)
@@ -26,6 +26,7 @@ actor ImageResizer {
         let sx = CGFloat(options.width) / CGFloat(old.width)
         let sy = CGFloat(options.height) / CGFloat(old.height)
         manifest.guides = old.guides?.map { $0.scaled(x: sx, y: sy) }
+        manifest.paths = old.paths?.map { $0.transformed(.scale(Double(sx), Double(sy))) }
         var images: [UUID: ImportedImage] = [:]
         var masks: [UUID: ImportedImage] = [:]
         var usedPixels = 0, usedMaskPixels = 0
@@ -113,7 +114,7 @@ extension EditorSession {
         document = CanvasDocument(id: m.documentID, width: m.width, height: m.height,
             layers: m.layers.map { ImageLayer(id: $0.id, asset: snapshot.images[$0.id], name: $0.name,
                 isVisible: $0.isVisible, transform: $0.transform, parentID: $0.parentID, isGroup: $0.isGroup == true, opacity: $0.opacity ?? 1, blendMode: $0.blendMode ?? .normal, mask: snapshot.mask(for: $0), maskSourceID: $0.maskSourceID, adjustment: $0.adjustment) }, resolution: m.resolution ?? 72, guides: m.guides ?? [],
-            colorProfile: DocumentColorProfile(rawValue: m.colorSpace) ?? .sRGB)
+            colorProfile: DocumentColorProfile(rawValue: m.colorSpace) ?? .sRGB, paths: m.paths ?? [])
         endEdit()
         viewport.fit(documentSize: document!.size)
     }

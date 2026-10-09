@@ -33,6 +33,7 @@
         }
       }
     },
+    "—" : {},
     "." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -162,6 +163,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 색상"
+          }
+        }
+      }
+    },
+    "%@ copy" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 복사본"
           }
         }
       }
@@ -305,9 +316,7 @@
         }
       }
     },
-    "3.5×5 in" : {
-
-    },
+    "3.5×5 in" : {},
     "4:3" : {
       "localizations" : {
         "ko" : {
@@ -318,15 +327,9 @@
         }
       }
     },
-    "4×6 in" : {
-
-    },
-    "5×7 in" : {
-
-    },
-    "8×10 in" : {
-
-    },
+    "4×6 in" : {},
+    "5×7 in" : {},
+    "8×10 in" : {},
     "16:9" : {
       "localizations" : {
         "ko" : {
@@ -522,9 +525,7 @@
         }
       }
     },
-    "Adobe RGB (1998)" : {
-
-    },
+    "Adobe RGB (1998)" : {},
     "Advanced" : {
       "localizations" : {
         "ko" : {
@@ -1179,6 +1180,16 @@
         }
       }
     },
+    "Canvas Only (F)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캔버스만 보기 (F)"
+          }
+        }
+      }
+    },
     "Canvas Size" : {
       "localizations" : {
         "ko" : {
@@ -1244,6 +1255,16 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
+            "value" : "채널"
+          }
+        }
+      }
+    },
+    "Channels" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "채널"
           }
         }
@@ -1592,9 +1613,7 @@
         }
       }
     },
-    "CMYK" : {
-
-    },
+    "CMYK" : {},
     "Color" : {
       "localizations" : {
         "ko" : {
@@ -1763,6 +1782,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "색상"
+          }
+        }
+      }
+    },
+    "Command Palette…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "명령 팔레트…"
           }
         }
       }
@@ -1976,6 +2005,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 만들기"
+          }
+        }
+      }
+    },
+    "Create a canvas first." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 캔버스를 만드세요."
           }
         }
       }
@@ -2257,6 +2296,16 @@
         }
       }
     },
+    "Delete" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "삭제"
+          }
+        }
+      }
+    },
     "Delete " : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2328,6 +2377,26 @@
         }
       }
     },
+    "Delete path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스 삭제"
+          }
+        }
+      }
+    },
+    "Delete Path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스 삭제"
+          }
+        }
+      }
+    },
     "Delete selected effect" : {
       "localizations" : {
         "ko" : {
@@ -2365,6 +2434,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "선택한 레이어 삭제"
+          }
+        }
+      }
+    },
+    "Delete Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역 삭제"
           }
         }
       }
@@ -2491,6 +2570,16 @@
         }
       }
     },
+    "Direct Selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "직접 선택"
+          }
+        }
+      }
+    },
     "Direction" : {
       "localizations" : {
         "ko" : {
@@ -2512,9 +2601,7 @@
         }
       }
     },
-    "Display P3" : {
-
-    },
+    "Display P3" : {},
     "Distance" : {
       "localizations" : {
         "ko" : {
@@ -2649,6 +2736,17 @@
         }
       }
     },
+    "Drag a tab in the panel to move it. Floating panels move by their title bars and dock again when closed." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널의 탭을 끌어 순서를 바꿀 수 있습니다. 떠 있는 패널은 제목 막대로 옮기고, 닫으면 다시 붙습니다."
+          }
+        }
+      }
+    },
     "Drag inside the wheel. Angle sets hue, distance sets saturation." : {
       "localizations" : {
         "ko" : {
@@ -2675,6 +2773,26 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "드래그하거나 스크롤하여 이동합니다. 더블 클릭하면 맞춤과 100% 사이를 전환합니다."
+          }
+        }
+      }
+    },
+    "Drag the bar on top of the tools or the Layers panel to move it over the canvas; let go by its edge to dock it again. Drag a tab to change the order." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구나 레이어 패널 맨 위의 막대를 끌면 캔버스 위로 옮길 수 있고, 원래 가장자리에서 놓으면 다시 붙습니다. 탭을 끌면 순서가 바뀝니다."
+          }
+        }
+      }
+    },
+    "Drag to move this panel; let go by its edge to dock it again" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끌어서 패널을 옮기고, 가장자리에서 놓으면 다시 붙습니다"
           }
         }
       }
@@ -2725,6 +2843,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "안내선 그리기"
+          }
+        }
+      }
+    },
+    "Draw one with the Pen (P), or make one from a selection." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "펜(P)으로 그리거나 선택 영역에서 만드세요."
           }
         }
       }
@@ -2785,6 +2913,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "레이어 복제"
+          }
+        }
+      }
+    },
+    "Duplicate Path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스 복제"
           }
         }
       }
@@ -3022,9 +3160,7 @@
         }
       }
     },
-    "Executive" : {
-
-    },
+    "Executive" : {},
     "Expand…" : {
       "localizations" : {
         "ko" : {
@@ -3205,6 +3341,26 @@
         }
       }
     },
+    "Fill Path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스 칠하기"
+          }
+        }
+      }
+    },
+    "Fill path with the foreground color" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전경색으로 패스 칠하기"
+          }
+        }
+      }
+    },
     "Fill the inside of the shape" : {
       "localizations" : {
         "ko" : {
@@ -3373,6 +3529,61 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "세로로 뒤집기"
+          }
+        }
+      }
+    },
+    "Float Layers Panel" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 패널 분리"
+          }
+        }
+      }
+    },
+    "Float the Layers panel in its own window" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "레이어 패널을 별도 창으로 띄우기"
+          }
+        }
+      }
+    },
+    "Float the tools in their own window" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구를 별도 창으로 띄우기"
+          }
+        }
+      }
+    },
+    "Float this panel in its own window" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 패널을 별도 창으로 띄우기"
+          }
+        }
+      }
+    },
+    "Float Tools" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구 분리"
           }
         }
       }
@@ -4327,6 +4538,16 @@
         }
       }
     },
+    "Importing…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가져오는 중…"
+          }
+        }
+      }
+    },
     "in" : {
       "localizations" : {
         "ko" : {
@@ -4460,12 +4681,8 @@
         }
       }
     },
-    "ISO A" : {
-
-    },
-    "ISO B" : {
-
-    },
+    "ISO A" : {},
+    "ISO B" : {},
     "Its clipping mask isn't the layer right below it, which Photoshop can't do, so it was applied to the pixels." : {
       "localizations" : {
         "ko" : {
@@ -4476,9 +4693,7 @@
         }
       }
     },
-    "JIS B" : {
-
-    },
+    "JIS B" : {},
     "Keep adjustment layers editable" : {
       "localizations" : {
         "ko" : {
@@ -4545,6 +4760,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "언어"
+          }
+        }
+      }
+    },
+    "Large" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "크게"
           }
         }
       }
@@ -4692,9 +4917,7 @@
         }
       }
     },
-    "Legal" : {
-
-    },
+    "Legal" : {},
     "Lens Correction" : {
       "localizations" : {
         "ko" : {
@@ -4705,9 +4928,7 @@
         }
       }
     },
-    "Letter" : {
-
-    },
+    "Letter" : {},
     "Levels" : {
       "localizations" : {
         "ko" : {
@@ -4915,6 +5136,26 @@
         }
       }
     },
+    "Load path as a selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스를 선택 영역으로 불러오기"
+          }
+        }
+      }
+    },
+    "Load Path as Selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스를 선택 영역으로 불러오기"
+          }
+        }
+      }
+    },
     "Loading histogram…" : {
       "localizations" : {
         "ko" : {
@@ -5046,12 +5287,32 @@
         }
       }
     },
+    "Make a path from the selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택 영역으로 패스 만들기"
+          }
+        }
+      }
+    },
     "Make each dithered pixel this many pixels across, for a chunky old-screen look" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "각 디더링 픽셀의 크기를 지정한 픽셀 수만큼 크게 만들어, 예전 화면처럼 큼직한 느낌을 냅니다."
+          }
+        }
+      }
+    },
+    "Make Selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택 영역 만들기"
           }
         }
       }
@@ -5142,6 +5403,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "클릭한 픽셀 또는 그 주변 픽셀의 평균값과 일치시킵니다."
+          }
+        }
+      }
+    },
+    "Medium" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보통"
           }
         }
       }
@@ -5289,6 +5560,16 @@
         }
       }
     },
+    "Move Left" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "왼쪽으로 이동"
+          }
+        }
+      }
+    },
     "Move Mask" : {
       "localizations" : {
         "ko" : {
@@ -5309,6 +5590,26 @@
         }
       }
     },
+    "Move panel" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널 이동"
+          }
+        }
+      }
+    },
+    "Move Right" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오른쪽으로 이동"
+          }
+        }
+      }
+    },
     "Multiply" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5316,6 +5617,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "곱하기"
+          }
+        }
+      }
+    },
+    "My Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 작업 영역"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이름"
           }
         }
       }
@@ -5460,6 +5781,36 @@
         }
       }
     },
+    "New path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 패스"
+          }
+        }
+      }
+    },
+    "New Path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 패스"
+          }
+        }
+      }
+    },
+    "New path on first click" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "처음 클릭하면 새 패스가 만들어집니다"
+          }
+        }
+      }
+    },
     "New: %lld × %lld pixels · %@ uncompressed" : {
       "localizations" : {
         "en" : {
@@ -5526,6 +5877,16 @@
         }
       }
     },
+    "No commands match" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일치하는 명령이 없습니다"
+          }
+        }
+      }
+    },
     "No layers yet" : {
       "localizations" : {
         "ko" : {
@@ -5542,6 +5903,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 레이어에는 렌즈 메타데이터가 없습니다. 프로필 슬라이더는 일반 보정 강도로 설정됩니다."
+          }
+        }
+      }
+    },
+    "No paths yet" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 패스가 없습니다"
           }
         }
       }
@@ -5923,6 +6294,17 @@
         }
       }
     },
+    "Panel" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널"
+          }
+        }
+      }
+    },
     "Paper" : {
       "localizations" : {
         "ko" : {
@@ -5973,6 +6355,46 @@
         }
       }
     },
+    "Path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스"
+          }
+        }
+      }
+    },
+    "Path Selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스 선택"
+          }
+        }
+      }
+    },
+    "Path Selection moves whole paths; Direct Selection moves anchor points and handles. Tab or Shift-A switches." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스 선택은 패스 전체를, 직접 선택은 기준점과 핸들을 옮깁니다. Tab 또는 Shift-A로 전환합니다."
+          }
+        }
+      }
+    },
+    "Paths" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스"
+          }
+        }
+      }
+    },
     "Pattern" : {
       "localizations" : {
         "ko" : {
@@ -5989,6 +6411,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "패턴 오버레이"
+          }
+        }
+      }
+    },
+    "Pen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "펜"
           }
         }
       }
@@ -6517,6 +6949,16 @@
         }
       }
     },
+    "Put every panel, tab and size back as it was when the app was new" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 패널·탭·크기를 처음 설치했을 때 상태로 되돌립니다"
+          }
+        }
+      }
+    },
     "px" : {
       "localizations" : {
         "ko" : {
@@ -6648,12 +7090,8 @@
         }
       }
     },
-    "Rec. 709" : {
-
-    },
-    "Rec. 2020" : {
-
-    },
+    "Rec. 709" : {},
+    "Rec. 2020" : {},
     "Reconstruct" : {
       "localizations" : {
         "ko" : {
@@ -6884,6 +7322,16 @@
         }
       }
     },
+    "Reset Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역 재설정"
+          }
+        }
+      }
+    },
     "Resize" : {
       "localizations" : {
         "ko" : {
@@ -7094,6 +7542,26 @@
         }
       }
     },
+    "Rotate Canvas 90° Clockwise" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캔버스 90° 시계 방향 회전"
+          }
+        }
+      }
+    },
+    "Rotate Canvas 90° Counterclockwise" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캔버스 90° 반시계 방향 회전"
+          }
+        }
+      }
+    },
     "Round the rectangle's corners by this many pixels; 0 keeps them square" : {
       "localizations" : {
         "ko" : {
@@ -7215,6 +7683,46 @@
         }
       }
     },
+    "Save Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역 저장"
+          }
+        }
+      }
+    },
+    "Save Workspace…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 작업 영역 저장…"
+          }
+        }
+      }
+    },
+    "Save…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장…"
+          }
+        }
+      }
+    },
+    "Saved" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장된 작업 영역"
+          }
+        }
+      }
+    },
     "Sawtooth" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7263,6 +7771,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "스크린"
+          }
+        }
+      }
+    },
+    "Search commands and tools" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "명령과 도구 검색"
           }
         }
       }
@@ -7354,6 +7872,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택됨"
+          }
+        }
+      }
+    },
+    "Selection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택"
           }
         }
       }
@@ -7650,6 +8178,16 @@
         }
       }
     },
+    "Small" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작게"
+          }
+        }
+      }
+    },
     "Smear" : {
       "localizations" : {
         "ko" : {
@@ -7811,9 +8349,7 @@
         }
       }
     },
-    "sRGB" : {
-
-    },
+    "sRGB" : {},
     "sRGB · Transparent" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8006,9 +8542,17 @@
         }
       }
     },
-    "Tabloid" : {
-
+    "Tab order" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "탭 순서"
+          }
+        }
+      }
     },
+    "Tabloid" : {},
     "Take back every stroke" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8210,6 +8754,16 @@
         }
       }
     },
+    "The panels' places, the tab order and the tool icon size are saved under this name." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패널 위치, 탭 순서, 도구 아이콘 크기가 이 이름으로 저장됩니다."
+          }
+        }
+      }
+    },
     "The pattern's own color" : {
       "localizations" : {
         "ko" : {
@@ -8336,6 +8890,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "채널당 톤 수입니다. 2로 설정하면 완전한 흑백이 됩니다."
+          }
+        }
+      }
+    },
+    "Tool Icons" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구 아이콘"
           }
         }
       }
@@ -8808,6 +9372,16 @@
         }
       }
     },
+    "Viewing a channel changes nothing in the image." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채널을 보기만 할 뿐 이미지는 바뀌지 않습니다."
+          }
+        }
+      }
+    },
     "Vignette" : {
       "localizations" : {
         "ko" : {
@@ -8936,6 +9510,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "작업 중…"
+          }
+        }
+      }
+    },
+    "Workspace" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 영역"
           }
         }
       }

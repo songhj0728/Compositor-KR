@@ -13,6 +13,12 @@ struct EditorCanvas: NSViewRepresentable {
         _ = session.showsGuides
         _ = session.guideDrag
         _ = session.document?.guides
+        // Compositor-KR: the path outline and the single-channel view are drawn in the overlay, which these redraw.
+        _ = session.document?.paths
+        _ = (session.activePathID, session.selectedPathAnchors, session.selectedPathContours, session.penDraft)
+        _ = (session.effectivePathSelectionKind, session.sidePanelTab, session.channelView, session.tool)
+        _ = session.pathDrag?.current
+        view.refreshOverlay()
         view.synchronizeDisplay()
         view.window?.isDocumentEdited = session.isModified
     }
@@ -50,6 +56,7 @@ final class CanvasView: NSView {
     }
     private let sampleRing = SampleRingOverlay()
     private let lines = CanvasLinesOverlay()
+    func refreshOverlay() { lines.needsDisplay = true }
     private var samplingOriginal = PaletteColor.black
     let session: EditorSession
     private var spaceHeld = false
@@ -899,12 +906,15 @@ final class CanvasView: NSView {
         }
     }
 
+    /// The gray around the canvas, black in Canvas Only (F).
+    private var surround: CGFloat { session.canvasOnly ? 0 : 0.105 }
+
     override func draw(_ dirtyRect: NSRect) {
         // The grid and a text frame being dragged follow the pixels under them.
         if lines.frame != bounds { lines.frame = bounds }
         lines.needsDisplay = true
         if drawOnGPU(dirtyRect) { return }
-        NSColor(white: 0.105, alpha: 1).setFill()
+        NSColor(white: surround, alpha: 1).setFill()
         dirtyRect.fill()
         guard let document = session.document,
               let context = NSGraphicsContext.current?.cgContext else { return }
@@ -1481,7 +1491,86 @@ final class CanvasView: NSView {
             let visible = rect.intersection(bounds).intersection(dirtyRect)
             if !visible.isNull, !visible.isEmpty { drawPixelGrid(in: visible, document: document, context: context) }
         }
+        if session.channelView != .composite { drawChannel(document: document, context: context) }
         drawTextBoxDraft()
+        drawPaths(document: document, context: context)
+    }
+
+    /// One color channel alone in gray, over the pixels, as the Channels panel shows it.
+    private func drawChannel(document: CanvasDocument, context: CGContext) {
+        let longest = max(document.width, document.height)
+        guard let image = session.channelImage(session.channelView, maxSide: min(4096, longest)) else { return }
+        let viewport = session.viewport
+        let rect = CGRect(origin: viewport.viewPoint(from: .zero, documentSize: document.size),
+                          size: CGSize(width: document.size.width * viewport.pointsPerPixel, height: document.size.height * viewport.pointsPerPixel))
+        context.saveGState()
+        context.interpolationQuality = viewport.zoom >= Self.crispZoom && image.width == document.width ? .none : .high
+        // The overlay is flipped: draw the image the right way up.
+        context.translateBy(x: rect.minX, y: rect.maxY)
+        context.scaleBy(x: 1, y: -1)
+        context.draw(image, in: CGRect(origin: .zero, size: rect.size))
+        context.restoreGState()
+    }
+
+    /// The active path over the canvas: its outline, and with a path tool its anchors as small squares (filled when
+    /// picked), the handles being edited, and Direct Selection's box.
+    private func drawPaths(document: CanvasDocument, context: CGContext) {
+        guard session.showsActivePath, let path = session.activePath else { return }
+        let viewport = session.viewport
+        func view(_ p: PathVector) -> CGPoint { viewport.viewPoint(from: p.cgPoint, documentSize: document.size) }
+        let accent = NSColor.systemBlue.cgColor
+        let outline = CGMutablePath()
+        for contour in path.contours {
+            guard let first = contour.anchors.first else { continue }
+            outline.move(to: view(first.point))
+            for segment in contour.segments {
+                outline.addCurve(to: view(segment.end), control1: view(segment.control1), control2: view(segment.control2))
+            }
+            if contour.isClosed { outline.closeSubpath() }
+        }
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.setStrokeColor(accent)
+        context.setLineWidth(1)
+        context.addPath(outline)
+        context.strokePath()
+        guard session.isPathTool else { return }
+        // Handles: a line from the anchor and a small dot at its end.
+        for ref in session.pathAnchorsShowingHandles where path.contours.indices.contains(ref.contour)
+            && path.contours[ref.contour].anchors.indices.contains(ref.anchor) {
+            let anchor = path.contours[ref.contour].anchors[ref.anchor]
+            for handle in [anchor.inHandle, anchor.outHandle] where handle != anchor.point {
+                context.move(to: view(anchor.point))
+                context.addLine(to: view(handle))
+                context.strokePath()
+                let end = view(handle)
+                context.setFillColor(accent)
+                context.fillEllipse(in: CGRect(x: end.x - 3, y: end.y - 3, width: 6, height: 6))
+            }
+        }
+        let picked: Set<PathAnchorRef>
+        let drawn: Set<PathAnchorRef>
+        let everything = PathEditing.allAnchors(of: Set(path.contours.indices), in: path)
+        if session.tool == .pathSelection, session.effectivePathSelectionKind == .path {
+            picked = PathEditing.allAnchors(of: session.selectedPathContours, in: path)
+            drawn = picked
+        } else {
+            picked = session.tool == .pathSelection ? session.selectedPathAnchors : []
+            drawn = everything
+        }
+        for ref in drawn {
+            let center = view(path.contours[ref.contour].anchors[ref.anchor].point)
+            let square = CGRect(x: center.x - 3, y: center.y - 3, width: 6, height: 6)
+            context.setFillColor(picked.contains(ref) ? accent : NSColor.white.cgColor)
+            context.fill(square)
+            context.stroke(square)
+        }
+        if let drag = session.pathDrag, case .marquee = drag.kind {
+            let a = view(drag.start), b = view(drag.current)
+            context.setLineDash(phase: 0, lengths: [3, 3])
+            context.setStrokeColor(NSColor.white.withAlphaComponent(0.8).cgColor)
+            context.stroke(CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(a.x - b.x), height: abs(a.y - b.y)))
+        }
     }
 
     /// One-screen-pixel lines on document pixel boundaries, over the image only.
@@ -1525,7 +1614,7 @@ final class CanvasView: NSView {
             // The Move tool's cursor depends on the pointer (handles, Option to duplicate), so match it here.
             : session.tool == .move ? window.map { transformCursor(at: convert($0.mouseLocationOutsideOfEventStream, from: nil)) } ?? .arrow
             : session.tool == .type ? .iBeam
-            : session.tool == .idle ? .arrow
+            : session.tool == .idle || session.tool == .pathSelection ? .arrow
             : session.tool == .zoom ? (optionHeld ? Self.zoomOutCursor : Self.zoomInCursor)
             : .crosshair
     }
@@ -1918,13 +2007,29 @@ final class CanvasView: NSView {
             if event.clickCount >= 2, beginLiveTextEdit(at: point) { return }
             if beginGuideDrag(at: point) { return }
             beginTransformDrag(at: point, modifiers: event.modifierFlags)
+        } else if session.tool == .pen, let document = session.document {
+            session.penPress(at: session.viewport.documentPoint(from: point, documentSize: document.size), tolerance: pathTolerance,
+                             option: event.modifierFlags.contains(.option), shift: event.modifierFlags.contains(.shift))
+            lines.needsDisplay = true
+        } else if session.tool == .pathSelection, let document = session.document {
+            session.pathSelectionPress(at: session.viewport.documentPoint(from: point, documentSize: document.size), tolerance: pathTolerance,
+                                       shift: event.modifierFlags.contains(.shift), option: event.modifierFlags.contains(.option))
+            lines.needsDisplay = true
         } else if session.tool == .zoom {
             zoomDrag = (point, session.viewport.zoom, false)
         }
     }
+    /// How near, in document pixels, a click has to land to take an anchor, handle or segment: six screen points.
+    private var pathTolerance: CGFloat { 6 / max(session.viewport.pointsPerPixel, 0.0001) }
     override func mouseDragged(with event: NSEvent) {
         guard session.document != nil else { return }
         let point = convert(event.locationInWindow, from: nil)
+        if session.pathDrag != nil, let document = session.document {
+            session.pathDragMoved(to: session.viewport.documentPoint(from: point, documentSize: document.size),
+                                  shift: event.modifierFlags.contains(.shift))
+            lines.needsDisplay = true
+            return
+        }
         if session.filterEdit?.drawingCameraRawGeometryGuide == true, session.filterEdit?.cameraRawGuideDraft != nil,
            let document = session.document {
             session.continueCameraRawGeometryGuide(to: session.viewport.documentPoint(from: point, documentSize: document.size))
@@ -2111,6 +2216,11 @@ final class CanvasView: NSView {
         session.filterEdit?.cameraRawDrag = nil
         if textBoxAnchor != nil { finishTextGesture(); return }
         stopMarqueeAutoscroll()
+        if session.pathDrag != nil {
+            session.pathDragEnded()
+            lines.needsDisplay = true
+            return
+        }
         if let drag = zoomDrag {
             zoomDrag = nil
             if !drag.moved {
@@ -2245,6 +2355,10 @@ final class CanvasView: NSView {
         } else if session.gradientEdit != nil, [36, 76].contains(event.keyCode) {
             gradientDrag = nil
             Task { await session.commitGradient() }
+        } else if session.penDraft != nil, [53, 36, 76].contains(event.keyCode) {
+            // Return or Escape leaves the Pen's open contour as it is; the next click starts another.
+            session.finishPenContour()
+            lines.needsDisplay = true
         } else if session.tool == .crop, event.keyCode == 53 {
             cropDrag = nil
             session.cancelCrop()
@@ -2273,11 +2387,19 @@ final class CanvasView: NSView {
             let step: CGFloat = event.modifierFlags.contains(.shift) ? 10 : 1
             session.nudgeSelection(dx: event.keyCode == 123 ? -step : event.keyCode == 124 ? step : 0,
                                    dy: event.keyCode == 126 ? -step : event.keyCode == 125 ? step : 0)
+        } else if session.tool == .pathSelection, [123, 124, 125, 126].contains(event.keyCode),
+                  event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
+                  session.nudgePathSelection(dx: event.keyCode == 123 ? -(event.modifierFlags.contains(.shift) ? 10 : 1) : event.keyCode == 124 ? (event.modifierFlags.contains(.shift) ? 10 : 1) : 0,
+                                             dy: event.keyCode == 126 ? -(event.modifierFlags.contains(.shift) ? 10 : 1) : event.keyCode == 125 ? (event.modifierFlags.contains(.shift) ? 10 : 1) : 0) {
+            lines.needsDisplay = true
         } else if session.tool == .move, [123, 124, 125, 126].contains(event.keyCode),
                   event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
             let step: CGFloat = event.modifierFlags.contains(.shift) ? 10 : 1
             session.nudgeLayer(dx: event.keyCode == 123 ? -step : event.keyCode == 124 ? step : 0,
                                dy: event.keyCode == 126 ? -step : event.keyCode == 125 ? step : 0)
+        } else if (event.keyCode == 51 || event.keyCode == 117), session.isPathTool,
+                  event.modifierFlags.intersection([.command, .control, .option]).isEmpty, session.deleteSelectedPathParts() {
+            lines.needsDisplay = true
         } else if (event.keyCode == 51 || event.keyCode == 117),
            event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
             session.deleteKeyPressed()
@@ -2318,7 +2440,9 @@ final class CanvasView: NSView {
             // Shift turns [ and ] into { and }.
             case "{" where session.tool.isBrushTool: session.changeBrushHardness(increase: false)
             case "}" where session.tool.isBrushTool: session.changeBrushHardness(increase: true)
-            case "a": session.selectTool(.idle)
+            // Shift-A: the path selection tools, switching between Path and Direct on each press. A alone is No tool.
+            case "a": if event.modifierFlags.contains(.shift) { session.pressPathSelectionKey() } else { session.selectTool(.idle) }
+            case "p": session.selectTool(.pen)
             case "r": session.selectTool(.blur)
             case "c": session.selectTool(.crop)
             case "v": session.selectTool(.move)
@@ -2738,7 +2862,7 @@ extension CanvasView {
         func gray(_ white: CGFloat, alpha: CGFloat = 1) -> CIImage {
             CIImage(color: CIColor(red: white, green: white, blue: white, alpha: alpha))
         }
-        var frame = gray(0.105).cropped(to: full)
+        var frame = gray(surround).cropped(to: full)
         guard rect.intersects(full) else { return frame }
         // The document's shadow, then its checkerboard: 10-point squares from its top-left corner.
         let shadow = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0.35)).cropped(to: rect)

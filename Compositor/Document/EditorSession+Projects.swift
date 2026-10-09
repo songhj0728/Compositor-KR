@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 extension EditorSession {
     func projectSnapshot() -> ProjectSnapshot? {
@@ -13,7 +14,8 @@ extension EditorSession {
         }
         return ProjectSnapshot(manifest: ProjectManifest(colorSpace: document.colorProfile.rawValue, resolution: document.resolution, documentID: document.id, width: document.width,
             height: document.height, activeLayerID: activeLayerID, layers: layers,
-            guides: document.guides.isEmpty ? nil : document.guides), images: images, masks: masks)
+            guides: document.guides.isEmpty ? nil : document.guides,
+            paths: document.paths.isEmpty ? nil : document.paths), images: images, masks: masks)
     }
 
     /// Called only after the entire package has successfully validated and loaded.
@@ -32,7 +34,7 @@ extension EditorSession {
                            effects: $0.effects,
                            text: LayerText.loaded($0.text, image: snapshot.images[$0.id]?.image), isLocked: $0.isLocked == true)
             }, resolution: manifest.resolution ?? 72, guides: manifest.guides ?? [],
-            colorProfile: DocumentColorProfile(rawValue: manifest.colorSpace) ?? .sRGB)
+            colorProfile: DocumentColorProfile(rawValue: manifest.colorSpace) ?? .sRGB, paths: manifest.paths ?? [])
         activeLayerID = manifest.activeLayerID
         projectURL = url
         renamingLayerID = nil

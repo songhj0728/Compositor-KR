@@ -75,6 +75,8 @@ extension EditorSession {
             }
         }
         self.document?.guides = document.guides.map { $0.mirrored(horizontally: horizontally, across: axis) }
+        let mirror = horizontally ? PathAffine(a: -1, tx: Double(document.size.width)) : PathAffine(d: -1, ty: Double(document.size.height))
+        self.document?.paths = document.paths.map { $0.transformed(mirror) }
         endEdit()
     }
 }
